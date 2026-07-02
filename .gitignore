@@ -1,0 +1,58 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Temporary
+.tmp/
+*.log
+
+# Next.js
+apps/.next/
+apps/out/
+
+# Node
+apps/node_modules/
+node_modules/
+
+# Go
+*.exe
+*.test
+coverage.out
+
+# Build
+build/
+dist/
+bin/
+
+# Database
+configs/*.db
+*.sqlite
+*.sqlite3
+
+# DevServer
+.devserver/cache/
+.devserver/logs/
+.devserver/history/
+.devserver/snapshot/
+
+# Cache
+.devserver/cache/
+.tmp/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Generated context
+.devserver/context/*.json
+
+# GitHub
+.github/copilot/
+
+# Logs
+*.log
