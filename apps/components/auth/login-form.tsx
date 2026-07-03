@@ -109,7 +109,7 @@ export function LoginForm({ branding, subtitle, supportEmail }: Props) {
         />
 
         <Card>
-          <Badge tone="info">Mock workflow</Badge>
+          <Badge tone="info">Command-driven workflow</Badge>
           <h3 className="rail-title">Need a fresh install?</h3>
           <p className="rail-copy">If the platform is not set up yet, the bootstrap router will send you to the setup wizard first.</p>
           <Button href="/setup" variant="secondary">

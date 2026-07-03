@@ -1,0 +1,112 @@
+[
+  {
+    "type": "file",
+    "name": "clean.js",
+    "path": "clean.js",
+    "size": 253
+  },
+  {
+    "type": "file",
+    "name": "dev.js",
+    "path": "dev.js",
+    "size": 0
+  },
+  {
+    "type": "file",
+    "name": "doctor.js",
+    "path": "doctor.js",
+    "size": 252
+  },
+  {
+    "type": "file",
+    "name": "index.js",
+    "path": "index.js",
+    "size": 430
+  },
+  {
+    "type": "directory",
+    "name": "inspector",
+    "path": "inspector",
+    "children": [
+      {
+        "type": "file",
+        "name": "config.js",
+        "path": "inspector\\config.js",
+        "size": 529
+      },
+      {
+        "type": "file",
+        "name": "index.js",
+        "path": "inspector\\index.js",
+        "size": 430
+      },
+      {
+        "type": "directory",
+        "name": "output",
+        "path": "inspector\\output",
+        "children": []
+      },
+      {
+        "type": "directory",
+        "name": "scanners",
+        "path": "inspector\\scanners",
+        "children": [
+          {
+            "type": "file",
+            "name": "tree.js",
+            "path": "inspector\\scanners\\tree.js",
+            "size": 876
+          }
+        ]
+      },
+      {
+        "type": "file",
+        "name": "utils.js",
+        "path": "inspector\\utils.js",
+        "size": 527
+      },
+      {
+        "type": "file",
+        "name": "writers.js",
+        "path": "inspector\\writers.js",
+        "size": 278
+      }
+    ]
+  },
+  {
+    "type": "file",
+    "name": "package-lock.json",
+    "path": "package-lock.json",
+    "size": 1183
+  },
+  {
+    "type": "file",
+    "name": "package.json",
+    "path": "package.json",
+    "size": 321
+  },
+  {
+    "type": "file",
+    "name": "project-snapshot.js",
+    "path": "project-snapshot.js",
+    "size": 3107
+  },
+  {
+    "type": "file",
+    "name": "release.js",
+    "path": "release.js",
+    "size": 0
+  },
+  {
+    "type": "file",
+    "name": "snapshot.js",
+    "path": "snapshot.js",
+    "size": 0
+  },
+  {
+    "type": "file",
+    "name": "watch.js",
+    "path": "watch.js",
+    "size": 558
+  }
+]

@@ -221,6 +221,26 @@ export interface TaskEvent {
   scope: string
 }
 
+export interface CommandRecord {
+  id: string
+  name: string
+  workspaceId?: string
+  capability: string
+  provider?: string
+  target?: string
+  status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled' | 'rolled_back'
+  taskId?: string
+  progress?: number
+  detail?: string
+  error?: string
+  result?: unknown
+  parameters?: Record<string, unknown>
+  metadata?: Record<string, string>
+  createdAt: string
+  startedAt?: string
+  completedAt?: string
+}
+
 export interface DashboardDataV2 {
   metrics: DashboardMetric[]
   sections: DashboardSectionCard[]

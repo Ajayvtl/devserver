@@ -1,18 +1,25 @@
-import { request, requestOrFallback, setApiToken } from '../api/client'
+import { setApiToken, submitCommand } from '../api/client'
 import { loginFallback } from './fallbacks'
-import type { LoginData } from '../types'
+import type { CommandRecord, LoginData } from '../types'
 
 export async function getLoginData(): Promise<LoginData> {
-  return requestOrFallback<LoginData>('/api/auth/login', loginFallback, { auth: false })
+  return loginFallback
 }
 
 export async function authenticate(email: string, password: string, remember: boolean): Promise<{ ok: boolean; message: string }> {
-  const response = await request<{ token: string; role: string }>('/api/auth/login', {
-    method: 'POST',
-    body: { email, password, remember },
+  const response = await submitCommand<CommandRecord>({
+    capability: 'auth.login',
+    parameters: { email, password, remember },
+    name: 'Authenticate user',
+  }, {
     auth: false,
   })
 
-  setApiToken(response.token, remember)
-  return { ok: true, message: `Signed in as ${response.role}.` }
+  const result = response.result as { token?: string; role?: string } | undefined
+  if (!result?.token) {
+    return { ok: false, message: 'Authentication did not return a token.' }
+  }
+
+  setApiToken(result.token, remember)
+  return { ok: true, message: `Signed in as ${result.role ?? 'User'}.` }
 }

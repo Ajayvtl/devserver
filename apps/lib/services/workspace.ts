@@ -1,4 +1,4 @@
-import { requestOrFallback } from '../api/client'
+import { submitCommand } from '../api/client'
 import type {
   WorkspaceOverview,
   WorkspaceFilesResponse,
@@ -13,66 +13,58 @@ import type {
   MCPInfo,
   WorkspaceDoctorData,
   WorkspaceSettingsData,
-  WorkspaceSection,
 } from '../types'
 
-const WORKSPACE_ID = 'devserver'
-
-function wsPath(section: WorkspaceSection | string, query = '') {
-  const base = `/api/workspaces/${WORKSPACE_ID}/${section}`
-  return query ? `${base}?${query}` : base
-}
-
 export async function getWorkspaceOverview(): Promise<WorkspaceOverview> {
-  return requestOrFallback<WorkspaceOverview>(wsPath('overview'), {
+  return {
     workspace: { id: 'devserver', name: 'Devserver', root: '.', kind: 'Go', framework: 'Go', languages: ['Go', 'TypeScript'], runtime: 'go', packageManager: 'npm', generatedAt: new Date().toISOString() },
     project: { id: 'devserver', name: 'Devserver', root: '.', framework: 'Go', languages: ['Go', 'TypeScript'], runtime: 'go', packageManager: 'npm', repository: 'git' },
     health: { score: 60, build: 'unknown', tests: 'unknown', lint: 'unknown' },
     git: { branch: 'main', commit: '', clean: true, ahead: 0, behind: 0, recentCommits: [], changedFiles: [] },
     plugins: { detected: [], capabilities: [] },
-  })
+  }
 }
 
 export async function getWorkspaceFiles(query = ''): Promise<WorkspaceFilesResponse> {
-  return requestOrFallback<WorkspaceFilesResponse>(wsPath('files', query ? `q=${encodeURIComponent(query)}` : ''), { files: [], total: 0 })
+  return { files: [], total: 0 }
 }
 
 export async function getWorkspaceGit(): Promise<WorkspaceGitInfo> {
-  return requestOrFallback<WorkspaceGitInfo>(wsPath('repository'), {
+  return {
     branch: '', commit: '', clean: true, ahead: 0, behind: 0, recentCommits: [], changedFiles: [],
-  })
+  }
 }
 
 export async function getWorkspaceEnvironment(): Promise<WorkspaceEnvironmentInfo> {
-  return requestOrFallback<WorkspaceEnvironmentInfo>(wsPath('environment'), {
+  return {
     files: [], keys: [], secrets: [], preview: {},
-  })
+  }
 }
 
 export async function getWorkspaceInfrastructure(): Promise<InfrastructureInfo> {
-  return requestOrFallback<InfrastructureInfo>(wsPath('infrastructure'), {
+  return {
     tools: [], os: '', arch: '', hostname: '',
-  })
+  }
 }
 
 export async function getWorkspaceServices(): Promise<WorkspaceServiceInfo[]> {
-  return requestOrFallback<WorkspaceServiceInfo[]>(wsPath('services'), [])
+  return []
 }
 
 export async function getWorkspaceDeployments(): Promise<DeploymentInfo> {
-  return requestOrFallback<DeploymentInfo>(wsPath('deployments'), { entries: [], current: '' })
+  return { entries: [], current: '' }
 }
 
 export async function getWorkspaceDomains(): Promise<WorkspaceDomainInfo[]> {
-  return requestOrFallback<WorkspaceDomainInfo[]>(wsPath('domains'), [])
+  return []
 }
 
 export async function getWorkspaceLogs(): Promise<WorkspaceLogEntry[]> {
-  return requestOrFallback<WorkspaceLogEntry[]>(wsPath('logs'), [])
+  return []
 }
 
 export async function getWorkspaceAI(): Promise<AIContextInfo> {
-  return requestOrFallback<AIContextInfo>(wsPath('ai'), {
+  return {
     workspace: { id: '', name: '', root: '', kind: '', framework: '', languages: [], runtime: '', packageManager: '', generatedAt: '' },
     git: { branch: '', commit: '', clean: true, ahead: 0, behind: 0, recentCommits: [], changedFiles: [] },
     architecture: { kind: '', framework: '', languages: [], runtime: '', packageManager: '', entryPoints: [], notes: [] },
@@ -81,32 +73,36 @@ export async function getWorkspaceAI(): Promise<AIContextInfo> {
     routes: { next: [], go: [], api: [] },
     database: { kind: '', files: [], migrations: [], environment: [] },
     generatedAt: '',
-  })
+  }
 }
 
 export async function getWorkspaceMCP(): Promise<MCPInfo> {
-  return requestOrFallback<MCPInfo>(wsPath('mcp'), { providers: [] })
+  return { providers: [] }
 }
 
 export async function getWorkspaceDoctor(): Promise<WorkspaceDoctorData> {
-  return requestOrFallback<WorkspaceDoctorData>(wsPath('doctor'), {
+  return {
     health: { score: 0, build: 'unknown', tests: 'unknown', lint: 'unknown' },
     project: { id: '', name: '', root: '', framework: '', languages: [], runtime: '', packageManager: '', repository: '' },
     git: { branch: '', commit: '', clean: true, ahead: 0, behind: 0, recentCommits: [], changedFiles: [] },
     plugins: { detected: [], capabilities: [] },
     checks: [],
     recommendations: [],
-  })
+  }
 }
 
 export async function getWorkspaceSettings(): Promise<WorkspaceSettingsData> {
-  return requestOrFallback<WorkspaceSettingsData>(wsPath('settings'), {
+  return {
     workspace: { id: '', name: '', root: '', kind: '', framework: '', languages: [], runtime: '', packageManager: '', generatedAt: '' },
     index: { version: 0, generatedAt: '', workspace: '', files: {} },
     cache: { updatedAt: '', fingerprint: '', changed: [] },
-  })
+  }
 }
 
 export async function triggerWorkspaceReindex(): Promise<{ status: string }> {
-  return requestOrFallback<{ status: string }>(`/api/workspaces/${WORKSPACE_ID}/index`, { status: 'offline' }, { method: 'POST' })
+  return submitCommand<{ status: string }>({
+    capability: 'workspace.index',
+    workspaceId: 'devserver',
+    name: 'Reindex workspace',
+  })
 }

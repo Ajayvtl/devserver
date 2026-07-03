@@ -1,9 +1,9 @@
-import { request, requestOrFallback } from '../api/client'
+import { submitCommand } from '../api/client'
 import { setupFallback } from './fallbacks'
-import type { SetupWizardData } from '../types'
+import type { CommandRecord, SetupWizardData } from '../types'
 
 export async function getSetupWizardData(): Promise<SetupWizardData> {
-  return requestOrFallback<SetupWizardData>('/api/setup', setupFallback)
+  return setupFallback
 }
 
 export async function completeSetupWizard(payload: {
@@ -13,10 +13,12 @@ export async function completeSetupWizard(payload: {
   adminPassword: string
   provider: string
   installationType: string
-}): Promise<{ taskId: string; status: string }> {
-  return request<{ taskId: string; status: string }>('/api/setup/complete', {
-    method: 'POST',
-    body: payload,
+}): Promise<CommandRecord> {
+  return submitCommand<CommandRecord>({
+    capability: 'workspace.setup',
+    parameters: payload,
+    name: 'Bootstrap DevServer',
+  }, {
     auth: false,
   })
 }

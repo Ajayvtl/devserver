@@ -1,0 +1,16 @@
+{
+  "name": "tools",
+  "version": "1.0.0",
+  "main": "project-snapshot.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "inspect": "node inspector/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "chokidar": "^5.0.0"
+  }
+}

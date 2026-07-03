@@ -1,0 +1,5 @@
+{
+  "scripts": {
+    "inspect": "node inspector/index.js"
+  }
+}

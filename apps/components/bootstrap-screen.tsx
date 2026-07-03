@@ -1,10 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-
 import { Progress } from './ui/progress'
-
-const statuses = ['Checking installation...', 'Scanning configuration...', 'Preparing next step...']
 
 interface Props {
   progress: number
@@ -12,15 +8,7 @@ interface Props {
 }
 
 export function BootstrapScreen({ progress, message }: Props) {
-  const [statusIndex, setStatusIndex] = useState(0)
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setStatusIndex((current) => (current + 1) % statuses.length)
-    }, 1400)
-
-    return () => window.clearInterval(timer)
-  }, [])
+  const status = progress >= 100 ? 'Ready to continue...' : progress >= 60 ? 'Finalizing runtime state...' : 'Checking installation...'
 
   return (
     <div className="bootstrap-screen">
@@ -34,7 +22,7 @@ export function BootstrapScreen({ progress, message }: Props) {
         </div>
 
         <h1>Loading...</h1>
-        <p>{statuses[statusIndex]}</p>
+        <p>{status}</p>
         <p className="bootstrap-screen__message">{message}</p>
         <Progress value={progress} tone="accent" />
 

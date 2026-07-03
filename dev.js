@@ -58,7 +58,14 @@ function ensureWebDependencies() {
   return new Promise((resolve, reject) => {
     console.log('[web] node_modules not found, installing dependencies...')
 
-    const installer = spawn('npm.cmd', ['install'], {
+    const npmCommand = process.platform === 'win32'
+      ? 'cmd.exe'
+      : 'npm'
+    const npmArgs = process.platform === 'win32'
+      ? ['/d', '/s', '/c', 'npm install']
+      : ['install']
+
+    const installer = spawn(npmCommand, npmArgs, {
       cwd: webDir,
       env: buildChildEnv(),
       shell: false,

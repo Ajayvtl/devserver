@@ -42,24 +42,24 @@ type SetupChecklistData struct {
 }
 
 type SetupInstallationTypeData struct {
-	Key   string `json:"key"`
-	Label string `json:"label"`
+	Key    string `json:"key"`
+	Label  string `json:"label"`
 	Detail string `json:"detail"`
 }
 
 type SetupWizardDataStore struct {
-	Steps             []SetupStepData            `json:"steps"`
-	Checks            []SetupChecklistData       `json:"checks"`
-	Providers         []string                   `json:"providers"`
+	Steps             []SetupStepData             `json:"steps"`
+	Checks            []SetupChecklistData        `json:"checks"`
+	Providers         []string                    `json:"providers"`
 	InstallationTypes []SetupInstallationTypeData `json:"installationTypes"`
-	KnowledgeArticles []KnowledgeArticleData     `json:"knowledgeArticles"`
-	TaskID            string                     `json:"taskId"`
+	KnowledgeArticles []KnowledgeArticleData      `json:"knowledgeArticles"`
+	TaskID            string                      `json:"taskId"`
 }
 
 type LoginDataStore struct {
-	Branding         string               `json:"branding"`
-	Subtitle         string               `json:"subtitle"`
-	SupportEmail     string               `json:"supportEmail"`
+	Branding          string                 `json:"branding"`
+	Subtitle          string                 `json:"subtitle"`
+	SupportEmail      string                 `json:"supportEmail"`
 	KnowledgeArticles []KnowledgeArticleData `json:"knowledgeArticles"`
 }
 
@@ -104,14 +104,14 @@ type RecommendationItemData struct {
 }
 
 type DashboardDataStore struct {
-	Server          string                 `json:"server"`
-	Notifications   int                    `json:"notifications"`
-	Metrics         []MetricData           `json:"metrics"`
-	Sections        []SectionCardData      `json:"sections"`
-	Activity        []ActivityItemData     `json:"activity"`
-	Tasks           []TaskItemData         `json:"tasks"`
+	Server          string                   `json:"server"`
+	Notifications   int                      `json:"notifications"`
+	Metrics         []MetricData             `json:"metrics"`
+	Sections        []SectionCardData        `json:"sections"`
+	Activity        []ActivityItemData       `json:"activity"`
+	Tasks           []TaskItemData           `json:"tasks"`
 	Recommendations []RecommendationItemData `json:"recommendations"`
-	Knowledge       []KnowledgeArticleData `json:"knowledge"`
+	Knowledge       []KnowledgeArticleData   `json:"knowledge"`
 }
 
 type ProjectData struct {
@@ -162,18 +162,18 @@ type ProjectDatabaseData struct {
 }
 
 type ProjectDetailDataStore struct {
-	Project         ProjectData               `json:"project"`
-	Repository      map[string]string         `json:"repository"`
-	Environment     []ProjectEnvironmentData   `json:"environment"`
-	Deployments     []ProjectDeploymentData    `json:"deployments"`
-	Domains         []ProjectDomainData        `json:"domains"`
-	Logs            []ProjectLogData           `json:"logs"`
-	Database        ProjectDatabaseData        `json:"database"`
-	Overview        []SectionCardData          `json:"overview"`
-	Activity        []ActivityItemData         `json:"activity"`
-	Tasks           []TaskItemData             `json:"tasks"`
-	Recommendations []RecommendationItemData   `json:"recommendations"`
-	Knowledge       []KnowledgeArticleData     `json:"knowledge"`
+	Project         ProjectData              `json:"project"`
+	Repository      map[string]string        `json:"repository"`
+	Environment     []ProjectEnvironmentData `json:"environment"`
+	Deployments     []ProjectDeploymentData  `json:"deployments"`
+	Domains         []ProjectDomainData      `json:"domains"`
+	Logs            []ProjectLogData         `json:"logs"`
+	Database        ProjectDatabaseData      `json:"database"`
+	Overview        []SectionCardData        `json:"overview"`
+	Activity        []ActivityItemData       `json:"activity"`
+	Tasks           []TaskItemData           `json:"tasks"`
+	Recommendations []RecommendationItemData `json:"recommendations"`
+	Knowledge       []KnowledgeArticleData   `json:"knowledge"`
 }
 
 type ProjectFormDataStore struct {
@@ -203,17 +203,17 @@ type SettingsItemData struct {
 }
 
 type SettingsSectionData struct {
-	Title       string            `json:"title"`
-	Description string            `json:"description"`
+	Title       string             `json:"title"`
+	Description string             `json:"description"`
 	Items       []SettingsItemData `json:"items"`
 }
 
 type SettingsDataStore struct {
-	Sections       []SettingsSectionData `json:"sections"`
-	Preferences    []SettingsItemData    `json:"preferences"`
-	Security       []SettingsItemData    `json:"security"`
-	AIProviders    []SettingsItemData    `json:"aiProviders"`
-	MCPIntegrations []SettingsItemData   `json:"mcpIntegrations"`
+	Sections        []SettingsSectionData `json:"sections"`
+	Preferences     []SettingsItemData    `json:"preferences"`
+	Security        []SettingsItemData    `json:"security"`
+	AIProviders     []SettingsItemData    `json:"aiProviders"`
+	MCPIntegrations []SettingsItemData    `json:"mcpIntegrations"`
 }
 
 type ChecklistData struct {
@@ -223,16 +223,16 @@ type ChecklistData struct {
 }
 
 type DevCenterSectionDataStore struct {
-	Key         string            `json:"key"`
-	Title       string            `json:"title"`
-	Subtitle    string            `json:"subtitle"`
-	Description string            `json:"description"`
-	Bullets     []string          `json:"bullets"`
-	Examples    []string          `json:"examples"`
-	Checklist   []ChecklistData   `json:"checklist"`
+	Key         string                 `json:"key"`
+	Title       string                 `json:"title"`
+	Subtitle    string                 `json:"subtitle"`
+	Description string                 `json:"description"`
+	Bullets     []string               `json:"bullets"`
+	Examples    []string               `json:"examples"`
+	Checklist   []ChecklistData        `json:"checklist"`
 	Knowledge   []KnowledgeArticleData `json:"knowledge"`
-	CodeSample  string            `json:"codeSample"`
-	Metadata    map[string]string `json:"metadata,omitempty"`
+	CodeSample  string                 `json:"codeSample"`
+	Metadata    map[string]string      `json:"metadata,omitempty"`
 }
 
 type DevCenterSectionSummaryData struct {
@@ -294,7 +294,7 @@ func NewDB(path string) (*StoreDB, error) {
 	if err != nil {
 		return nil, err
 	}
-	if store, err := openStore("file:///"+filepath.ToSlash(absPath)+"?mode=rwc&cache=shared"); err == nil {
+	if store, err := openStore("file:///" + filepath.ToSlash(absPath) + "?mode=rwc&cache=shared"); err == nil {
 		return store, nil
 	}
 	return openStore(":memory:")
@@ -540,10 +540,10 @@ func (s *StoreDB) seedDevCenter(ctx context.Context) error {
 	}
 	type seed struct {
 		key, title, subtitle, description, code string
-		bullets []string
-		examples []string
-		checklist []ChecklistData
-		metadata map[string]string
+		bullets                                 []string
+		examples                                []string
+		checklist                               []ChecklistData
+		metadata                                map[string]string
 	}
 	seeds := []seed{
 		{key: "architecture", title: "Architecture", subtitle: "Understand how DevServer is structured end to end.", description: "A single control plane coordinates server bootstrap, project metadata, tasks, and automation.", code: "const task = await createTask({\n  name: 'Install nginx',\n  progress: 72,\n  rollback: 'Remove package and restore previous config',\n})", bullets: []string{"Backend services stay in internal/ and expose testable interfaces.", "The web app consumes mock facades that can be swapped for APIs later.", "Each long-running workflow is modeled as a task sequence with rollback support."}, examples: []string{"Bootstrap -> Setup -> Login -> Dashboard", "Project -> Deployments -> Logs -> Settings"}, checklist: []ChecklistData{{Label: "Shell layout", Detail: "A consistent shell wraps product screens.", Status: "passed"}, {Label: "Service boundaries", Detail: "Mock services keep the UI replaceable.", Status: "passed"}, {Label: "Task engine", Detail: "Progress and rollback hooks are represented in the UI.", Status: "warning"}}, metadata: map[string]string{"recommendation": "Keep the API shape stable while swapping mocks for real services."}},
@@ -621,10 +621,10 @@ func (s *StoreDB) SetupWizardData(ctx context.Context) (SetupWizardDataStore, er
 			{Label: "Postgres", Detail: "Not installed yet", Status: "pending"},
 			{Label: "PM2", Detail: "Optional process manager unavailable", Status: "pending"},
 		},
-		Providers: []string{"OpenAI", "Anthropic", "Local Model", "None"},
+		Providers:         []string{"OpenAI", "Anthropic", "Local Model", "None"},
 		InstallationTypes: []SetupInstallationTypeData{{Key: "quick", Label: "Quick install", Detail: "Recommended defaults with sensible production-ready settings."}, {Key: "advanced", Label: "Advanced install", Detail: "Choose every module and inspect each generated step."}},
 		KnowledgeArticles: articles,
-		TaskID: "task-boot-setup",
+		TaskID:            "task-boot-setup",
 	}, nil
 }
 
@@ -634,9 +634,9 @@ func (s *StoreDB) LoginData(ctx context.Context) (LoginDataStore, error) {
 		return LoginDataStore{}, err
 	}
 	return LoginDataStore{
-		Branding: "DevServer",
-		Subtitle: "Control server bootstrap, deployments, and infrastructure workflows from one place.",
-		SupportEmail: "support@devserver.local",
+		Branding:          "DevServer",
+		Subtitle:          "Control server bootstrap, deployments, and infrastructure workflows from one place.",
+		SupportEmail:      "support@devserver.local",
 		KnowledgeArticles: articles,
 	}, nil
 }
@@ -655,19 +655,19 @@ func (s *StoreDB) DashboardData(ctx context.Context) (DashboardDataStore, error)
 		return DashboardDataStore{}, err
 	}
 	return DashboardDataStore{
-		Server: "production-east-1",
+		Server:        "production-east-1",
 		Notifications: 4,
-		Metrics: []MetricData{{Label: "CPU", Value: "42%", Detail: "32% average over 15 min", Trend: "+4%", Tone: "success"}, {Label: "RAM", Value: "68%", Detail: "A little warm on two hosts", Trend: "+2%", Tone: "warning"}, {Label: "Disk", Value: "51%", Detail: "Plenty of headroom remains", Trend: "stable", Tone: "info"}, {Label: "Network", Value: "24 ms", Detail: "Median request path latency", Trend: "-7%", Tone: "accent"}},
+		Metrics:       []MetricData{{Label: "CPU", Value: "42%", Detail: "32% average over 15 min", Trend: "+4%", Tone: "success"}, {Label: "RAM", Value: "68%", Detail: "A little warm on two hosts", Trend: "+2%", Tone: "warning"}, {Label: "Disk", Value: "51%", Detail: "Plenty of headroom remains", Trend: "stable", Tone: "info"}, {Label: "Network", Value: "24 ms", Detail: "Median request path latency", Trend: "-7%", Tone: "accent"}},
 		Sections: []SectionCardData{
 			{Title: "Projects", Detail: "Active projects and their health.", Items: []SectionItemData{{Label: projects[0].Name, Value: "healthy", Tone: "success"}, {Label: projects[1].Name, Value: "deploying", Tone: "warning"}, {Label: projects[2].Name, Value: "stable", Tone: "info"}}},
 			{Title: "Domains", Detail: "DNS and SSL coverage.", Items: []SectionItemData{{Label: "app.devserver.local", Value: "valid", Tone: "success"}, {Label: "api.devserver.local", Value: "renew in 22 days", Tone: "warning"}, {Label: "staging.devserver.local", Value: "healthy", Tone: "success"}}},
 			{Title: "Services", Detail: "Runtime services and systemd state.", Items: []SectionItemData{{Label: "nginx", Value: "running", Tone: "success"}, {Label: "postgres", Value: "running", Tone: "success"}, {Label: "redis", Value: "degraded", Tone: "warning"}}},
 			{Title: "Deployments", Detail: "Release history and rollout state.", Items: []SectionItemData{{Label: "Production", Value: "2 hours ago", Tone: "success"}, {Label: "Staging", Value: "12 minutes ago", Tone: "accent"}, {Label: "Preview", Value: "queued", Tone: "warning"}}},
 		},
-		Activity: []ActivityItemData{{Title: "Redis task queued", Detail: "Prepare memory policy and reload service", When: "2m ago", Tone: "warning"}, {Title: "Deploy approved", Detail: "Production deployment passed validation", When: "11m ago", Tone: "success"}, {Title: "SSL renewal warning", Detail: "One certificate will expire soon", When: "25m ago", Tone: "info"}},
-		Tasks: tasks,
+		Activity:        []ActivityItemData{{Title: "Redis task queued", Detail: "Prepare memory policy and reload service", When: "2m ago", Tone: "warning"}, {Title: "Deploy approved", Detail: "Production deployment passed validation", When: "11m ago", Tone: "success"}, {Title: "SSL renewal warning", Detail: "One certificate will expire soon", When: "25m ago", Tone: "info"}},
+		Tasks:           tasks,
 		Recommendations: []RecommendationItemData{{Title: "Enable SSL renewal", Detail: "One domain is nearing expiry and should be automated.", Reason: "Improves uptime and reduces manual maintenance."}, {Title: "Review redis memory limits", Detail: "A warning was detected in the monitoring snapshot.", Reason: "Keeps cache pressure from affecting the stack."}, {Title: "Add project metadata", Detail: "Projects can be richer if owners and environments are registered.", Reason: "Improves filtering and auditability."}},
-		Knowledge: articles,
+		Knowledge:       articles,
 	}, nil
 }
 
@@ -698,18 +698,18 @@ func (s *StoreDB) ProjectDetail(ctx context.Context, slug string) (ProjectDetail
 	logs, _ := s.projectLogs(ctx, slug)
 	knowledge, _ := s.knowledgeByScope(ctx, "dashboard")
 	return ProjectDetailDataStore{
-		Project: project,
-		Repository: map[string]string{"url": project.Repository, "branch": branchFor(project.Environment), "buildCommand": "pnpm build", "startCommand": "pnpm start"},
-		Environment: env,
-		Deployments: deployments,
-		Domains: []ProjectDomainData{{Host: project.Slug + ".devserver.local", SSL: "Valid", Target: "nginx / root"}, {Host: "api." + project.Slug + ".devserver.local", SSL: "Renewing", Target: "internal api / upstream"}, {Host: "cdn." + project.Slug + ".devserver.local", SSL: "Pending", Target: "storage / assets"}},
-		Logs: logs,
-		Database: ProjectDatabaseData{Name: project.Slug + "-platform", Engine: "PostgreSQL 16", Status: dbStatusFor(project.Status)},
-		Overview: []SectionCardData{{Title: "Ownership", Detail: "Project metadata and lifecycle status.", Items: []SectionItemData{{Label: "Owner", Value: project.Owner, Tone: "accent"}, {Label: "Environment", Value: project.Environment, Tone: "info"}, {Label: "Status", Value: project.Status, Tone: project.Status}}}, {Title: "Build", Detail: "Repository and release commands.", Items: []SectionItemData{{Label: "Repository", Value: project.Repository, Tone: "neutral"}, {Label: "Branch", Value: branchFor(project.Environment), Tone: "accent"}, {Label: "Deploy target", Value: "Primary fleet", Tone: "success"}}}},
-		Activity: []ActivityItemData{{Title: "Project synced", Detail: "Repository state was refreshed from the latest snapshot.", When: "2m ago", Tone: "success"}, {Title: "Task queued", Detail: "A deployment workflow is waiting for approval.", When: "15m ago", Tone: "warning"}},
-		Tasks: []TaskItemData{{Title: "Build project index", Progress: 100, State: "Done", Detail: "Metadata and environments are indexed."}, {Title: "Validate secrets", Progress: 68, State: "Running", Detail: "Checking secret references and mounts."}, {Title: "Prepare terminal session", Progress: 28, State: "Queued", Detail: "Waiting for a workspace slot."}},
+		Project:         project,
+		Repository:      map[string]string{"url": project.Repository, "branch": branchFor(project.Environment), "buildCommand": "pnpm build", "startCommand": "pnpm start"},
+		Environment:     env,
+		Deployments:     deployments,
+		Domains:         []ProjectDomainData{{Host: project.Slug + ".devserver.local", SSL: "Valid", Target: "nginx / root"}, {Host: "api." + project.Slug + ".devserver.local", SSL: "Renewing", Target: "internal api / upstream"}, {Host: "cdn." + project.Slug + ".devserver.local", SSL: "Pending", Target: "storage / assets"}},
+		Logs:            logs,
+		Database:        ProjectDatabaseData{Name: project.Slug + "-platform", Engine: "PostgreSQL 16", Status: dbStatusFor(project.Status)},
+		Overview:        []SectionCardData{{Title: "Ownership", Detail: "Project metadata and lifecycle status.", Items: []SectionItemData{{Label: "Owner", Value: project.Owner, Tone: "accent"}, {Label: "Environment", Value: project.Environment, Tone: "info"}, {Label: "Status", Value: project.Status, Tone: project.Status}}}, {Title: "Build", Detail: "Repository and release commands.", Items: []SectionItemData{{Label: "Repository", Value: project.Repository, Tone: "neutral"}, {Label: "Branch", Value: branchFor(project.Environment), Tone: "accent"}, {Label: "Deploy target", Value: "Primary fleet", Tone: "success"}}}},
+		Activity:        []ActivityItemData{{Title: "Project synced", Detail: "Repository state was refreshed from the latest snapshot.", When: "2m ago", Tone: "success"}, {Title: "Task queued", Detail: "A deployment workflow is waiting for approval.", When: "15m ago", Tone: "warning"}},
+		Tasks:           []TaskItemData{{Title: "Build project index", Progress: 100, State: "Done", Detail: "Metadata and environments are indexed."}, {Title: "Validate secrets", Progress: 68, State: "Running", Detail: "Checking secret references and mounts."}, {Title: "Prepare terminal session", Progress: 28, State: "Queued", Detail: "Waiting for a workspace slot."}},
 		Recommendations: []RecommendationItemData{{Title: "Promote preview to staging", Detail: "This project has a solid deployment history and could reuse the same release path.", Reason: "Keeps the release train consistent."}, {Title: "Review SSL expiry windows", Detail: "One domain is renewing and should be validated before traffic shifts.", Reason: "Protects the project edge surface."}},
-		Knowledge: knowledge,
+		Knowledge:       knowledge,
 	}, nil
 }
 
@@ -755,10 +755,10 @@ func (s *StoreDB) SaveProject(ctx context.Context, form ProjectFormDataStore) (P
 
 func (s *StoreDB) Settings(ctx context.Context) (SettingsDataStore, error) {
 	return SettingsDataStore{
-		Sections: []SettingsSectionData{{Title: "Platform defaults", Description: "Control global behavior for all projects and new deployments.", Items: []SettingsItemData{{Label: "Default environment", Value: "production", Detail: "New projects inherit this environment unless overridden."}, {Label: "Deployment mode", Value: "Rolling", Detail: "Updates roll through the fleet with health checks."}, {Label: "Time zone", Value: "Asia/Kolkata", Detail: "Used for audit logs, tasks, and scheduled jobs."}}}, {Title: "Notifications", Description: "Route operational updates to the right people.", Items: []SettingsItemData{{Label: "Email alerts", Value: "Enabled", Detail: "Warnings and failures go to the admin team."}, {Label: "Task summaries", Value: "Every 6 hours", Detail: "Digest mode keeps noise manageable."}, {Label: "Slack bridge", Value: "Connected", Detail: "Workspace bridge currently points to #devserver-ops."}}}},
-		Preferences: []SettingsItemData{{Label: "Theme", Value: "Dark / Graphite", Detail: "The product ships in a calm high-contrast palette."}, {Label: "Default shell", Value: "/bin/bash", Detail: "Used when launching terminal sessions from projects."}, {Label: "Editor format", Value: "Prettier + ESLint", Detail: "Formatting presets are surfaced in project configs."}},
-		Security: []SettingsItemData{{Label: "Session TTL", Value: "12 hours", Detail: "Admins can reduce this later without changing the UI."}, {Label: "MFA enforcement", Value: "Recommended", Detail: "Enable for admin accounts before production use."}, {Label: "Audit retention", Value: "90 days", Detail: "Audit logs are retained on the platform database."}},
-		AIProviders: []SettingsItemData{{Label: "OpenAI", Value: "Connected", Detail: "Configured and ready"}, {Label: "Anthropic", Value: "Available", Detail: "Can be enabled from settings"}, {Label: "Local Model", Value: "Available", Detail: "Local provider stub for offline testing"}, {Label: "None", Value: "Disabled", Detail: "Skip AI for now"}},
+		Sections:        []SettingsSectionData{{Title: "Platform defaults", Description: "Control global behavior for all projects and new deployments.", Items: []SettingsItemData{{Label: "Default environment", Value: "production", Detail: "New projects inherit this environment unless overridden."}, {Label: "Deployment mode", Value: "Rolling", Detail: "Updates roll through the fleet with health checks."}, {Label: "Time zone", Value: "Asia/Kolkata", Detail: "Used for audit logs, tasks, and scheduled jobs."}}}, {Title: "Notifications", Description: "Route operational updates to the right people.", Items: []SettingsItemData{{Label: "Email alerts", Value: "Enabled", Detail: "Warnings and failures go to the admin team."}, {Label: "Task summaries", Value: "Every 6 hours", Detail: "Digest mode keeps noise manageable."}, {Label: "Slack bridge", Value: "Connected", Detail: "Workspace bridge currently points to #devserver-ops."}}}},
+		Preferences:     []SettingsItemData{{Label: "Theme", Value: "Dark / Graphite", Detail: "The product ships in a calm high-contrast palette."}, {Label: "Default shell", Value: "/bin/bash", Detail: "Used when launching terminal sessions from projects."}, {Label: "Editor format", Value: "Prettier + ESLint", Detail: "Formatting presets are surfaced in project configs."}},
+		Security:        []SettingsItemData{{Label: "Session TTL", Value: "12 hours", Detail: "Admins can reduce this later without changing the UI."}, {Label: "MFA enforcement", Value: "Recommended", Detail: "Enable for admin accounts before production use."}, {Label: "Audit retention", Value: "90 days", Detail: "Audit logs are retained on the platform database."}},
+		AIProviders:     []SettingsItemData{{Label: "OpenAI", Value: "Connected", Detail: "Configured and ready"}, {Label: "Anthropic", Value: "Available", Detail: "Can be enabled from settings"}, {Label: "Local Model", Value: "Available", Detail: "Local provider stub for offline testing"}, {Label: "None", Value: "Disabled", Detail: "Skip AI for now"}},
 		MCPIntegrations: []SettingsItemData{{Label: "GitHub", Value: "Connected", Detail: "Repository access and pull request metadata"}, {Label: "Slack", Value: "Connected", Detail: "Notifications and incident routing"}, {Label: "Linear", Value: "Available", Detail: "Issue tracking integration stub"}, {Label: "Grafana", Value: "Available", Detail: "Observability integration stub"}},
 	}, nil
 }
@@ -839,8 +839,13 @@ func (s *StoreDB) Tasks(ctx context.Context) ([]TaskItemData, error) {
 
 func (s *StoreDB) CreateTask(ctx context.Context, scope, name, detail string) (TaskRecordData, error) {
 	id := fmt.Sprintf("task-%d", time.Now().UnixNano())
-	task := TaskRecordData{ID: id, Name: name, Scope: scope, Progress: 0, State: "Running", Detail: detail}
-	if _, err := s.db.ExecContext(ctx, `INSERT INTO tasks (id, scope, name, progress, state, detail, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`, task.ID, task.Scope, task.Name, task.Progress, task.State, task.Detail, time.Now().UTC().Format(time.RFC3339)); err != nil {
+	return s.CreateTaskWithID(ctx, id, scope, name, detail)
+}
+
+func (s *StoreDB) CreateTaskWithID(ctx context.Context, id, scope, name, detail string) (TaskRecordData, error) {
+	task := TaskRecordData{ID: id, Name: name, Scope: scope, Progress: 0, State: "Queued", Detail: detail}
+	if _, err := s.db.ExecContext(ctx, `INSERT INTO tasks (id, scope, name, progress, state, detail, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(id) DO UPDATE SET scope = excluded.scope, name = excluded.name, progress = excluded.progress, state = excluded.state, detail = excluded.detail, updated_at = excluded.updated_at`, task.ID, task.Scope, task.Name, task.Progress, task.State, task.Detail, time.Now().UTC().Format(time.RFC3339)); err != nil {
 		return TaskRecordData{}, err
 	}
 	return task, nil
@@ -966,17 +971,17 @@ func (s *StoreDB) projectLogs(ctx context.Context, slug string) ([]ProjectLogDat
 
 func formFromProject(project ProjectData) ProjectFormDataStore {
 	return ProjectFormDataStore{
-		Name: project.Name,
-		Slug: project.Slug,
-		Description: project.Description,
-		Repository: project.Repository,
-		Branch: branchFor(project.Environment),
-		Environment: project.Environment,
-		Owner: project.Owner,
+		Name:         project.Name,
+		Slug:         project.Slug,
+		Description:  project.Description,
+		Repository:   project.Repository,
+		Branch:       branchFor(project.Environment),
+		Environment:  project.Environment,
+		Owner:        project.Owner,
 		DeployTarget: "Primary fleet",
-		HealthCheck: "/health",
-		AutoDeploy: true,
-		Domains: project.Slug + ".devserver.local, api." + project.Slug + ".devserver.local",
+		HealthCheck:  "/health",
+		AutoDeploy:   true,
+		Domains:      project.Slug + ".devserver.local, api." + project.Slug + ".devserver.local",
 	}
 }
 

@@ -38,6 +38,19 @@ export interface WebSocketHandlers<T> {
   reconnectDelayMs?: number
 }
 
+export interface CommandRequest {
+  id?: string
+  name?: string
+  workspaceId?: string
+  capability: string
+  provider?: string
+  target?: string
+  parameters?: Record<string, unknown>
+  metadata?: Record<string, string>
+  retries?: number
+  timeout?: number
+}
+
 const DEFAULT_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://127.0.0.1:8080'
 
 let authToken: string | null = null
@@ -128,6 +141,16 @@ export async function requestOrFallback<T>(path: string, fallback: T, options: R
   }
 }
 
+export async function submitCommand<T>(command: CommandRequest, options: RequestOptions = {}): Promise<T> {
+  return request<T>('/api/commands', {
+    method: 'POST',
+    auth: options.auth,
+    headers: options.headers,
+    signal: options.signal,
+    body: command,
+  })
+}
+
 async function safeJson(response: Response) {
   const contentType = response.headers.get('content-type') ?? ''
   if (contentType.includes('application/json')) {
@@ -159,6 +182,7 @@ export function connectSocket<T>(path: string, handlers: WebSocketHandlers<T> = 
   let closed = false
   let socket: WebSocket | null = null
   let retries = 0
+  let retryTimer: number | null = null
 
   const open = () => {
     const base = baseUrl().replace(/^http/, 'ws')
@@ -183,9 +207,10 @@ export function connectSocket<T>(path: string, handlers: WebSocketHandlers<T> = 
 
     socket.onclose = () => {
       handlers.onClose?.()
-      if (!closed && handlers.retry !== false && retries < 3) {
+      if (!closed && handlers.retry !== false) {
         retries += 1
-        setTimeout(open, handlers.reconnectDelayMs ?? 750)
+        const delay = Math.min((handlers.reconnectDelayMs ?? 750) * retries, 5000)
+        retryTimer = window.setTimeout(open, delay)
       }
     }
   }
@@ -195,6 +220,10 @@ export function connectSocket<T>(path: string, handlers: WebSocketHandlers<T> = 
   return {
     close() {
       closed = true
+      if (retryTimer !== null) {
+        window.clearTimeout(retryTimer)
+        retryTimer = null
+      }
       socket?.close()
     },
   }

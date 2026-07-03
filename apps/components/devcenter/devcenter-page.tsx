@@ -66,7 +66,7 @@ export function DevCenterPage({ data }: Props) {
       </div>
 
       <div className="page-grid--two">
-        {data.knowledge.length ? <LearnCard title={data.title} articles={data.knowledge} /> : <EmptyState title={`${data.title} placeholder`} description="This devcenter section is ready to be expanded with real docs." />}
+        {data.knowledge.length ? <LearnCard title={data.title} articles={data.knowledge} /> : <EmptyState title={`${data.title} section`} description="This devcenter section is ready to be expanded with runtime docs." />}
         <Card>
           <div className="card__eyebrow">Section key</div>
           <h3>{data.key}</h3>

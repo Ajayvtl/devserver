@@ -17,6 +17,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Ajayvtl/devserver/internal/events"
 	"github.com/rs/zerolog"
 )
 
@@ -256,10 +257,27 @@ type Indexer struct {
 	log        zerolog.Logger
 	mu         sync.RWMutex
 	workspaces map[string]*workspaceState
-	interval   time.Duration
+	bus        events.Bus
+	provider   *WorkspaceProvider
 }
 
-func NewIndexer(log zerolog.Logger, specs []WorkspaceSpec) *Indexer {
+func (i *Indexer) SetProvider(p *WorkspaceProvider) {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	i.provider = p
+}
+
+func (i *Indexer) Workspace(id string) (*WorkspaceSpec, bool) {
+	i.mu.RLock()
+	defer i.mu.RUnlock()
+	ws, ok := i.workspaces[id]
+	if !ok {
+		return nil, false
+	}
+	return &ws.spec, true
+}
+
+func NewIndexer(log zerolog.Logger, specs []WorkspaceSpec, bus events.Bus) *Indexer {
 	workspaces := make(map[string]*workspaceState, len(specs))
 	for _, spec := range specs {
 		if spec.ID == "" || spec.Root == "" {
@@ -267,21 +285,53 @@ func NewIndexer(log zerolog.Logger, specs []WorkspaceSpec) *Indexer {
 		}
 		workspaces[spec.ID] = &workspaceState{spec: spec, snapshot: map[string]FileStamp{}}
 	}
-	return &Indexer{log: log, workspaces: workspaces, interval: 2 * time.Second}
+	return &Indexer{log: log, workspaces: workspaces, bus: bus}
+}
+
+// AddWorkspace registers a workspace for indexing at runtime.
+func (i *Indexer) AddWorkspace(id, root string) {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	i.workspaces[id] = &workspaceState{
+		spec:     WorkspaceSpec{ID: id, Root: root},
+		snapshot: map[string]FileStamp{},
+	}
+}
+
+// RemoveWorkspace unregisters a workspace from indexing.
+func (i *Indexer) RemoveWorkspace(id string) {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	delete(i.workspaces, id)
+}
+
+// WorkspaceIDs returns all currently registered workspace IDs.
+func (i *Indexer) WorkspaceIDs() []string {
+	i.mu.RLock()
+	defer i.mu.RUnlock()
+	ids := make([]string, 0, len(i.workspaces))
+	for id := range i.workspaces {
+		ids = append(ids, id)
+	}
+	return ids
 }
 
 func (i *Indexer) Run(ctx context.Context) error {
 	if err := i.RefreshAll(ctx); err != nil {
 		return err
 	}
-	ticker := time.NewTicker(i.interval)
-	defer ticker.Stop()
+	
+	ch := i.bus.Subscribe(events.WorkspaceChanged)
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
-		case <-ticker.C:
-			_ = i.RefreshAll(ctx)
+		case evt := <-ch:
+			payload, ok := evt.Payload.(events.WorkspaceChangedEvent)
+			if ok {
+				i.log.Debug().Str("workspace", payload.WorkspaceID).Msg("received change event, refreshing")
+				_ = i.Refresh(ctx, payload.WorkspaceID)
+			}
 		}
 	}
 }
@@ -325,11 +375,30 @@ func (i *Indexer) Refresh(ctx context.Context, id string) error {
 		return err
 	}
 
+	if err := writeCache(ws.spec.Root, next); err != nil {
+		return err
+	}
 	i.mu.Lock()
 	ws.snapshot = current
 	ws.context = next
+	p := i.provider
 	i.mu.Unlock()
+	
+	if p != nil {
+		p.Invalidate(id)
+	}
 
+	i.bus.Publish(events.WorkspaceIndexed, events.WorkspaceIndexedEvent{
+		WorkspaceID:  id,
+		ChangedFiles: len(dirty),
+	})
+
+	for _, file := range dirty {
+    i.log.Debug().
+        Str("workspace", id).
+        Str("file", file).
+        Msg("changed file")
+	}
 	i.log.Info().Str("workspace", id).Int("changed_files", len(dirty)).Msg("workspace indexed")
 	return nil
 }
@@ -407,26 +476,66 @@ func diffFiles(prev, current map[string]FileStamp) []string {
 }
 
 func isRelevantFile(rel string) bool {
-	if strings.Contains(rel, ".devserver/context/") {
-		return false
-	}
-	base := filepath.Base(rel)
-	if strings.HasPrefix(base, ".env") || base == "go.mod" || base == "go.sum" || base == "package.json" || base == "composer.json" || base == "pyproject.toml" || strings.HasPrefix(base, "requirements") || base == "pnpm-lock.yaml" || base == "yarn.lock" || base == "package-lock.json" || base == "docker-compose.yml" || base == "docker-compose.yaml" || base == "Dockerfile" || strings.HasSuffix(base, ".sql") {
-		return true
-	}
-	if strings.HasSuffix(base, ".go") || strings.HasSuffix(base, ".js") || strings.HasSuffix(base, ".jsx") || strings.HasSuffix(base, ".ts") || strings.HasSuffix(base, ".tsx") || strings.HasSuffix(base, ".py") || strings.HasSuffix(base, ".php") || strings.HasSuffix(base, ".md") || strings.HasSuffix(base, ".yaml") || strings.HasSuffix(base, ".yml") || strings.HasSuffix(base, ".json") {
-		return true
-	}
-	if strings.Contains(rel, ".devserver/knowledge/") {
-		return true
-	}
-	return false
+    if strings.Contains(rel, ".devserver/context/") ||
+        strings.Contains(rel, ".devserver/cache/") ||
+        strings.Contains(rel, ".devserver/snapshot/") {
+        return false
+    }
+
+    base := filepath.Base(rel)
+
+    if strings.HasPrefix(base, ".env") ||
+        base == "go.mod" ||
+        base == "go.sum" ||
+        base == "package.json" ||
+        base == "composer.json" ||
+        base == "pyproject.toml" ||
+        strings.HasPrefix(base, "requirements") ||
+        base == "pnpm-lock.yaml" ||
+        base == "yarn.lock" ||
+        base == "package-lock.json" ||
+        base == "docker-compose.yml" ||
+        base == "docker-compose.yaml" ||
+        base == "Dockerfile" ||
+        strings.HasSuffix(base, ".sql") {
+        return true
+    }
+
+    if strings.HasSuffix(base, ".go") ||
+        strings.HasSuffix(base, ".js") ||
+        strings.HasSuffix(base, ".jsx") ||
+        strings.HasSuffix(base, ".ts") ||
+        strings.HasSuffix(base, ".tsx") ||
+        strings.HasSuffix(base, ".py") ||
+        strings.HasSuffix(base, ".php") ||
+        strings.HasSuffix(base, ".md") ||
+        strings.HasSuffix(base, ".yaml") ||
+        strings.HasSuffix(base, ".yml") ||
+        strings.HasSuffix(base, ".json") {
+        return true
+    }
+
+    if strings.Contains(rel, ".devserver/knowledge/") {
+        return true
+    }
+
+    return false
 }
 
 func shouldSkipDir(name string) bool {
 	switch name {
-	case ".git", "node_modules", ".next", "build", "dist", "vendor", ".tmp", "coverage":
-		return true
+	case ".git",
+     "node_modules",
+     ".next",
+     "build",
+     "dist",
+     "vendor",
+     ".tmp",
+	 ".turbo",
+	 ".vercel",
+     "coverage",
+     ".devserver":
+    return true
 	default:
 		return false
 	}
@@ -516,10 +625,6 @@ func composeContext(ws *workspaceState, files map[string]FileStamp, dirty []stri
 			"cache-deps":     "../cache/dependencies.json",
 		},
 	}
-	if needs(dirty, "index") {
-		_ = writeContext(ws.spec.Root, base)
-	}
-	_ = writeCache(ws.spec.Root, base)
 	return base
 }
 

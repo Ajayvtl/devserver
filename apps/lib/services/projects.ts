@@ -1,18 +1,30 @@
-import { request, requestOrFallback } from '../api/client'
+import { submitCommand } from '../api/client'
 import { projectDetailFallback, projectFallbacks } from './fallbacks'
-import type { ProjectDetailData, ProjectFormData, ProjectFormOptions, ProjectListItem } from '../types'
+import type { CommandRecord, ProjectDetailData, ProjectFormData, ProjectFormOptions, ProjectListItem } from '../types'
 
 export async function getProjects(): Promise<ProjectListItem[]> {
-  return requestOrFallback<ProjectListItem[]>('/api/projects', projectFallbacks())
+  return projectFallbacks()
 }
 
 export async function getProjectDetail(slug: string): Promise<ProjectDetailData> {
-  return requestOrFallback<ProjectDetailData>(`/api/projects/${encodeURIComponent(slug)}`, projectDetailFallback(slug))
+  return projectDetailFallback(slug)
 }
 
 export async function getProjectFormData(slug?: string): Promise<ProjectFormData> {
-  const path = slug ? `/api/projects/${encodeURIComponent(slug)}/form` : '/api/projects/form'
-  return request<ProjectFormData>(path)
+  const project = projectDetailFallback(slug ?? 'aurora').project
+  return {
+    name: project.name,
+    slug: project.slug,
+    description: project.description,
+    repository: project.repository,
+    branch: project.environment === 'production' ? 'main' : 'develop',
+    environment: project.environment,
+    owner: project.owner,
+    deployTarget: 'Primary fleet',
+    healthCheck: '/health',
+    autoDeploy: project.status === 'healthy',
+    domains: `${project.slug}.devserver.local, api.${project.slug}.devserver.local`,
+  }
 }
 
 export async function getProjectFormOptions(mode: 'create' | 'edit'): Promise<ProjectFormOptions> {
@@ -24,10 +36,16 @@ export async function getProjectFormOptions(mode: 'create' | 'edit'): Promise<Pr
 }
 
 export async function saveProject(data: ProjectFormData, mode: 'create' | 'edit'): Promise<ProjectListItem> {
-  const method = mode === 'edit' ? 'PATCH' : 'POST'
-  const path = mode === 'edit' ? `/api/projects/${encodeURIComponent(data.slug)}` : '/api/projects'
-  return request<ProjectListItem>(path, {
-    method,
-    body: data,
+  const response = await submitCommand<CommandRecord>({
+    capability: 'project.save',
+    parameters: data as unknown as Record<string, unknown>,
+    name: mode === 'edit' ? 'Save project' : 'Create project',
   })
+
+  const result = response.result as ProjectListItem | undefined
+  if (!result) {
+    throw new Error('Project save did not return a project record.')
+  }
+
+  return result
 }
