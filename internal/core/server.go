@@ -7,30 +7,38 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
+	"github.com/Ajayvtl/devserver/internal/capabilities"
+	"github.com/Ajayvtl/devserver/internal/commands"
 	"github.com/Ajayvtl/devserver/internal/state"
-	"github.com/coder/websocket"
-	"github.com/coder/websocket/wsjson"
+	"github.com/Ajayvtl/devserver/internal/tasks"
 	"github.com/rs/zerolog"
 )
 
 type APIServer struct {
-	log   zerolog.Logger
-	store *state.StoreDB
-	indexer *Indexer
-	hub   *TaskHub
-	addr  string
+	log      zerolog.Logger
+	store    *state.StoreDB
+	indexer  *Indexer
+	provider *WorkspaceProvider
+	engine   *tasks.Engine
+	stream   *tasks.EventStream
+	commands *commands.Engine
+	caps     *capabilities.Registry
+	addr     string
 }
 
-func NewAPIServer(log zerolog.Logger, store *state.StoreDB, indexer *Indexer, addr string) *APIServer {
+func NewAPIServer(log zerolog.Logger, store *state.StoreDB, indexer *Indexer, provider *WorkspaceProvider, engine *tasks.Engine, stream *tasks.EventStream, cmdBus *commands.Engine, caps *capabilities.Registry, addr string) *APIServer {
 	return &APIServer{
-		log:   log,
-		store: store,
-		indexer: indexer,
-		hub:   NewTaskHub(log),
-		addr:  addr,
+		log:      log,
+		store:    store,
+		indexer:  indexer,
+		provider: provider,
+		engine:   engine,
+		stream:   stream,
+		commands: cmdBus,
+		caps:     caps,
+		addr:     addr,
 	}
 }
 
@@ -51,12 +59,19 @@ func (s *APIServer) Run(ctx context.Context) error {
 	mux.HandleFunc("/api/workspaces/", s.handleWorkspaces)
 	mux.HandleFunc("/api/tasks", s.handleTasks)
 	mux.HandleFunc("/api/tasks/", s.handleTaskByID)
-	mux.HandleFunc("/ws/tasks", s.hub.handleWS)
+	mux.HandleFunc("/api/commands", s.handleCommands)
+	mux.HandleFunc("/api/commands/", s.handleCommandByID)
+	mux.HandleFunc("/api/capabilities", s.handleCapabilities)
+	mux.HandleFunc("/ws/events", s.stream.HandleWS)
+	mux.HandleFunc("/ws/tasks", s.stream.HandleWS)
 
 	if s.indexer != nil {
 		go func() {
 			_ = s.indexer.Run(ctx)
 		}()
+	}
+	if s.stream != nil {
+		go s.stream.Run(ctx)
 	}
 
 	server := &http.Server{
@@ -131,17 +146,20 @@ func (s *APIServer) handleSetupComplete(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	task, err := s.store.CreateTask(r.Context(), "setup", "Bootstrap DevServer", "Applying configuration and provisioning services")
-	if err != nil {
-		writeJSONError(w, http.StatusInternalServerError, err)
+	taskID := s.submitTask("setup", "Bootstrap DevServer", "Applying configuration and provisioning services", func(ctx *tasks.Context) error {
+		ctx.ReportProgress(25, "Validating setup request")
+		if err := s.store.CompleteSetup(context.Background(), req); err != nil {
+			return err
+		}
+		ctx.ReportProgress(100, "Setup complete")
+		return nil
+	})
+	if taskID == "" {
+		writeJSONError(w, http.StatusInternalServerError, fmt.Errorf("failed to queue setup task"))
 		return
 	}
 
-	go s.simulateTask(task.ID, "setup", "Bootstrap DevServer", "Applying configuration and provisioning services", func() error {
-		return s.store.CompleteSetup(context.Background(), req)
-	})
-
-	writeJSON(w, map[string]any{"taskId": task.ID, "status": "started"})
+	writeJSON(w, map[string]any{"taskId": taskID, "status": "started"})
 }
 
 func (s *APIServer) handleLogin(w http.ResponseWriter, r *http.Request) {
@@ -201,8 +219,10 @@ func (s *APIServer) handleProjects(w http.ResponseWriter, r *http.Request) {
 			writeJSONError(w, http.StatusInternalServerError, err)
 			return
 		}
-		task, _ := s.store.CreateTask(r.Context(), "project", "Save project", "Persisting project metadata and settings")
-		go s.simulateTask(task.ID, "project", "Save project", "Persisting project metadata and settings", nil)
+		go s.submitTask("project", "Save project", "Persisting project metadata and settings", func(ctx *tasks.Context) error {
+			ctx.ReportProgress(100, "Project saved")
+			return nil
+		})
 		writeJSON(w, saved)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -277,28 +297,28 @@ func (s *APIServer) handleSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *APIServer) handleDevCenter(w http.ResponseWriter, r *http.Request) {
-	if s.indexer != nil {
+	if s.provider != nil {
 		if r.URL.Path == "/api/devcenter" {
 			if r.Method != http.MethodGet {
 				w.WriteHeader(http.StatusMethodNotAllowed)
 				return
 			}
-			ctxData, ok := s.indexer.Context("devserver")
-			if !ok {
+			ctxData, err := s.provider.Load("devserver")
+			if err != nil {
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}
-			writeJSON(w, devcenterSectionListFromContext(ctxData))
+			writeJSON(w, devcenterSectionListFromContext(*ctxData))
 			return
 		}
 		key := strings.TrimPrefix(r.URL.Path, "/api/devcenter/")
 		key = strings.TrimSuffix(key, "/")
-		ctxData, ok := s.indexer.Context("devserver")
-		if !ok {
+		ctxData, err := s.provider.Load("devserver")
+		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		writeJSON(w, devcenterSectionFromContext(key, ctxData))
+		writeJSON(w, devcenterSectionFromContext(key, *ctxData))
 		return
 	}
 
@@ -330,47 +350,37 @@ func (s *APIServer) handleDoctor(w http.ResponseWriter, r *http.Request) {
 	if slug == "" {
 		slug = "atlas-commerce"
 	}
-	report := map[string]any{}
-	if ctxData, ok := s.indexer.Context("devserver"); ok {
-		report = map[string]any{
-			"project": ctxData.Project,
-			"checks": []map[string]string{
-				{"label": "Dependencies", "status": statusFor(len(ctxData.Dependencies.Backend)+len(ctxData.Dependencies.Frontend)+len(ctxData.Dependencies.Database) > 0, "warning"), "detail": strings.Join(ctxData.Dependencies.Backend, ", ")},
-				{"label": "Routes", "status": statusFor(len(ctxData.Routes.API) > 0, "passed"), "detail": fmt.Sprintf("%d routes indexed", len(ctxData.Routes.API))},
-				{"label": "Git", "status": statusFor(ctxData.Git.Branch != "", "warning"), "detail": ctxData.Git.Branch},
-				{"label": "Health", "status": statusFor(ctxData.Health.Score >= 40, "warning"), "detail": fmt.Sprintf("Score %d", ctxData.Health.Score)},
-			},
-			"recommendations": []string{
-				"Review dependency surface and plugins.",
-				"Refresh route metadata after new saves.",
-				"Keep the generated context in sync with the latest changes.",
-			},
-		}
-	} else {
-		detail, err := s.store.ProjectDetail(r.Context(), slug)
-		if err != nil {
-			writeJSONError(w, http.StatusNotFound, err)
+
+	if s.provider != nil {
+		report, err := s.provider.Doctor("devserver")
+		if err == nil {
+			writeJSON(w, report)
 			return
 		}
-		report = map[string]any{
-			"project": detail.Project,
-			"checks": []map[string]string{
-				{"label": "Repository", "status": "passed", "detail": "Connected and fetchable."},
-				{"label": "Environment", "status": "warning", "detail": "One secret is missing from the snapshot."},
-				{"label": "Deployment target", "status": "passed", "detail": "Healthy and ready to accept rollout."},
-			},
-			"recommendations": []string{
-				"Review environment variables.",
-				"Validate SSL renewal coverage.",
-				"Inspect queued deployment tasks.",
-			},
-		}
 	}
-	writeJSON(w, report)
+
+	detail, err := s.store.ProjectDetail(r.Context(), slug)
+	if err != nil {
+		writeJSONError(w, http.StatusNotFound, err)
+		return
+	}
+	writeJSON(w, map[string]any{
+		"project": detail.Project,
+		"checks": []map[string]string{
+			{"label": "Repository", "status": "passed", "detail": "Connected and fetchable."},
+			{"label": "Environment", "status": "warning", "detail": "One secret is missing from the snapshot."},
+			{"label": "Deployment target", "status": "passed", "detail": "Healthy and ready to accept rollout."},
+		},
+		"recommendations": []string{
+			"Review environment variables.",
+			"Validate SSL renewal coverage.",
+			"Inspect queued deployment tasks.",
+		},
+	})
 }
 
 func (s *APIServer) handleWorkspaces(w http.ResponseWriter, r *http.Request) {
-	if s.indexer == nil {
+	if s.indexer == nil || s.provider == nil {
 		w.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
@@ -394,88 +404,142 @@ func (s *APIServer) handleWorkspaces(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, map[string]string{"status": "queued"})
 		return
 	}
-	ctxData, ok := s.indexer.Context(id)
-	if !ok {
-		writeJSONError(w, http.StatusNotFound, fmt.Errorf("workspace %q not indexed", id))
-		return
-	}
+
 	switch section {
 	case "context":
-		writeJSON(w, ctxData)
+		data, err := s.provider.Load(id)
+		if err != nil {
+			writeJSONError(w, http.StatusInternalServerError, err)
+			return
+		}
+		writeJSON(w, data)
 	case "overview":
-		writeJSON(w, map[string]any{
-			"workspace": ctxData.Workspace,
-			"project":   ctxData.Project,
-			"health":    ctxData.Health,
-			"git":       ctxData.Git,
-			"plugins":   ctxData.Plugins,
-		})
+		data, err := s.provider.Overview(id)
+		if err != nil {
+			writeJSONError(w, http.StatusInternalServerError, err)
+			return
+		}
+		writeJSON(w, data)
 	case "files":
 		query := r.URL.Query().Get("q")
-		files := ctxData.Files
-		if query != "" {
-			filtered := make([]WorkspaceFileInfo, 0)
-			for _, f := range files {
-				if strings.Contains(strings.ToLower(f.Path), strings.ToLower(query)) {
-					filtered = append(filtered, f)
-				}
-			}
-			files = filtered
+		data, err := s.provider.Files(id, query)
+		if err != nil {
+			writeJSONError(w, http.StatusInternalServerError, err)
+			return
 		}
-		writeJSON(w, map[string]any{"files": files, "total": len(files)})
+		writeJSON(w, data)
 	case "repository", "git":
-		writeJSON(w, ctxData.Git)
+		data, err := s.provider.Git(id)
+		if err != nil {
+			writeJSONError(w, http.StatusInternalServerError, err)
+			return
+		}
+		writeJSON(w, data)
 	case "environment":
-		writeJSON(w, ctxData.Environment)
+		data, err := s.provider.Environment(id)
+		if err != nil {
+			writeJSONError(w, http.StatusInternalServerError, err)
+			return
+		}
+		writeJSON(w, data)
 	case "infrastructure":
-		writeJSON(w, ctxData.Infrastructure)
+		data, err := s.provider.Infrastructure(id)
+		if err != nil {
+			writeJSONError(w, http.StatusInternalServerError, err)
+			return
+		}
+		writeJSON(w, data)
 	case "services":
-		writeJSON(w, ctxData.Services)
+		data, err := s.provider.Services(id)
+		if err != nil {
+			writeJSONError(w, http.StatusInternalServerError, err)
+			return
+		}
+		writeJSON(w, data)
 	case "deployments":
-		writeJSON(w, ctxData.Deployments)
+		data, err := s.provider.Deployments(id)
+		if err != nil {
+			writeJSONError(w, http.StatusInternalServerError, err)
+			return
+		}
+		writeJSON(w, data)
 	case "database":
-		writeJSON(w, ctxData.Database)
+		data, err := s.provider.Database(id)
+		if err != nil {
+			writeJSONError(w, http.StatusInternalServerError, err)
+			return
+		}
+		writeJSON(w, data)
 	case "domains":
-		writeJSON(w, ctxData.Domains)
+		data, err := s.provider.Domains(id)
+		if err != nil {
+			writeJSONError(w, http.StatusInternalServerError, err)
+			return
+		}
+		writeJSON(w, data)
 	case "logs":
-		writeJSON(w, ctxData.Logs)
+		data, err := s.provider.Logs(id)
+		if err != nil {
+			writeJSONError(w, http.StatusInternalServerError, err)
+			return
+		}
+		writeJSON(w, data)
 	case "ai":
-		writeJSON(w, ctxData.AI)
+		data, err := s.provider.AI(id)
+		if err != nil {
+			writeJSONError(w, http.StatusInternalServerError, err)
+			return
+		}
+		writeJSON(w, data)
 	case "knowledge":
-		writeJSON(w, ctxData.Knowledge)
+		data, err := s.provider.Knowledge(id)
+		if err != nil {
+			writeJSONError(w, http.StatusInternalServerError, err)
+			return
+		}
+		writeJSON(w, data)
 	case "doctor":
-		writeJSON(w, map[string]any{
-			"health":  ctxData.Health,
-			"project": ctxData.Project,
-			"git":     ctxData.Git,
-			"plugins": ctxData.Plugins,
-			"checks": []map[string]string{
-				{"label": "Dependencies", "status": statusFor(len(ctxData.Dependencies.Backend)+len(ctxData.Dependencies.Frontend)+len(ctxData.Dependencies.Database) > 0, "warning"), "detail": strings.Join(ctxData.Dependencies.Backend, ", ")},
-				{"label": "Routes", "status": statusFor(len(ctxData.Routes.API) > 0, "passed"), "detail": fmt.Sprintf("%d routes indexed", len(ctxData.Routes.API))},
-				{"label": "Git", "status": statusFor(ctxData.Git.Branch != "", "warning"), "detail": ctxData.Git.Branch},
-				{"label": "Health", "status": statusFor(ctxData.Health.Score >= 40, "warning"), "detail": fmt.Sprintf("Score %d", ctxData.Health.Score)},
-				{"label": "Infrastructure", "status": statusFor(len(ctxData.Infrastructure.Tools) > 0, "warning"), "detail": fmt.Sprintf("%d tools checked", len(ctxData.Infrastructure.Tools))},
-			},
-			"recommendations": []string{
-				"Review dependency surface and plugins.",
-				"Refresh route metadata after new saves.",
-				"Keep the generated context in sync with the latest changes.",
-			},
-		})
+		data, err := s.provider.Doctor(id)
+		if err != nil {
+			writeJSONError(w, http.StatusInternalServerError, err)
+			return
+		}
+		writeJSON(w, data)
 	case "settings":
-		writeJSON(w, map[string]any{
-			"workspace": ctxData.Workspace,
-			"index":     ctxData.Index,
-			"cache":     ctxData.Cache,
-		})
+		data, err := s.provider.Settings(id)
+		if err != nil {
+			writeJSONError(w, http.StatusInternalServerError, err)
+			return
+		}
+		writeJSON(w, data)
 	case "mcp":
-		writeJSON(w, ctxData.MCP)
+		data, err := s.provider.MCP(id)
+		if err != nil {
+			writeJSONError(w, http.StatusInternalServerError, err)
+			return
+		}
+		writeJSON(w, data)
 	case "routes":
-		writeJSON(w, ctxData.Routes)
+		data, err := s.provider.Routes(id)
+		if err != nil {
+			writeJSONError(w, http.StatusInternalServerError, err)
+			return
+		}
+		writeJSON(w, data)
 	case "dependencies":
-		writeJSON(w, ctxData.Dependencies)
+		data, err := s.provider.Dependencies(id)
+		if err != nil {
+			writeJSONError(w, http.StatusInternalServerError, err)
+			return
+		}
+		writeJSON(w, data)
 	case "health":
-		writeJSON(w, ctxData.Health)
+		data, err := s.provider.Health(id)
+		if err != nil {
+			writeJSONError(w, http.StatusInternalServerError, err)
+			return
+		}
+		writeJSON(w, data)
 	default:
 		w.WriteHeader(http.StatusNotFound)
 	}
@@ -620,27 +684,108 @@ func (s *APIServer) handleTaskByID(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, task)
 }
 
-func (s *APIServer) simulateTask(taskID, scope, name, detail string, done func() error) {
-	phases := []struct {
-		progress int
-		state    string
-		detail   string
-	}{
-		{20, "Running", detail},
-		{45, "Running", "Installing dependencies and generating configs"},
-		{70, "Running", "Applying validation and platform registration"},
-		{100, "Done", "Task completed successfully"},
+func (s *APIServer) handleCommands(w http.ResponseWriter, r *http.Request) {
+	if s.commands == nil {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		return
 	}
 
-	for _, phase := range phases {
-		time.Sleep(450 * time.Millisecond)
-		_ = s.store.UpdateTask(context.Background(), taskID, phase.progress, phase.state, phase.detail)
-		s.hub.broadcast(state.TaskEvent{TaskID: taskID, Name: name, Progress: phase.progress, State: phase.state, Detail: phase.detail, Scope: scope})
+	switch r.Method {
+	case http.MethodGet:
+		writeJSON(w, s.commands.List())
+	case http.MethodPost:
+		var req commands.Command
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeJSONError(w, http.StatusBadRequest, err)
+			return
+		}
+		record, err := s.commands.Submit(r.Context(), &req)
+		if err != nil {
+			writeJSONError(w, http.StatusBadRequest, err)
+			return
+		}
+		writeJSON(w, record)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+}
+
+func (s *APIServer) handleCommandByID(w http.ResponseWriter, r *http.Request) {
+	if s.commands == nil {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		return
+	}
+	id := strings.TrimPrefix(r.URL.Path, "/api/commands/")
+	if id == "" {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	record, err := s.commands.Get(id)
+	if err != nil {
+		writeJSONError(w, http.StatusNotFound, err)
+		return
+	}
+	writeJSON(w, record)
+}
+
+func (s *APIServer) handleCapabilities(w http.ResponseWriter, r *http.Request) {
+	if s.caps == nil {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		return
 	}
 
-	if done != nil {
-		_ = done()
+	if capName := strings.TrimSpace(r.URL.Query().Get("capability")); capName != "" {
+		bindings, err := capabilities.NewResolver(s.caps).Resolve(capabilities.Capability(capName))
+		if err != nil {
+			writeJSONError(w, http.StatusBadRequest, err)
+			return
+		}
+		writeJSON(w, bindings)
+		return
 	}
+
+	out := make(map[string][]capabilities.Metadata)
+	for _, provider := range s.caps.Providers() {
+		for _, cap := range provider.Capabilities() {
+			meta := provider.Metadata(cap)
+			meta.Provider = provider.Name()
+			meta.Capability = cap
+			out[string(cap)] = append(out[string(cap)], meta)
+		}
+	}
+	writeJSON(w, out)
+}
+
+func (s *APIServer) submitTask(scope, name, detail string, work func(ctx *tasks.Context) error) string {
+	taskID := fmt.Sprintf("task-%d", time.Now().UnixNano())
+	_, _ = s.store.CreateTaskWithID(context.Background(), taskID, scope, name, detail)
+
+	def := &tasks.Definition{
+		ID:          taskID,
+		Name:        name,
+		WorkspaceID: scope,
+		Priority:    tasks.PriorityNormal,
+		Metadata:    map[string]string{"scope": scope},
+		Fn: func(ctx *tasks.Context) error {
+			ctx.ReportProgress(10, detail)
+			if work != nil {
+				if err := work(ctx); err != nil {
+					return err
+				}
+			}
+			ctx.ReportProgress(100, "Completed")
+			return nil
+		},
+	}
+
+	record, err := s.engine.Submit(def)
+	if err != nil {
+		_ = s.store.UpdateTask(context.Background(), taskID, 0, "Failed", err.Error())
+		s.log.Error().Err(err).Str("task", name).Msg("submit task failed")
+		return ""
+	}
+
+	return record.ID
 }
 
 func writeJSON(w http.ResponseWriter, payload any) {
@@ -658,58 +803,4 @@ func statusFor(condition bool, fallback string) string {
 		return "passed"
 	}
 	return fallback
-}
-
-type TaskHub struct {
-	log     zerolog.Logger
-	mu      sync.Mutex
-	clients map[*websocket.Conn]struct{}
-}
-
-func NewTaskHub(log zerolog.Logger) *TaskHub {
-	return &TaskHub{
-		log:     log,
-		clients: map[*websocket.Conn]struct{}{},
-	}
-}
-
-func (h *TaskHub) handleWS(w http.ResponseWriter, r *http.Request) {
-	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{OriginPatterns: []string{"*"}})
-	if err != nil {
-		return
-	}
-	h.mu.Lock()
-	h.clients[conn] = struct{}{}
-	h.mu.Unlock()
-	defer func() {
-		h.mu.Lock()
-		delete(h.clients, conn)
-		h.mu.Unlock()
-		_ = conn.Close(websocket.StatusNormalClosure, "")
-	}()
-
-	ctx := r.Context()
-	for {
-		var ignore map[string]any
-		if err := wsjson.Read(ctx, conn, &ignore); err != nil {
-			return
-		}
-	}
-}
-
-func (h *TaskHub) broadcast(event state.TaskEvent) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	for conn := range h.clients {
-		_ = wsjson.Write(context.Background(), conn, event)
-	}
-}
-
-func (h *TaskHub) Close() {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	for conn := range h.clients {
-		_ = conn.Close(websocket.StatusNormalClosure, "")
-		delete(h.clients, conn)
-	}
 }

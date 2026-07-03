@@ -42,5 +42,6 @@ Use the root launcher:
 ```bash
 node dev.js
 ```
+Test Indexer
 
 It starts the Go backend and the Next.js frontend together from the project root.

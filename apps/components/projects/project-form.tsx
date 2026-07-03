@@ -63,7 +63,7 @@ export function ProjectForm({ initialData, options }: Props) {
     setSaving(false)
     push({
       title: options.title,
-      message: `${saved.name} is ready in the mock service.`,
+      message: `${saved.name} is ready in the runtime.`,
       tone: 'success',
     })
     router.push(`/projects/${saved.slug}`)
@@ -77,7 +77,7 @@ export function ProjectForm({ initialData, options }: Props) {
           <h1 className="page-title">{options.title}</h1>
           <p className="page-subtitle">{options.subtitle}</p>
           <div className="form-badges">
-            <Badge tone="accent">Mock service</Badge>
+            <Badge tone="accent">Runtime command</Badge>
             <Badge tone="info">Accessible form</Badge>
             <Badge tone="success">Responsive</Badge>
           </div>

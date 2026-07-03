@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import type { SetupWizardData } from '@/lib/types'
-import type { TaskEvent } from '@/lib/types'
+import type { CommandRecord } from '@/lib/types'
 import { completeSetupWizard } from '@/lib/services/setup'
 import { connectSocket } from '@/lib/api/client'
 
@@ -29,6 +29,20 @@ interface FormState {
   adminPassword: string
   provider: string
   installationType: string
+}
+
+interface RuntimeEvent {
+  type: string
+  payload?: {
+    taskId?: string
+    TaskID?: string
+    progress?: number
+    Progress?: number
+    detail?: string
+    Detail?: string
+    error?: string
+    Error?: string
+  }
 }
 
 const initialForm: FormState = {
@@ -58,21 +72,32 @@ export function SetupWizard({ initialData }: Props) {
   const learnArticles = useMemo(() => initialData.knowledgeArticles, [initialData.knowledgeArticles])
 
   useEffect(() => {
-    const connection = connectSocket<TaskEvent>('/ws/tasks', {
+    const connection = connectSocket<RuntimeEvent>('/ws/events', {
       onMessage(event) {
-        if (event.scope !== 'setup') {
+        if (event.type !== 'task:progress' && event.type !== 'task:completed' && event.type !== 'task:failed') {
           return
         }
 
-        if (taskIdRef.current && event.taskId !== taskIdRef.current) {
+        const taskId = event.payload?.taskId ?? event.payload?.TaskID
+        if (!taskId) {
           return
         }
 
-        taskIdRef.current = event.taskId
-        setInstallProgress(event.progress)
-        setTaskState(event.state === 'Done' ? 'done' : 'running')
+        if (taskIdRef.current && taskId !== taskIdRef.current) {
+          return
+        }
 
-        if (event.state === 'Done') {
+        taskIdRef.current = taskId
+
+        if (event.type === 'task:progress') {
+          setInstallProgress(event.payload?.progress ?? event.payload?.Progress ?? 0)
+          setTaskState('running')
+          return
+        }
+
+        if (event.type === 'task:completed') {
+          setInstallProgress(100)
+          setTaskState('done')
           setInstalling(false)
           setStepIndex(totalSteps - 1)
           push({
@@ -80,6 +105,13 @@ export function SetupWizard({ initialData }: Props) {
             message: 'DevServer is ready. Review the finish screen and continue.',
             tone: 'success',
           })
+          return
+        }
+
+        if (event.type === 'task:failed') {
+          setInstalling(false)
+          setTaskState('idle')
+          setErrors([event.payload?.error ?? event.payload?.Error ?? 'Setup failed.'])
         }
       },
     })
@@ -133,9 +165,9 @@ export function SetupWizard({ initialData }: Props) {
       setTaskState('running')
       setStepIndex(stepIndex + 1)
       completeSetupWizard(form)
-        .then((result) => {
-          taskIdRef.current = result.taskId
-          setInstallProgress(10)
+        .then((result: CommandRecord) => {
+          taskIdRef.current = result.taskId ?? null
+          setInstallProgress(result.progress ?? 10)
         })
         .catch((error) => {
           setInstalling(false)

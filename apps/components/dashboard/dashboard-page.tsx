@@ -21,7 +21,7 @@ export function DashboardPageContent({ data, knowledge }: Props) {
           <Badge tone="success">Live.</Badge>
           <h1>GitHub clarity, Linear motion, Railway speed.</h1>
           <p>
-            The platform is responsive, mock-driven, and ready to wire into real APIs without changing page layout.
+            The platform is responsive, runtime-driven, and ready to wire into live systems without changing page layout.
           </p>
           <div className="dashboard-hero__actions">
             <Button variant="primary" href="#deployments">
@@ -36,7 +36,7 @@ export function DashboardPageContent({ data, knowledge }: Props) {
         <Card className="dashboard-hero__panel">
           <div className="card__eyebrow">Current server</div>
           <h3>{data.server}</h3>
-          <p>All metrics below are backed by service interfaces and mock data today.</p>
+          <p>All metrics below are backed by service interfaces and runtime data today.</p>
           <div className="dashboard-hero__pulse">
             <span />
             <span />
@@ -198,7 +198,7 @@ function PanelCard({
             </div>
           ))
         ) : (
-          <EmptyState title="Nothing here yet" description="This area will populate when real APIs are connected." />
+          <EmptyState title="Nothing here yet" description="This area will populate when runtime data is connected." />
         )}
       </div>
     </Card>
