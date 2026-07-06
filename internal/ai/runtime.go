@@ -15,6 +15,7 @@ type Runtime struct {
 	log       zerolog.Logger
 	workspace *core.WorkspaceProvider
 	indexer   *core.Indexer
+	assembler *ContextAssembler
 
 	mu     sync.RWMutex
 	status rt.Status
@@ -26,6 +27,7 @@ func NewRuntime(logger zerolog.Logger, workspace *core.WorkspaceProvider, indexe
 		log:       logger.With().Str("component", "AIRuntime").Logger(),
 		workspace: workspace,
 		indexer:   indexer,
+		assembler: NewContextAssembler(logger, workspace),
 		status:    rt.StatusStopped,
 	}
 }
