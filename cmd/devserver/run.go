@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/Ajayvtl/devserver/internal/ai"
+	"github.com/Ajayvtl/devserver/internal/api"
 	"github.com/Ajayvtl/devserver/internal/auth"
 	"github.com/Ajayvtl/devserver/internal/bootstrap"
 	"github.com/Ajayvtl/devserver/internal/capabilities"
@@ -204,8 +205,6 @@ func runServer(ctx context.Context, log zerolog.Logger, cfg config.Config) error
 		return err
 	}
 
-	server := core.NewAPIServer(log, db, indexer, provider, taskEngine, taskStream, commandEngine, capRegistry, ":8080")
-
 	// Phase 7: Authentication
 	authStore, err := auth.NewMySQLStore(cfg.Database.DSN)
 	if err != nil {
@@ -260,6 +259,17 @@ func runServer(ctx context.Context, log zerolog.Logger, cfg config.Config) error
 
 	providerConfigService := providerconfig.NewService(log, providerConfigStore, envService)
 	_ = providerConfigService // Silencing unused warning until wired to HTTP handlers
+
+	// Phase 8: HTTP API & Middleware Integration
+	apiRouter := api.NewRouter(
+		authService,
+		rbacService,
+		settingsService,
+		envService,
+		providerConfigService,
+	)
+
+	server := core.NewAPIServer(log, db, indexer, provider, taskEngine, taskStream, commandEngine, capRegistry, apiRouter, ":8080")
 
 	// Phase 2: Runtime Bootstrap
 	rtReg := rt.NewRegistry()

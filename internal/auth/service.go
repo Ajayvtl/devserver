@@ -34,6 +34,7 @@ type Service interface {
 	Logout(ctx context.Context, sessionID string) error
 	Refresh(ctx context.Context, refreshToken string) (*TokenPair, error)
 	ValidateSession(ctx context.Context, sessionID string) (*User, error)
+	ValidateToken(ctx context.Context, token string) (string, error)
 	RevokeAll(ctx context.Context, userID string) error
 }
 
@@ -176,6 +177,31 @@ func (s *DefaultService) RevokeAll(ctx context.Context, userID string) error {
 	s.publishAudit(user, "revoke_all_sessions")
 
 	return nil
+}
+
+func (s *DefaultService) ValidateToken(ctx context.Context, tokenStr string) (string, error) {
+	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+		}
+		return jwtSecret, nil
+	})
+
+	if err != nil || !token.Valid {
+		return "", ErrSessionExpired
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return "", ErrSessionExpired
+	}
+
+	userID, ok := claims["sub"].(string)
+	if !ok || userID == "" {
+		return "", ErrSessionExpired
+	}
+
+	return userID, nil
 }
 
 func (s *DefaultService) createSession(ctx context.Context, userID string) (*Session, error) {

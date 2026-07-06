@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Ajayvtl/devserver/internal/api"
 	"github.com/Ajayvtl/devserver/internal/capabilities"
 	"github.com/Ajayvtl/devserver/internal/commands"
 	rt "github.com/Ajayvtl/devserver/internal/runtime"
@@ -26,6 +27,7 @@ type APIServer struct {
 	stream   *tasks.EventStream
 	commands *commands.Engine
 	caps     *capabilities.Registry
+	apiRoute *api.Router
 	addr     string
 	ctx      context.Context
 	cancel   context.CancelFunc
@@ -33,7 +35,7 @@ type APIServer struct {
 	status   rt.Status
 }
 
-func NewAPIServer(log zerolog.Logger, store *state.StoreDB, indexer *Indexer, provider *WorkspaceProvider, engine *tasks.Engine, stream *tasks.EventStream, cmdBus *commands.Engine, caps *capabilities.Registry, addr string) *APIServer {
+func NewAPIServer(log zerolog.Logger, store *state.StoreDB, indexer *Indexer, provider *WorkspaceProvider, engine *tasks.Engine, stream *tasks.EventStream, cmdBus *commands.Engine, caps *capabilities.Registry, apiRoute *api.Router, addr string) *APIServer {
 	return &APIServer{
 		log:      log,
 		store:    store,
@@ -43,6 +45,7 @@ func NewAPIServer(log zerolog.Logger, store *state.StoreDB, indexer *Indexer, pr
 		stream:   stream,
 		commands: cmdBus,
 		caps:     caps,
+		apiRoute: apiRoute,
 		addr:     addr,
 		status:   rt.StatusStopped,
 	}
@@ -82,6 +85,12 @@ func (s *APIServer) Health() rt.Health { return rt.HealthHealthy }
 func (s *APIServer) runInternal(ctx context.Context) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/bootstrap/decision", s.handleBootstrapDecision)
+
+	// Phase 8: Mount v1 Product API
+	if s.apiRoute != nil {
+		s.apiRoute.Register(mux)
+	}
+
 	mux.HandleFunc("/api/setup", s.handleSetup)
 	mux.HandleFunc("/api/setup/complete", s.handleSetupComplete)
 	mux.HandleFunc("/api/auth/login", s.handleLogin)
