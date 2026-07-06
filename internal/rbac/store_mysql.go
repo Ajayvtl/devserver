@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -268,9 +269,10 @@ func (s *MySQLStore) ProvisionOrganizationTx(ctx context.Context, org *Organizat
 	}
 	org.UpdatedAt = now
 
+	slug := strings.ToLower(strings.ReplaceAll(org.Name, " ", "-"))
 	_, err = tx.ExecContext(ctx,
-		`INSERT INTO organizations (id, name, created_at, updated_at) VALUES (?, ?, ?, ?)`,
-		org.ID, org.Name, org.CreatedAt.Format("2006-01-02 15:04:05"), org.UpdatedAt.Format("2006-01-02 15:04:05"),
+		`INSERT INTO organizations (id, name, slug, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`,
+		org.ID, org.Name, slug, org.CreatedAt.Format("2006-01-02 15:04:05"), org.UpdatedAt.Format("2006-01-02 15:04:05"),
 	)
 	if err != nil {
 		return err
