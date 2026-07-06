@@ -29,18 +29,18 @@ func newQueue(maxSize int) *queue {
 	return q
 }
 
-// Enqueue adds a definition to the queue. Returns false if full or closed.
-func (q *queue) Enqueue(def *Definition) bool {
+// Enqueue adds a task to the queue. Returns false if full or closed.
+func (q *queue) Enqueue(task *Task) bool {
 	q.mu.Lock()
 	defer q.mu.Unlock()
-	if q.closed || def == nil {
+	if q.closed || task == nil {
 		return false
 	}
 	if q.maxSize > 0 && q.items.Len() >= q.maxSize {
 		return false
 	}
 	q.seq++
-	heap.Push(&q.items, &queuedItem{def: def, seq: q.seq})
+	heap.Push(&q.items, &queuedItem{task: task, seq: q.seq})
 	select {
 	case q.notify <- struct{}{}:
 	default:
@@ -49,13 +49,13 @@ func (q *queue) Enqueue(def *Definition) bool {
 }
 
 // Dequeue removes and returns the highest-priority item, or nil if empty.
-func (q *queue) Dequeue() *Definition {
+func (q *queue) Dequeue() *Task {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 	if q.paused || q.items.Len() == 0 {
 		return nil
 	}
-	return heap.Pop(&q.items).(*queuedItem).def
+	return heap.Pop(&q.items).(*queuedItem).task
 }
 
 // Len returns the number of items in the queue.
@@ -116,7 +116,7 @@ func (q *queue) Remove(id string) bool {
 		return false
 	}
 	for i, item := range q.items {
-		if item.def != nil && item.def.ID == id {
+		if item.task != nil && item.task.ID == id {
 			heap.Remove(&q.items, i)
 			return true
 		}
@@ -138,7 +138,7 @@ func (q *queue) ResumeWait() <-chan struct{} {
 // --- heap interface implementation ---
 
 type queuedItem struct {
-	def *Definition
+	task *Task
 	seq uint64
 }
 
@@ -146,10 +146,10 @@ type priorityHeap []*queuedItem
 
 func (h priorityHeap) Len() int { return len(h) }
 func (h priorityHeap) Less(i, j int) bool {
-	if h[i].def.Priority == h[j].def.Priority {
+	if h[i].task.Priority == h[j].task.Priority {
 		return h[i].seq < h[j].seq
 	}
-	return h[i].def.Priority < h[j].def.Priority
+	return h[i].task.Priority < h[j].task.Priority
 }
 func (h priorityHeap) Swap(i, j int) { h[i], h[j] = h[j], h[i] }
 

@@ -38,7 +38,7 @@
         "type": "file",
         "name": "index.js",
         "path": "inspector\\index.js",
-        "size": 430
+        "size": 1241
       },
       {
         "type": "directory",
@@ -51,6 +51,36 @@
         "name": "scanners",
         "path": "inspector\\scanners",
         "children": [
+          {
+            "type": "file",
+            "name": "dependencies.js",
+            "path": "inspector\\scanners\\dependencies.js",
+            "size": 1813
+          },
+          {
+            "type": "file",
+            "name": "filesystem.js",
+            "path": "inspector\\scanners\\filesystem.js",
+            "size": 1846
+          },
+          {
+            "type": "file",
+            "name": "index.js",
+            "path": "inspector\\scanners\\index.js",
+            "size": 491
+          },
+          {
+            "type": "file",
+            "name": "manifest.js",
+            "path": "inspector\\scanners\\manifest.js",
+            "size": 1719
+          },
+          {
+            "type": "file",
+            "name": "project.js",
+            "path": "inspector\\scanners\\project.js",
+            "size": 2559
+          },
           {
             "type": "file",
             "name": "tree.js",
@@ -72,6 +102,12 @@
         "size": 278
       }
     ]
+  },
+  {
+    "type": "file",
+    "name": "inspector.zip",
+    "path": "inspector.zip",
+    "size": 2822
   },
   {
     "type": "file",

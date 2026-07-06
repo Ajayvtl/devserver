@@ -1,0 +1,206 @@
+[
+  {
+    "name": "go.mod",
+    "path": "../.tmp/gomodcache/github.com/coder/websocket@v1.8.14/go.mod",
+    "size": 43,
+    "modified": "2026-07-03T07:30:22.531Z"
+  },
+  {
+    "name": "go.sum",
+    "path": "../.tmp/gomodcache/github.com/coder/websocket@v1.8.14/go.sum",
+    "size": 0,
+    "modified": "2026-07-03T07:30:22.532Z"
+  },
+  {
+    "name": "go.mod",
+    "path": "../.tmp/gomodcache/github.com/dustin/go-humanize@v1.0.1/go.mod",
+    "size": 46,
+    "modified": "2026-07-03T07:31:21.619Z"
+  },
+  {
+    "name": "go.mod",
+    "path": "../.tmp/gomodcache/github.com/fsnotify/fsnotify@v1.10.1/go.mod",
+    "size": 279,
+    "modified": "2026-07-03T07:30:25.541Z"
+  },
+  {
+    "name": "go.sum",
+    "path": "../.tmp/gomodcache/github.com/fsnotify/fsnotify@v1.10.1/go.sum",
+    "size": 153,
+    "modified": "2026-07-03T07:30:25.541Z"
+  },
+  {
+    "name": "go.mod",
+    "path": "../.tmp/gomodcache/github.com/mattn/go-colorable@v0.1.13/go.mod",
+    "size": 90,
+    "modified": "2026-07-03T07:30:27.192Z"
+  },
+  {
+    "name": "go.sum",
+    "path": "../.tmp/gomodcache/github.com/mattn/go-colorable@v0.1.13/go.sum",
+    "size": 380,
+    "modified": "2026-07-03T07:30:27.193Z"
+  },
+  {
+    "name": "go.mod",
+    "path": "../.tmp/gomodcache/github.com/mattn/go-isatty@v0.0.20/go.mod",
+    "size": 76,
+    "modified": "2026-07-03T07:30:30.501Z"
+  },
+  {
+    "name": "go.sum",
+    "path": "../.tmp/gomodcache/github.com/mattn/go-isatty@v0.0.20/go.sum",
+    "size": 151,
+    "modified": "2026-07-03T07:30:30.501Z"
+  },
+  {
+    "name": "go.mod",
+    "path": "../.tmp/gomodcache/github.com/ncruces/go-strftime@v0.1.9/go.mod",
+    "size": 47,
+    "modified": "2026-07-03T07:31:22.311Z"
+  },
+  {
+    "name": "go.mod",
+    "path": "../.tmp/gomodcache/github.com/remyoudompheng/bigfft@v0.0.0-20230129092748-24d4a6f8daec/go.mod",
+    "size": 49,
+    "modified": "2026-07-03T07:31:24.541Z"
+  },
+  {
+    "name": "go.mod",
+    "path": "../.tmp/gomodcache/github.com/rs/zerolog@v1.33.0/go.mod",
+    "size": 274,
+    "modified": "2026-07-03T07:30:22.420Z"
+  },
+  {
+    "name": "go.sum",
+    "path": "../.tmp/gomodcache/github.com/rs/zerolog@v1.33.0/go.sum",
+    "size": 2034,
+    "modified": "2026-07-03T07:30:22.421Z"
+  },
+  {
+    "name": "go.mod",
+    "path": "../.tmp/gomodcache/golang.org/x/exp@v0.0.0-20230315142452-642cacee5cc0/go.mod",
+    "size": 176,
+    "modified": "2026-07-03T07:31:22.384Z"
+  },
+  {
+    "name": "go.sum",
+    "path": "../.tmp/gomodcache/golang.org/x/exp@v0.0.0-20230315142452-642cacee5cc0/go.sum",
+    "size": 1207,
+    "modified": "2026-07-03T07:31:22.385Z"
+  },
+  {
+    "name": "go.mod",
+    "path": "../.tmp/gomodcache/golang.org/x/sys@v0.31.0/go.mod",
+    "size": 35,
+    "modified": "2026-07-03T07:30:28.178Z"
+  },
+  {
+    "name": "Dockerfile",
+    "path": "../.tmp/gomodcache/golang.org/x/sys@v0.31.0/unix/linux/Dockerfile",
+    "size": 2262,
+    "modified": "2026-07-03T07:30:28.205Z"
+  },
+  {
+    "name": "go.mod",
+    "path": "../.tmp/gomodcache/gopkg.in/yaml.v3@v3.0.1/go.mod",
+    "size": 95,
+    "modified": "2026-07-03T07:30:22.308Z"
+  },
+  {
+    "name": "go.mod",
+    "path": "../.tmp/gomodcache/modernc.org/libc@v1.61.13/go.mod",
+    "size": 1038,
+    "modified": "2026-07-03T07:30:59.620Z"
+  },
+  {
+    "name": "go.sum",
+    "path": "../.tmp/gomodcache/modernc.org/libc@v1.61.13/go.sum",
+    "size": 9539,
+    "modified": "2026-07-03T07:30:59.620Z"
+  },
+  {
+    "name": "go.mod",
+    "path": "../.tmp/gomodcache/modernc.org/mathutil@v1.7.1/go.mod",
+    "size": 114,
+    "modified": "2026-07-03T07:31:21.837Z"
+  },
+  {
+    "name": "go.sum",
+    "path": "../.tmp/gomodcache/modernc.org/mathutil@v1.7.1/go.sum",
+    "size": 239,
+    "modified": "2026-07-03T07:31:21.838Z"
+  },
+  {
+    "name": "go.mod",
+    "path": "../.tmp/gomodcache/modernc.org/memory@v1.8.2/go.mod",
+    "size": 221,
+    "modified": "2026-07-03T07:31:22.170Z"
+  },
+  {
+    "name": "go.sum",
+    "path": "../.tmp/gomodcache/modernc.org/memory@v1.8.2/go.sum",
+    "size": 710,
+    "modified": "2026-07-03T07:31:22.171Z"
+  },
+  {
+    "name": "go.mod",
+    "path": "../.tmp/gomodcache/modernc.org/sqlite@v1.36.3/go.mod",
+    "size": 1189,
+    "modified": "2026-07-03T07:30:28.710Z"
+  },
+  {
+    "name": "go.sum",
+    "path": "../.tmp/gomodcache/modernc.org/sqlite@v1.36.3/go.sum",
+    "size": 4835,
+    "modified": "2026-07-03T07:30:28.710Z"
+  },
+  {
+    "name": "next.config.mjs",
+    "path": "../apps/next.config.mjs",
+    "size": 116,
+    "modified": "2026-07-02T10:20:09.783Z"
+  },
+  {
+    "name": "package-lock.json",
+    "path": "../apps/package-lock.json",
+    "size": 192687,
+    "modified": "2026-07-03T08:05:47.054Z"
+  },
+  {
+    "name": "package.json",
+    "path": "../apps/package.json",
+    "size": 500,
+    "modified": "2026-07-02T12:25:32.545Z"
+  },
+  {
+    "name": "tsconfig.json",
+    "path": "../apps/tsconfig.json",
+    "size": 732,
+    "modified": "2026-07-02T10:19:39.156Z"
+  },
+  {
+    "name": "go.mod",
+    "path": "../go.mod",
+    "size": 795,
+    "modified": "2026-07-02T14:31:07.415Z"
+  },
+  {
+    "name": "go.sum",
+    "path": "../go.sum",
+    "size": 5693,
+    "modified": "2026-07-02T14:31:07.416Z"
+  },
+  {
+    "name": "package-lock.json",
+    "path": "package-lock.json",
+    "size": 1183,
+    "modified": "2026-07-02T13:42:38.938Z"
+  },
+  {
+    "name": "package.json",
+    "path": "package.json",
+    "size": 321,
+    "modified": "2026-07-03T10:12:03.510Z"
+  }
+]

@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/Ajayvtl/devserver/internal/events"
+	rt "github.com/Ajayvtl/devserver/internal/runtime"
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 	"github.com/rs/zerolog"
@@ -19,6 +20,9 @@ type EventStream struct {
 	bus     events.Bus
 	mu      sync.Mutex
 	clients map[*websocket.Conn]struct{}
+	ctx     context.Context
+	cancel  context.CancelFunc
+	status  rt.Status
 }
 
 // NewEventStream creates a new stream that subscribes to the EventBus.
@@ -27,8 +31,35 @@ func NewEventStream(log zerolog.Logger, bus events.Bus) *EventStream {
 		log:     log,
 		bus:     bus,
 		clients: make(map[*websocket.Conn]struct{}),
+		status:  rt.StatusStopped,
 	}
 }
+
+func (s *EventStream) Name() string { return "tasks.EventStream" }
+
+func (s *EventStream) Initialize(ctx context.Context) error {
+	s.status = rt.StatusStarting
+	return nil
+}
+
+func (s *EventStream) Start(ctx context.Context) error {
+	s.ctx, s.cancel = context.WithCancel(context.Background())
+	s.status = rt.StatusRunning
+	go s.runInternal(s.ctx)
+	return nil
+}
+
+func (s *EventStream) Stop(ctx context.Context) error {
+	if s.cancel != nil {
+		s.cancel()
+	}
+	s.status = rt.StatusStopped
+	return nil
+}
+
+func (s *EventStream) Status() rt.Status { return s.status }
+
+func (s *EventStream) Health() rt.Health { return rt.HealthHealthy }
 
 // wireEvent is the JSON shape sent to the frontend.
 type wireEvent struct {
@@ -36,9 +67,9 @@ type wireEvent struct {
 	Payload any    `json:"payload"`
 }
 
-// Run subscribes to all relevant event types and broadcasts them
+// runInternal subscribes to all relevant event types and broadcasts them
 // to connected WebSocket clients. Blocks until ctx is cancelled.
-func (s *EventStream) Run(ctx context.Context) {
+func (s *EventStream) runInternal(ctx context.Context) {
 	// Subscribe to all event types we want to forward.
 	topics := []events.EventType{
 		events.TaskQueued,

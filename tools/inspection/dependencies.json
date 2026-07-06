@@ -1,0 +1,62 @@
+[
+  {
+    "ecosystem": "go",
+    "name": "github.com/coder/websocket",
+    "version": "1.8.14"
+  },
+  {
+    "ecosystem": "go",
+    "name": "gopkg.in/yaml.v3",
+    "version": "3.0.1"
+  },
+  {
+    "ecosystem": "go",
+    "name": "modernc.org/sqlite",
+    "version": "1.36.3"
+  },
+  {
+    "ecosystem": "npm",
+    "name": "@types/node",
+    "version": "22.13.4"
+  },
+  {
+    "ecosystem": "npm",
+    "name": "@types/react",
+    "version": "19.0.10"
+  },
+  {
+    "ecosystem": "npm",
+    "name": "@types/react-dom",
+    "version": "19.0.4"
+  },
+  {
+    "ecosystem": "npm",
+    "name": "eslint",
+    "version": "^9.39.4"
+  },
+  {
+    "ecosystem": "npm",
+    "name": "eslint-config-next",
+    "version": "15.1.6"
+  },
+  {
+    "ecosystem": "npm",
+    "name": "next",
+    "version": "^15.5.20"
+  },
+  {
+    "ecosystem": "npm",
+    "name": "react",
+    "version": "19.0.0"
+  },
+  {
+    "ecosystem": "npm",
+    "name": "react-dom",
+    "version": "19.0.0"
+  },
+  {
+    "ecosystem": "npm",
+    "name": "typescript",
+    "version": "5.7.3"
+  }
+]

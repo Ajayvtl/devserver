@@ -5,76 +5,66 @@ import (
 	"time"
 )
 
-// store is an in-memory task record store, thread-safe.
+// store is an in-memory task store, thread-safe.
 // It holds the runtime state of all tasks known to the engine.
 type store struct {
 	mu      sync.RWMutex
-	records map[string]*Record
+	tasks   map[string]*Task
 	order   []string
 }
 
 func newStore() *store {
 	return &store{
-		records: make(map[string]*Record),
+		tasks: make(map[string]*Task),
 	}
 }
 
-// Create adds a new record from a definition.
-func (s *store) Create(def *Definition) *Record {
+// Create adds a new task to the store.
+func (s *store) Create(task *Task) *Task {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	now := time.Now().UTC()
-	r := &Record{
-		ID:          def.ID,
-		Name:        def.Name,
-		WorkspaceID: def.WorkspaceID,
-		Status:      StatusQueued,
-		Progress:    0,
-		Detail:      "Queued",
-		Priority:    def.Priority,
-		Attempt:     0,
-		MaxRetries:  def.Retry.MaxRetries,
-		Metadata:    def.Metadata,
-		CreatedAt:   now,
+	if task.StartedAt.IsZero() {
+		task.StartedAt = now
 	}
-	s.records[def.ID] = r
-	s.order = append(s.order, def.ID)
-	return r
+	s.tasks[task.ID] = task
+	s.order = append(s.order, task.ID)
+	return task
 }
 
-// Get returns a record by ID, or nil if not found.
-func (s *store) Get(id string) *Record {
+// Get returns a task by ID, or nil if not found.
+func (s *store) Get(id string) *Task {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.records[id]
+	return s.tasks[id]
 }
 
-// Update persists changes to a record already in the store.
-func (s *store) Update(r *Record) {
+// Update persists changes to a task already in the store.
+func (s *store) Update(t *Task) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.records[r.ID] = r
+	s.tasks[t.ID] = t
 }
 
-// List returns all records in creation order.
-func (s *store) List() []*Record {
+// List returns all tasks in creation order.
+func (s *store) List() []*Task {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	out := make([]*Record, 0, len(s.order))
+	out := make([]*Task, 0, len(s.order))
 	for _, id := range s.order {
-		if r, ok := s.records[id]; ok {
-			out = append(out, r)
+		if t, ok := s.tasks[id]; ok {
+			out = append(out, t)
 		}
 	}
 	return out
 }
 
-// Delete removes a record by ID.
+// Delete removes a task by ID.
 func (s *store) Delete(id string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	delete(s.records, id)
+	delete(s.tasks, id)
 	for i, oid := range s.order {
 		if oid == id {
 			s.order = append(s.order[:i], s.order[i+1:]...)

@@ -6,19 +6,24 @@ import (
 	"time"
 
 	"github.com/Ajayvtl/devserver/internal/events"
+	rt "github.com/Ajayvtl/devserver/internal/runtime"
 	"github.com/rs/zerolog"
 )
 
 // Engine is the central task execution coordinator.
-// It owns the queue, worker pool, and task store.
+// It owns the queue, worker pool, task store, registry, and runtime.
 type Engine struct {
-	log     zerolog.Logger
-	bus     events.Bus
-	queue   *queue
-	store   *store
-	workers []*worker
-	exec    Executor
-	size    int
+	log      zerolog.Logger
+	bus      events.Bus
+	queue    *queue
+	store    *store
+	workers  []*worker
+	registry *Registry
+	runtime  *Runtime
+	size     int
+	ctx      context.Context
+	cancel   context.CancelFunc
+	status   rt.Status
 }
 
 // EngineConfig controls engine behavior.
@@ -28,7 +33,7 @@ type EngineConfig struct {
 }
 
 // NewEngine creates a task engine with the given configuration.
-func NewEngine(log zerolog.Logger, bus events.Bus, exec Executor, cfg EngineConfig) *Engine {
+func NewEngine(log zerolog.Logger, bus events.Bus, registry *Registry, runtime *Runtime, cfg EngineConfig) *Engine {
 	if cfg.Workers <= 0 {
 		cfg.Workers = 4
 	}
@@ -36,28 +41,56 @@ func NewEngine(log zerolog.Logger, bus events.Bus, exec Executor, cfg EngineConf
 	q := newQueue(cfg.QueueMax)
 	s := newStore()
 
-	if exec == nil {
-		exec = NewDirectExecutor()
+	if registry == nil {
+		registry = NewRegistry()
 	}
 
 	workers := make([]*worker, cfg.Workers)
 	for i := 0; i < cfg.Workers; i++ {
-		workers[i] = newWorker(i, log, bus, exec, q, s)
+		workers[i] = newWorker(i, log, bus, registry, runtime, q, s)
 	}
 
 	return &Engine{
-		log:     log,
-		bus:     bus,
-		queue:   q,
-		store:   s,
-		workers: workers,
-		exec:    exec,
-		size:    cfg.Workers,
+		log:      log,
+		bus:      bus,
+		queue:    q,
+		store:    s,
+		workers:  workers,
+		registry: registry,
+		runtime:  runtime,
+		size:     cfg.Workers,
+		status:   rt.StatusStopped,
 	}
 }
 
-// Run starts all workers. Blocks until ctx is cancelled.
-func (e *Engine) Run(ctx context.Context) {
+func (e *Engine) Name() string { return "tasks.Engine" }
+
+func (e *Engine) Initialize(ctx context.Context) error {
+	e.status = rt.StatusStarting
+	return nil
+}
+
+func (e *Engine) Start(ctx context.Context) error {
+	e.ctx, e.cancel = context.WithCancel(context.Background())
+	e.status = rt.StatusRunning
+	go e.runInternal(e.ctx)
+	return nil
+}
+
+func (e *Engine) Stop(ctx context.Context) error {
+	if e.cancel != nil {
+		e.cancel()
+	}
+	e.status = rt.StatusStopped
+	return nil
+}
+
+func (e *Engine) Status() rt.Status { return e.status }
+
+func (e *Engine) Health() rt.Health { return rt.HealthHealthy }
+
+// runInternal starts all workers. Blocks until ctx is cancelled.
+func (e *Engine) runInternal(ctx context.Context) {
 	e.log.Info().Int("workers", e.size).Msg("task engine started")
 
 	done := make(chan struct{})
@@ -75,35 +108,35 @@ func (e *Engine) Run(ctx context.Context) {
 	e.log.Info().Msg("task engine stopped")
 }
 
-// Submit enqueues a task definition for execution.
-// Returns the task record, or an error if the queue is full.
-func (e *Engine) Submit(def *Definition) (*Record, error) {
-	if def.ID == "" {
-		def.ID = fmt.Sprintf("task-%d", time.Now().UnixNano())
+// Submit enqueues a task for execution.
+// Returns the task, or an error if the queue is full.
+func (e *Engine) Submit(task *Task) (*Task, error) {
+	if task.ID == "" {
+		task.ID = fmt.Sprintf("task-%d", time.Now().UnixNano())
 	}
-	if def.Retry.MaxRetries == 0 && def.Retries > 0 {
-		def.Retry.MaxRetries = def.Retries
+	if task.Status == "" {
+		task.Status = TaskQueued
 	}
-	if def.Retry.Backoff <= 0 {
-		def.Retry.Backoff = defaultRetryBackoff
+	if task.StartedAt.IsZero() {
+		task.StartedAt = time.Now().UTC()
 	}
 
-	record := e.store.Create(def)
+	record := e.store.Create(task)
 
-	if !e.queue.Enqueue(def) {
-		record.Status = StatusFailed
+	if !e.queue.Enqueue(task) {
+		record.Status = TaskFailed
 		record.Error = "queue is full"
 		e.store.Update(record)
 		e.bus.Publish(events.TaskFailed, events.TaskFailedEvent{
-			TaskID: def.ID,
-			Name:   def.Name,
+			TaskID: task.ID,
+			Name:   task.Name,
 			Error:  "queue is full",
 		})
 		return record, fmt.Errorf("task queue is full")
 	}
 
 	publishTaskQueued(e.bus, record)
-	e.log.Debug().Str("task", def.ID).Str("name", def.Name).Msg("task submitted")
+	e.log.Debug().Str("task", task.ID).Str("name", task.Name).Msg("task submitted")
 	return record, nil
 }
 
@@ -113,7 +146,7 @@ func (e *Engine) Cancel(id string) error {
 	if e.queue.Remove(id) {
 		record := e.store.Get(id)
 		if record != nil {
-			record.markCancelled("Cancelled while queued")
+			record.Status = TaskCancelled
 			e.store.Update(record)
 			publishTaskCancelled(e.bus, record)
 		}
@@ -125,7 +158,7 @@ func (e *Engine) Cancel(id string) error {
 		if w.cancelTask(id) {
 			record := e.store.Get(id)
 			if record != nil {
-				record.markCancelled("Cancelled while running")
+				record.Status = TaskCancelled
 				e.store.Update(record)
 				publishTaskCancelled(e.bus, record)
 			}
@@ -137,7 +170,7 @@ func (e *Engine) Cancel(id string) error {
 }
 
 // Get returns the current state of a task.
-func (e *Engine) Get(id string) (*Record, error) {
+func (e *Engine) Get(id string) (*Task, error) {
 	r := e.store.Get(id)
 	if r == nil {
 		return nil, fmt.Errorf("task %q not found", id)
@@ -146,7 +179,7 @@ func (e *Engine) Get(id string) (*Record, error) {
 }
 
 // List returns all task records.
-func (e *Engine) List() []*Record {
+func (e *Engine) List() []*Task {
 	return e.store.List()
 }
 

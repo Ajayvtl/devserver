@@ -3,34 +3,34 @@ package tasks
 import "github.com/Ajayvtl/devserver/internal/events"
 
 // publishTaskQueued emits the queued lifecycle event.
-func publishTaskQueued(bus events.Bus, record *Record) {
-	if bus == nil || record == nil {
+func publishTaskQueued(bus events.Bus, task *Task) {
+	if bus == nil || task == nil {
 		return
 	}
 	bus.Publish(events.TaskQueued, events.TaskQueuedEvent{
-		TaskID:      record.ID,
-		Name:        record.Name,
-		WorkspaceID: record.WorkspaceID,
-		Detail:      record.Detail,
+		TaskID:      task.ID,
+		Name:        task.Name,
+		WorkspaceID: task.WorkspaceID,
+		Detail:      "Queued",
 	})
 }
 
-func publishTaskCancelled(bus events.Bus, record *Record) {
-	if bus == nil || record == nil {
+func publishTaskCancelled(bus events.Bus, task *Task) {
+	if bus == nil || task == nil {
 		return
 	}
 	bus.Publish(events.TaskCancelled, events.TaskCancelledEvent{
-		TaskID: record.ID,
-		Name:   record.Name,
+		TaskID: task.ID,
+		Name:   task.Name,
 	})
 }
 
-func publishTaskRolledBack(bus events.Bus, record *Record) {
-	if bus == nil || record == nil {
+func publishTaskRolledBack(bus events.Bus, task *Task) {
+	if bus == nil || task == nil {
 		return
 	}
 	bus.Publish(events.TaskRolledBack, events.TaskRolledBackEvent{
-		TaskID: record.ID,
-		Name:   record.Name,
+		TaskID: task.ID,
+		Name:   task.Name,
 	})
 }
