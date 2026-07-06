@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Ajayvtl/devserver/internal/commands"
 	domainWorkflow "github.com/Ajayvtl/devserver/internal/domain/workflow"
 	"github.com/Ajayvtl/devserver/internal/executor/contracts"
 	"github.com/Ajayvtl/devserver/internal/repository"
@@ -13,14 +12,12 @@ import (
 type defaultDispatcher struct {
 	actions  repository.ActionRepository
 	registry contracts.ExecutorRegistry
-	cmdBus   *commands.Engine
 }
 
-func NewDispatcher(actions repository.ActionRepository, registry contracts.ExecutorRegistry, cmdBus *commands.Engine) Dispatcher {
+func NewDispatcher(actions repository.ActionRepository, registry contracts.ExecutorRegistry) Dispatcher {
 	return &defaultDispatcher{
 		actions:  actions,
 		registry: registry,
-		cmdBus:   cmdBus,
 	}
 }
 

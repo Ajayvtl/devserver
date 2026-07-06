@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Ajayvtl/devserver/internal/commands"
 	"github.com/Ajayvtl/devserver/internal/domain/common"
 	domainWorkflow "github.com/Ajayvtl/devserver/internal/domain/workflow"
 	"github.com/Ajayvtl/devserver/internal/events"
@@ -21,20 +20,20 @@ var (
 )
 
 const (
-	StatusPending   = "pending"
-	StatusRunning   = "running"
-	StatusPaused    = "paused"
-	StatusCancelled = "cancelled"
-	StatusCompleted = "completed"
-	StatusFailed    = "failed"
+	StatusPending    = "pending"
+	StatusRunning    = "running"
+	StatusPaused     = "paused"
+	StatusCancelled  = "cancelled"
+	StatusCompleted  = "completed"
+	StatusFailed     = "failed"
 	StatusRolledBack = "rolled_back"
 )
 
 type NodeState struct {
-	Node     *domainWorkflow.WorkflowNode
-	Status   string
-	Error    error
-	Retries  int
+	Node    *domainWorkflow.WorkflowNode
+	Status  string
+	Error   error
+	Retries int
 }
 
 type WorkflowState struct {
@@ -43,25 +42,26 @@ type WorkflowState struct {
 	Nodes    map[string]*NodeState
 	Cancel   context.CancelFunc
 	ctx      context.Context
+	pauseCh  chan struct{}
 }
 
 type EngineImpl struct {
 	dispatcher Dispatcher
 	registry   contracts.ExecutorRegistry
 	bus        events.Bus
-	cmdEngine  *commands.Engine
 
-	mu     sync.RWMutex
-	states map[common.WorkflowID]*WorkflowState
+	mu       sync.RWMutex
+	states   map[common.WorkflowID]*WorkflowState
+	nodeToWf map[string]common.WorkflowID
 }
 
-func NewEngine(dispatcher Dispatcher, registry contracts.ExecutorRegistry, bus events.Bus, cmdEngine *commands.Engine) Engine {
+func NewEngine(dispatcher Dispatcher, registry contracts.ExecutorRegistry, bus events.Bus) Engine {
 	return &EngineImpl{
 		dispatcher: dispatcher,
 		registry:   registry,
 		bus:        bus,
-		cmdEngine:  cmdEngine,
 		states:     make(map[common.WorkflowID]*WorkflowState),
+		nodeToWf:   make(map[string]common.WorkflowID),
 	}
 }
 
@@ -70,10 +70,23 @@ func (e *EngineImpl) CreateExecutionPlan(ctx context.Context, wf *domainWorkflow
 	inDegree := make(map[string]int)
 	graph := make(map[string][]string)
 
+	e.mu.Lock()
+	state, exists := e.states[common.WorkflowID(wf.ID)]
+	if !exists {
+		state = &WorkflowState{
+			Workflow: wf,
+			Status:   StatusPending,
+			Nodes:    make(map[string]*NodeState),
+			pauseCh:  make(chan struct{}),
+		}
+		e.states[common.WorkflowID(wf.ID)] = state
+	}
 	for _, n := range wf.Nodes {
 		inDegree[n.ID] = 0
 		graph[n.ID] = []string{}
+		e.nodeToWf[n.ID] = common.WorkflowID(wf.ID)
 	}
+	e.mu.Unlock()
 
 	for _, edge := range wf.Edges {
 		inDegree[edge.To]++
@@ -126,6 +139,39 @@ func (e *EngineImpl) ExecutePlan(ctx context.Context, plan []*domainWorkflow.Wor
 	return nil
 }
 
+func (e *EngineImpl) waitIfPaused(ctx context.Context, nodeID string) error {
+	e.mu.RLock()
+	wfID, ok := e.nodeToWf[nodeID]
+	if !ok {
+		e.mu.RUnlock()
+		return nil
+	}
+	state, ok := e.states[wfID]
+	e.mu.RUnlock()
+
+	if !ok {
+		return nil
+	}
+
+	for {
+		e.mu.RLock()
+		status := state.Status
+		pauseCh := state.pauseCh
+		e.mu.RUnlock()
+
+		if status != StatusPaused {
+			return nil
+		}
+
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-pauseCh:
+			// Woken up, loop and check status again
+		}
+	}
+}
+
 func (e *EngineImpl) executeNode(ctx context.Context, node *domainWorkflow.WorkflowNode) error {
 	// Check Condition
 	if node.Condition != "" {
@@ -138,7 +184,20 @@ func (e *EngineImpl) executeNode(ctx context.Context, node *domainWorkflow.Workf
 		retries = 0
 	}
 
+	backoff := time.Second
+
 	for i := 0; i <= retries; i++ {
+		// Check cancellation before execution
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+
+		if waitErr := e.waitIfPaused(ctx, node.ID); waitErr != nil {
+			return waitErr
+		}
+
 		execCtx := ctx
 		var cancel context.CancelFunc
 		if node.Timeout > 0 {
@@ -166,12 +225,27 @@ func (e *EngineImpl) executeNode(ctx context.Context, node *domainWorkflow.Workf
 			return nil
 		}
 
-		time.Sleep(time.Second) // backoff
+		if i < retries {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(backoff):
+				backoff *= 2
+			}
+		}
 	}
 
 	if err != nil && node.Rollback != "" {
-		// Execute rollback action via dispatcher if implemented, or log
-		// Fallback for demonstration
+		rollbackNode := &domainWorkflow.WorkflowNode{
+			ID:       node.ID + "-rollback",
+			ActionID: node.Rollback,
+		}
+
+		rollbackErr := e.dispatcher.Dispatch(ctx, rollbackNode)
+		if rollbackErr != nil {
+			err = fmt.Errorf("node failed: %v, rollback also failed: %v", err, rollbackErr)
+		}
+
 		e.bus.Publish(events.TaskRolledBack, events.TaskRolledBackEvent{
 			TaskID: node.ID,
 			Name:   string(node.Rollback),
@@ -206,6 +280,8 @@ func (e *EngineImpl) Resume(ctx context.Context, wfID common.WorkflowID) error {
 		return fmt.Errorf("workflow not paused")
 	}
 	state.Status = StatusRunning
+	close(state.pauseCh)
+	state.pauseCh = make(chan struct{})
 	return nil
 }
 
@@ -230,20 +306,20 @@ func (e *EngineImpl) Retry(ctx context.Context, wfID common.WorkflowID, nodeID s
 	if !ok {
 		return ErrWorkflowNotFound
 	}
-	
+
 	nodeState, ok := state.Nodes[nodeID]
 	if !ok {
 		return ErrNodeNotFound
 	}
-	
+
 	if nodeState.Status != StatusFailed {
 		return fmt.Errorf("node is not in failed state")
 	}
-	
+
 	nodeState.Status = StatusPending
 	nodeState.Error = nil
 	nodeState.Retries++
-	
+
 	// Re-trigger execution for this node
 	return nil
 }
@@ -255,7 +331,7 @@ func (e *EngineImpl) Rollback(ctx context.Context, wfID common.WorkflowID) error
 	if !ok {
 		return ErrWorkflowNotFound
 	}
-	
+
 	state.Status = StatusRolledBack
 	return nil
 }
