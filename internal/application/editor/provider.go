@@ -1,24 +1,24 @@
-package providers
+package editor
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/Ajayvtl/devserver/internal/application/editor"
+	"github.com/Ajayvtl/devserver/internal/providers"
 )
 
 // VSCodeExtensionProvider wraps a VS Code extension as a DevServer Provider.
 type VSCodeExtensionProvider struct {
 	extensionID string
-	metadata    ProviderMetadata
-	extManager  editor.ExtensionManager
+	metadata    providers.ProviderMetadata
+	extManager  ExtensionManager
 }
 
 // NewVSCodeExtensionProvider creates a new provider for a VS Code extension.
-func NewVSCodeExtensionProvider(extensionID, name, description, version string, extManager editor.ExtensionManager) Provider {
+func NewVSCodeExtensionProvider(extensionID, name, description, version string, extManager ExtensionManager) providers.Provider {
 	return &VSCodeExtensionProvider{
 		extensionID: extensionID,
-		metadata: ProviderMetadata{
+		metadata: providers.ProviderMetadata{
 			Name:        name,
 			Description: description,
 			Version:     version,
@@ -28,7 +28,7 @@ func NewVSCodeExtensionProvider(extensionID, name, description, version string, 
 	}
 }
 
-func (p *VSCodeExtensionProvider) Metadata() ProviderMetadata {
+func (p *VSCodeExtensionProvider) Metadata() providers.ProviderMetadata {
 	return p.metadata
 }
 
@@ -67,36 +67,36 @@ func (p *VSCodeExtensionProvider) Health(ctx context.Context) error {
 	return nil
 }
 
-func (p *VSCodeExtensionProvider) Status(ctx context.Context) (ProviderStatus, error) {
+func (p *VSCodeExtensionProvider) Status(ctx context.Context) (providers.ProviderStatus, error) {
 	installed, err := p.Detect(ctx)
 	if err != nil {
-		return StatusFailed, err
+		return providers.StatusFailed, err
 	}
 	if installed {
-		return StatusRunning, nil // extensions are "running" if the editor is running
+		return providers.StatusRunning, nil // extensions are "running" if the editor is running
 	}
-	return StatusNotInstalled, nil
+	return providers.StatusNotInstalled, nil
 }
 
-func (p *VSCodeExtensionProvider) Info(ctx context.Context) (ProviderInfo, error) {
+func (p *VSCodeExtensionProvider) Info(ctx context.Context) (providers.ProviderInfo, error) {
 	status, err := p.Status(ctx)
-	installed := status == StatusRunning
+	installed := status == providers.StatusRunning
 
-	return ProviderInfo{
+	return providers.ProviderInfo{
 		Name:      p.metadata.Name,
 		Version:   p.metadata.Version,
 		Installed: installed,
-		State: ProviderState{
+		State: providers.ProviderState{
 			Status: status,
-			Health: HealthHealthy, // Simplification
+			Health: providers.HealthHealthy, // Simplification
 		},
-		Metrics:      ProviderMetrics{},
+		Metrics:      providers.ProviderMetrics{},
 		Capabilities: p.Capabilities(),
 	}, err
 }
 
-func (p *VSCodeExtensionProvider) Capabilities() ProviderCapabilities {
-	return ProviderCapabilities{
+func (p *VSCodeExtensionProvider) Capabilities() providers.ProviderCapabilities {
+	return providers.ProviderCapabilities{
 		Detect:    true,
 		Version:   true,
 		Health:    true,
