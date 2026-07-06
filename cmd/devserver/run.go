@@ -28,6 +28,7 @@ import (
 	"github.com/Ajayvtl/devserver/internal/rbac"
 	"github.com/Ajayvtl/devserver/internal/registry"
 	rt "github.com/Ajayvtl/devserver/internal/runtime"
+	"github.com/Ajayvtl/devserver/internal/settings"
 	"github.com/Ajayvtl/devserver/internal/state"
 	"github.com/Ajayvtl/devserver/internal/tasks"
 	"github.com/rs/zerolog"
@@ -222,6 +223,16 @@ func runServer(ctx context.Context, log zerolog.Logger, cfg config.Config) error
 
 	rbacService := rbac.NewService(log, rbacStore)
 	_ = rbacService // Silencing unused warning until wired to HTTP handlers
+
+	// Phase 7: Settings & Integrations
+	settingsStore, err := settings.NewMySQLStore(cfg.Database.DSN)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to initialize settings database")
+	}
+	defer settingsStore.Close()
+
+	settingsService := settings.NewService(log, settingsStore)
+	_ = settingsService // Silencing unused warning until wired to HTTP handlers
 
 	// Phase 2: Runtime Bootstrap
 	rtReg := rt.NewRegistry()
