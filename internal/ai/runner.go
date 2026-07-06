@@ -76,6 +76,10 @@ func (r *TaskRunner) Execute(ctx context.Context, task *tasks.Task, runtime *tas
 		EditorState: editorState,
 	}
 
+	if sessionID, ok := task.Payload["sessionId"].(string); ok {
+		req.SessionID = sessionID
+	}
+
 	stream, _ := task.Payload["stream"].(bool)
 	if stream && r.Bus != nil {
 		req.Stream = true

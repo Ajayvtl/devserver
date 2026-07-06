@@ -57,4 +57,5 @@ This document tracks the granular implementation state of DevServer's subsystems
 * **WP-6.4 Command Bus Integration**: Wired AI intents (`ai.generate`, `ai.refactor`, `ai.explain`) into the `commands.Engine` via `tasks.Runner` bypassing module resolution.
 * **WP-6.5 Editor Context Integration**: Enhanced `ContextAssembler` and `AIRunner` to parse editor selection state (file, language, cursor, selectedText) and inject it seamlessly into the LLM context.
 * **WP-6.6 Response Streaming**: Implemented real-time token streaming via HTTP inference from Ollama API, piping output natively through WebSocket EventBus.
-* *Next Steps*: Session/conversation memory and multi-turn request tracking.
+* **WP-6.7 Conversation Memory**: Added thread-safe `SessionManager` retaining multi-turn interaction history (User vs Assistant roles). Full session context is now seamlessly auto-injected into successive prompt chains.
+* *Next Steps*: Diagnostics integration (Linter/Compiler errors) and Workspace context mapping (AST/Git diffs).

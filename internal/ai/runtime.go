@@ -19,6 +19,7 @@ type Runtime struct {
 	indexer    *core.Indexer
 	assembler  *ContextAssembler
 	dispatcher *Dispatcher
+	sessions   *SessionManager
 
 	mu     sync.RWMutex
 	status rt.Status
@@ -32,6 +33,7 @@ func NewRuntime(logger zerolog.Logger, workspace *core.WorkspaceProvider, indexe
 		indexer:    indexer,
 		assembler:  NewContextAssembler(logger, workspace),
 		dispatcher: NewDispatcher(logger, pm),
+		sessions:   NewSessionManager(),
 		status:     rt.StatusStopped,
 	}
 }
@@ -105,9 +107,62 @@ func (r *Runtime) Infer(ctx context.Context, workspaceID common.WorkspaceID, req
 		r.log.Warn().Err(err).Msg("Failed to assemble full workspace context, continuing with partial context")
 	}
 
-	// 2. Attach Context
+	// 2. Load History & Append User Prompt
+	var history []Message
+	if req.SessionID != "" {
+		r.sessions.AddMessage(req.SessionID, RoleUser, req.Prompt)
+		history = r.sessions.GetHistory(req.SessionID)
+	}
+
+	// 3. Format Prompt
+	formattedPrompt := req.Prompt
+	if len(history) > 0 {
+		formattedPrompt = r.formatHistory(history, wsContext)
+	} else if wsContext != nil {
+		formattedPrompt = fmt.Sprintf("Context:\n%s\n\nPrompt:\n%s", wsContext.Summary, req.Prompt)
+	}
+
+	req.Prompt = formattedPrompt
 	req.Context = wsContext
 
-	// 3. Dispatch Request
-	return r.dispatcher.Dispatch(ctx, req)
+	// 4. Dispatch Request
+	// Wrap StreamCallback to capture response if streaming
+	var accumulatedText string
+	originalCallback := req.StreamCallback
+	if req.Stream && originalCallback != nil {
+		req.StreamCallback = func(token string) {
+			accumulatedText += token
+			originalCallback(token)
+		}
+	}
+
+	resp, err := r.dispatcher.Dispatch(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	// 5. Append Assistant Response to History
+	if req.SessionID != "" {
+		var respText string
+		if req.Stream {
+			respText = accumulatedText
+		} else {
+			respText = resp.Text
+		}
+		r.sessions.AddMessage(req.SessionID, RoleAssistant, respText)
+	}
+
+	return resp, nil
+}
+
+func (r *Runtime) formatHistory(history []Message, ctx *AssembledContext) string {
+	var fullPrompt string
+	if ctx != nil {
+		fullPrompt = fmt.Sprintf("Context:\n%s\n\n", ctx.Summary)
+	}
+	fullPrompt += "Conversation History:\n"
+	for _, msg := range history {
+		fullPrompt += fmt.Sprintf("%s: %s\n", msg.Role, msg.Content)
+	}
+	return fullPrompt
 }

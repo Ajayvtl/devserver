@@ -22,6 +22,7 @@ type InferenceRequest struct {
 	Temperature    float64
 	MaxTokens      int
 	Stream         bool
+	SessionID      string
 	StreamCallback func(string)
 	EditorState    *EditorState
 	Context        *AssembledContext
@@ -79,9 +80,6 @@ func (d *Dispatcher) Dispatch(ctx context.Context, req InferenceRequest) (*Infer
 	}
 
 	fullPrompt := req.Prompt
-	if req.Context != nil {
-		fullPrompt = fmt.Sprintf("Context:\n%s\n\nPrompt:\n%s", req.Context.Summary, req.Prompt)
-	}
 
 	if req.Stream && req.StreamCallback != nil {
 		err := infProvider.GenerateStream(ctx, req.Model, fullPrompt, req.StreamCallback)
