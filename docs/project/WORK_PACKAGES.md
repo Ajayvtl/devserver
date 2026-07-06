@@ -45,6 +45,18 @@ Every development effort must map to a specific Work Package (WP).
 - WP-8.6.14: Deployment Module (Not Started)
 - WP-8.6.15: Monitoring Dashboard (Not Started)
 
+## Work Package Status Tracking Standard
+Every active and future Work Package tracks status across the following stages:
+
+| Stage | Meaning |
+| :--- | :--- |
+| **Design** | Architecture approved / design doc merged |
+| **Implementation** | Code complete / mock integration |
+| **Unit Tested** | Unit tests passing |
+| **Integration Tested** | End-to-end integration verified |
+| **Human QA** | Manual verification complete |
+| **Production Accepted**| Release gate passed |
+
 ---
 
 ## Active & Recent Work Packages
@@ -62,6 +74,13 @@ Every development effort must map to a specific Work Package (WP).
 
 ### WP-8.6.12 — Members Management UI
 **Status**: Not Started
+**Stages**:
+- [ ] Design
+- [ ] Implementation
+- [ ] Unit Tested
+- [ ] Integration Tested
+- [ ] Human QA
+- [ ] Production Accepted
 **Dependencies**: WP-8.3, WP-8.6.2
 **Produces**:
 - Organization Members view & role management controls in settings UI.
@@ -70,6 +89,13 @@ Every development effort must map to a specific Work Package (WP).
 
 ### WP-8.6.13 — Audit Viewer UI
 **Status**: Not Started
+**Stages**:
+- [ ] Design
+- [ ] Implementation
+- [ ] Unit Tested
+- [ ] Integration Tested
+- [ ] Human QA
+- [ ] Production Accepted
 **Dependencies**: WP-8.5, WP-8.6.11
 **Produces**:
 - Unified admin UI console displaying EventBus/database audit log streams.
@@ -78,6 +104,13 @@ Every development effort must map to a specific Work Package (WP).
 
 ### WP-8.6.14 — Deployment Module
 **Status**: Not Started
+**Stages**:
+- [ ] Design
+- [ ] Implementation
+- [ ] Unit Tested
+- [ ] Integration Tested
+- [ ] Human QA
+- [ ] Production Accepted
 **Dependencies**: WP-8.6.11
 **Produces**:
 - Live deployment trigger interface with backend builder integration.
@@ -86,11 +119,33 @@ Every development effort must map to a specific Work Package (WP).
 
 ### WP-8.6.15 — Monitoring Dashboard
 **Status**: Not Started
+**Stages**:
+- [ ] Design
+- [ ] Implementation
+- [ ] Unit Tested
+- [ ] Integration Tested
+- [ ] Human QA
+- [ ] Production Accepted
 **Dependencies**: WP-8.6.11
 **Produces**:
 - Health status charts & telemetry dashboard in the Web UI.
 **Consumed By**: DevServer Platform Release
 **Human Testing**: Pending
+
+### Milestone: Phase 8 Release Gate
+**Status**: Pending WP-8.6.12 through WP-8.6.15 Completion
+**Exit Criteria**:
+- [ ] Members Management UI complete (WP-8.6.12)
+- [ ] Audit Viewer UI complete (WP-8.6.13)
+- [ ] Deployment Module UI & mock integration complete (WP-8.6.14)
+- [ ] Monitoring Dashboard UI complete (WP-8.6.15)
+- [ ] Complete Manual QA & user flow run-through
+- [ ] Cross-browser validation (Chrome, Firefox, Safari)
+- [ ] Accessibility review (contrast, tab-indexes, screen-readers)
+- [ ] Performance benchmark (page load times, API response latency)
+- [ ] Production deployment checklist verified
+- [ ] Final release sign-off
+
 
 ### WP-8.4 — Web UI Configuration (Envs & Providers)
 **Status**: Completed
