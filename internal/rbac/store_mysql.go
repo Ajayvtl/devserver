@@ -183,7 +183,7 @@ func (s *MySQLStore) UpsertOrganization(ctx context.Context, org *Organization) 
 	org.UpdatedAt = now
 
 	_, err := s.db.ExecContext(ctx,
-		`INSERT INTO rbac_organizations (id, name, created_at, updated_at) 
+		`INSERT INTO organizations (id, name, created_at, updated_at) 
 		 VALUES (?, ?, ?, ?)
 		 ON DUPLICATE KEY UPDATE name = VALUES(name), updated_at = VALUES(updated_at)`,
 		org.ID, org.Name, org.CreatedAt.Format("2006-01-02 15:04:05"), org.UpdatedAt.Format("2006-01-02 15:04:05"),
@@ -201,7 +201,7 @@ func (s *MySQLStore) UpsertRole(ctx context.Context, role *Role) error {
 
 	permsJSON, _ := json.Marshal(role.Permissions)
 	_, err := s.db.ExecContext(ctx,
-		`INSERT INTO rbac_roles (id, org_id, name, permissions, created_at, updated_at) 
+		`INSERT INTO roles (id, org_id, name, permissions, created_at, updated_at) 
 		 VALUES (?, ?, ?, ?, ?, ?)
 		 ON DUPLICATE KEY UPDATE name = VALUES(name), permissions = VALUES(permissions), updated_at = VALUES(updated_at)`,
 		role.ID, role.OrgID, role.Name, string(permsJSON), role.CreatedAt.Format("2006-01-02 15:04:05"), role.UpdatedAt.Format("2006-01-02 15:04:05"),
@@ -218,7 +218,7 @@ func (s *MySQLStore) UpsertMembership(ctx context.Context, mem *Membership) erro
 	mem.UpdatedAt = now
 
 	_, err := s.db.ExecContext(ctx,
-		`INSERT INTO rbac_memberships (id, user_id, org_id, role_id, created_at, updated_at) 
+		`INSERT INTO memberships (id, user_id, org_id, role_id, created_at, updated_at) 
 		 VALUES (?, ?, ?, ?, ?, ?)
 		 ON DUPLICATE KEY UPDATE role_id = VALUES(role_id), updated_at = VALUES(updated_at)`,
 		mem.ID, mem.UserID, mem.OrgID, mem.RoleID, mem.CreatedAt.Format("2006-01-02 15:04:05"), mem.UpdatedAt.Format("2006-01-02 15:04:05"),
@@ -229,8 +229,8 @@ func (s *MySQLStore) UpsertMembership(ctx context.Context, mem *Membership) erro
 func (s *MySQLStore) ListOrganizationsForUser(ctx context.Context, userID string) ([]*Organization, error) {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT o.id, o.name, o.created_at, o.updated_at 
-		FROM rbac_organizations o
-		JOIN rbac_memberships m ON o.id = m.org_id
+		FROM organizations o
+		JOIN memberships m ON o.id = m.org_id
 		WHERE m.user_id = ?
 	`, userID)
 	if err != nil {
