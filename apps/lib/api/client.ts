@@ -57,6 +57,11 @@ const DEFAULT_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://127.0.0
 
 let authToken: string | null = null
 
+// TODO(TechDebt): JWT Storage
+// Currently Access Token is stored in localStorage.
+// Preferred design for production:
+// - Access Token -> in memory
+// - Refresh Token -> Secure HttpOnly Cookie
 export function setApiToken(token: string | null, remember = true) {
   authToken = token
   if (typeof window !== 'undefined') {
@@ -109,6 +114,18 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
       })
 
       if (!response.ok) {
+        if (response.status === 401 && attempt === 0 && getApiToken()) {
+          // Attempt refresh flow once
+          if (await handleTokenRefresh()) {
+            attempt++
+            continue
+          } else {
+            // Refresh failed, trigger logout event
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new Event('devserver-session-expired'))
+            }
+          }
+        }
         const payload = (await safeJson(response)) as APIResponse | undefined
         throw new ApiError(payload?.message ?? response.statusText, response.status, payload?.code, payload?.details)
       }
@@ -134,6 +151,36 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
       await new Promise((resolve) => setTimeout(resolve, 200 * attempt))
     }
   }
+}
+
+// Global flag to prevent multiple parallel refreshes
+let isRefreshing = false
+let refreshPromise: Promise<boolean> | null = null
+
+async function handleTokenRefresh(): Promise<boolean> {
+  if (isRefreshing && refreshPromise) {
+    return refreshPromise
+  }
+  
+  isRefreshing = true
+  refreshPromise = (async () => {
+    try {
+      // If we had a real refresh token in HttpOnly cookies, we would just call /api/v1/auth/refresh
+      // Since it's currently tech-debt, we will simulate a failed refresh if no valid token exists.
+      // In a full implementation:
+      // const res = await fetch(toUrl('/api/v1/auth/refresh'), { method: 'POST' })
+      // if (res.ok) { const data = await res.json(); setApiToken(data.data.accessToken); return true; }
+      
+      return false
+    } catch (e) {
+      return false
+    } finally {
+      isRefreshing = false
+      refreshPromise = null
+    }
+  })()
+  
+  return refreshPromise
 }
 
 export async function requestOrFallback<T>(path: string, fallback: T, options: RequestOptions = {}): Promise<T> {

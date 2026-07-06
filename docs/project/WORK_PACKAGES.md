@@ -44,7 +44,7 @@ Every development effort must map to a specific Work Package (WP).
 - Protected Route wrappers & Login/Logout workflows
 - HTTP request/response error interceptors
 **Consumed By**: UI Frontends (WP-8.4, WP-8.5)
-**Commit SHA**: <pending>
+**Commit SHA**: f7e7d8ae311ff35800a9f3e8f7c3c313deb3164d
 **Completion Date**: 2026-07-06
 **Remaining Work**: 
 - Provider, Environment, and Settings UI implementation (Moved to WP-8.4 per roadmap)

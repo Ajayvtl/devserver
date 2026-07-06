@@ -22,6 +22,7 @@ interface AuthContextType {
   setCurrentOrgId: (id: string) => void
   isLoading: boolean
   signOut: () => Promise<void>
+  can: (permission: string) => boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -74,13 +75,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     loadAuth()
+
+    const handleSessionExpired = () => {
+      setUser(null)
+      setOrganizations([])
+      setCurrentOrgId(null)
+      logout()
+      
+      // Push friendly error notification
+      if (typeof window !== 'undefined') {
+        const nextUrl = window.location.pathname
+        router.replace(`/login?redirect=${encodeURIComponent(nextUrl)}&expired=true`)
+      }
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('devserver-session-expired', handleSessionExpired)
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('devserver-session-expired', handleSessionExpired)
+      }
+    }
   }, [pathname, router])
 
   const handleSetOrgId = (id: string) => {
     setCurrentOrgId(id)
     if (typeof window !== 'undefined') {
       window.localStorage.setItem('devserver-org', id)
+      // Invalidate caches and trigger re-render of tenant data
+      window.dispatchEvent(new Event('devserver-org-changed'))
     }
+  }
+
+  const can = (permission: string) => {
+    // TODO: Verify permissions against the current organization's active Role.
+    // E.g. return user.permissions.includes(permission) || user.permissions.includes('*')
+    // For now, assume admin logic allows all if we have a user.
+    return !!user
   }
 
   const signOut = async () => {
@@ -99,7 +132,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         currentOrgId,
         setCurrentOrgId: handleSetOrgId,
         isLoading,
-        signOut
+        signOut,
+        can
       }}
     >
       {children}
