@@ -3,7 +3,6 @@ package ai
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/Ajayvtl/devserver/internal/core"
 	"github.com/Ajayvtl/devserver/internal/domain/common"
@@ -38,6 +37,7 @@ type AssembledContext struct {
 type ContextAssembler struct {
 	log       zerolog.Logger
 	workspace *core.WorkspaceProvider
+	budget    *ContextBudgetManager
 }
 
 // NewContextAssembler creates a new ContextAssembler.
@@ -45,6 +45,7 @@ func NewContextAssembler(logger zerolog.Logger, workspace *core.WorkspaceProvide
 	return &ContextAssembler{
 		log:       logger.With().Str("component", "ContextAssembler").Logger(),
 		workspace: workspace,
+		budget:    NewContextBudgetManager(4000), // e.g. 4000 characters limit
 	}
 }
 
@@ -59,70 +60,11 @@ func (c *ContextAssembler) Assemble(ctx context.Context, workspaceID common.Work
 		editorState = &EditorState{}
 	}
 
-	summary := c.generateSummary(wsContext, editorState)
+	summary := c.budget.Build(wsContext, editorState)
 
 	return &AssembledContext{
 		WorkspaceContext: wsContext,
 		EditorState:      editorState,
 		Summary:          summary,
 	}, nil
-}
-
-func (c *ContextAssembler) generateSummary(ws *core.WorkspaceContext, editor *EditorState) string {
-	var builder strings.Builder
-
-	builder.WriteString(fmt.Sprintf("Workspace: %s\n", ws.Workspace.Name))
-
-	// Inject Editor Context if present
-	if editor.ActiveFile != "" {
-		builder.WriteString(fmt.Sprintf("Active File: %s\n", editor.ActiveFile))
-	}
-	if editor.Language != "" {
-		builder.WriteString(fmt.Sprintf("Language: %s\n", editor.Language))
-	}
-	if editor.SelectedText != "" {
-		builder.WriteString(fmt.Sprintf("Selected Text:\n```\n%s\n```\n", editor.SelectedText))
-	}
-
-	if len(editor.Diagnostics) > 0 {
-		builder.WriteString("Diagnostics:\n")
-		for _, d := range editor.Diagnostics {
-			builder.WriteString(fmt.Sprintf("- [%s] %s:%d: %s\n", d.Severity, d.File, d.Line, d.Message))
-		}
-	}
-
-	if ws.Git.Branch != "" {
-		builder.WriteString(fmt.Sprintf("Git Branch: %s\n", ws.Git.Branch))
-	}
-
-	if len(ws.Services) > 0 {
-		builder.WriteString("Active Services: ")
-		var srvNames []string
-		for _, s := range ws.Services {
-			if s.State.Status == "running" {
-				srvNames = append(srvNames, s.Name)
-			}
-		}
-		builder.WriteString(strings.Join(srvNames, ", "))
-		builder.WriteString("\n")
-	}
-
-	if len(ws.Knowledge.Symbols) > 0 {
-		builder.WriteString(fmt.Sprintf("Known Symbols: %d\n", len(ws.Knowledge.Symbols)))
-	}
-
-	if ws.Health.Build != "" || ws.Health.Tests != "" || ws.Health.Lint != "" {
-		builder.WriteString("Workspace Health (Diagnostics):\n")
-		if ws.Health.Build != "" && ws.Health.Build != "unknown" {
-			builder.WriteString(fmt.Sprintf("- Build: %s\n", ws.Health.Build))
-		}
-		if ws.Health.Tests != "" && ws.Health.Tests != "unknown" {
-			builder.WriteString(fmt.Sprintf("- Tests: %s\n", ws.Health.Tests))
-		}
-		if ws.Health.Lint != "" && ws.Health.Lint != "unknown" {
-			builder.WriteString(fmt.Sprintf("- Lint: %s\n", ws.Health.Lint))
-		}
-	}
-
-	return builder.String()
 }
