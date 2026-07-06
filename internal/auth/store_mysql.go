@@ -92,7 +92,7 @@ func (s *MySQLStore) GetUserByUsername(ctx context.Context, username string) (*U
 	var hash string
 	var ca, ua []uint8
 
-	err := s.db.QueryRowContext(ctx, "SELECT id, username, email, password_hash, created_at, updated_at FROM users WHERE username = ?", username).
+	err := s.db.QueryRowContext(ctx, "SELECT id, username, email, password_hash, created_at, updated_at FROM users WHERE username = ? OR email = ?", username, username).
 		Scan(&user.ID, &user.Username, &user.Email, &hash, &ca, &ua)
 
 	if err != nil {

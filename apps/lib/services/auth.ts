@@ -9,7 +9,7 @@ export async function authenticate(email: string, password: string, remember: bo
   try {
     const result = await request<{ accessToken: string; refreshToken: string }>('/api/v1/auth/login', {
       method: 'POST',
-      body: { provider: 'local', email, password, remember },
+      body: { provider: 'local', username: email, email, password, remember },
       auth: false,
     })
 
