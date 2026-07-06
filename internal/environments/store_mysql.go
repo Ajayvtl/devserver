@@ -283,6 +283,33 @@ func (s *MySQLStore) ListSecrets(ctx context.Context, envID string) ([]*SecretRe
 	return secrets, nil
 }
 
+func (s *MySQLStore) ListRawSecrets(ctx context.Context, envID string) ([]*Secret, error) {
+	// INTERNAL USE ONLY: returns raw ciphertexts required for resolution expansion.
+	rows, err := s.db.QueryContext(ctx, "SELECT id, env_id, secret_key, secret_value, created_at, updated_at FROM env_secrets WHERE env_id = ?", envID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var secrets []*Secret
+	for rows.Next() {
+		var sec Secret
+		var ca, ua []uint8
+		if err := rows.Scan(&sec.ID, &sec.EnvID, &sec.Key, &sec.Value, &ca, &ua); err != nil {
+			return nil, err
+		}
+		var parseErr error
+		if sec.CreatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ca)); parseErr != nil {
+			return nil, fmt.Errorf("failed to parse created_at: %w", parseErr)
+		}
+		if sec.UpdatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ua)); parseErr != nil {
+			return nil, fmt.Errorf("failed to parse updated_at: %w", parseErr)
+		}
+		secrets = append(secrets, &sec)
+	}
+	return secrets, nil
+}
+
 func (s *MySQLStore) DeleteSecret(ctx context.Context, envID, key string) error {
 	_, err := s.db.ExecContext(ctx, "DELETE FROM env_secrets WHERE env_id = ? AND secret_key = ?", envID, key)
 	return err

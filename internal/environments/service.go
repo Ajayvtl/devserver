@@ -27,6 +27,7 @@ type Store interface {
 
 	GetSecret(ctx context.Context, envID, key string) (*Secret, error)
 	ListSecrets(ctx context.Context, envID string) ([]*SecretReference, error)
+	ListRawSecrets(ctx context.Context, envID string) ([]*Secret, error) // INTERNAL USE ONLY
 	UpsertSecret(ctx context.Context, secret *Secret) error
 	DeleteSecret(ctx context.Context, envID, key string) error
 }
@@ -111,14 +112,19 @@ func (s *DefaultService) Resolve(ctx context.Context, envID string) (map[string]
 		result[v.Key] = v.Value
 	}
 
-	// Wait, we need the raw ciphertext to decrypt.
-	// But ListSecrets only returns references. We need a way to get all raw secrets for resolution.
-	// We should probably add a helper in the Store or iterate over references.
-	// For now, let's assume we can fetch them individually or need a ListRawSecrets method.
-	// Since we are building the abstraction, I will leave this as a TODO or extend Store if necessary.
+	rawSecrets, err := s.store.ListRawSecrets(ctx, envID)
+	if err != nil {
+		return nil, err
+	}
 
-	// Implementation note: The service will orchestrate fetching the raw secrets securely and decrypting them.
-	// (Skipping full DB iteration for brevity in WP-7.4 backend mockup).
+	for _, sec := range rawSecrets {
+		plaintext, err := s.crypto.Decrypt(sec.Value)
+		if err != nil {
+			s.log.Error().Err(err).Str("env_id", envID).Str("key", sec.Key).Msg("Failed to decrypt secret during environment resolution")
+			return nil, err
+		}
+		result[sec.Key] = plaintext
+	}
 
 	return result, nil
 }
