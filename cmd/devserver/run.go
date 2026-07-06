@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/Ajayvtl/devserver/internal/ai"
+	"github.com/Ajayvtl/devserver/internal/auth"
 	"github.com/Ajayvtl/devserver/internal/bootstrap"
 	"github.com/Ajayvtl/devserver/internal/capabilities"
 	"github.com/Ajayvtl/devserver/internal/commands"
@@ -200,6 +201,10 @@ func runServer(ctx context.Context, log zerolog.Logger) error {
 	}
 
 	server := core.NewAPIServer(log, db, indexer, provider, taskEngine, taskStream, commandEngine, capRegistry, ":8080")
+
+	// Phase 7: Authentication
+	authService := auth.NewService(log, bus)
+	authService.RegisterProvider(&auth.LocalProvider{})
 
 	// Phase 2: Runtime Bootstrap
 	rtReg := rt.NewRegistry()

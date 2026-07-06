@@ -36,6 +36,8 @@ const (
 	ContextUpdated   EventType = "context:updated"
 
 	AIStreamToken EventType = "ai:stream:token"
+
+	AuthAuditLog EventType = "auth:audit"
 )
 
 // Typed event payloads. Every Publish call should use one of these
@@ -164,4 +166,9 @@ type AIStreamTokenEvent struct {
 	CommandID string
 	TaskID    string
 	Token     string
+}
+
+type AuthAuditEvent struct {
+	UserID string
+	Action string
 }
