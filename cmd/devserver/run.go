@@ -193,7 +193,7 @@ func runServer(ctx context.Context, log zerolog.Logger) error {
 	server := core.NewAPIServer(log, db, indexer, provider, taskEngine, taskStream, commandEngine, capRegistry, ":8080")
 
 	// Phase 6: AI Runtime
-	aiRuntime := ai.NewRuntime(log, provider, indexer)
+	aiRuntime := ai.NewRuntime(log, provider, indexer, providerManager)
 
 	// Phase 2: Runtime Bootstrap
 	rtReg := rt.NewRegistry()

@@ -53,4 +53,5 @@ This document tracks the granular implementation state of DevServer's subsystems
 * **WP-5.1 AI Providers**: Implemented `AIProvider` to detect and manage local AI models (e.g., Ollama) alongside traditional services, wiring them into the generic Provider Manager.
 * **WP-6.1 AI Runtime Scaffolding**: Implemented `ai.Runtime` as a foundational DevServer component connected to the WorkspaceProvider and Indexer.
 * **WP-6.2 Context Assembly**: Implemented `ContextAssembler` to fetch environment data (services, symbols, git) directly from WorkspaceProvider without bypassing existing abstractions.
-* *Next Steps*: Implement LLM inference dispatch logic and Editor context (active tabs, cursor).
+* **WP-6.3 LLM Dispatch & Inference Engine**: Implemented `Dispatcher` for routing requests to suitable `AIProviders` based on capabilities (streaming, embeddings, models).
+* *Next Steps*: Expose AI runtime via standard Command Bus intents (Generate, Refactor, Explain).

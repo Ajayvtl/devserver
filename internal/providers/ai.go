@@ -163,3 +163,17 @@ func (p *AIProvider) Configure(ctx context.Context, config map[string]any) error
 func (p *AIProvider) Validate(ctx context.Context) error {
 	return p.Health(ctx)
 }
+
+func (p *AIProvider) Generate(ctx context.Context, model string, prompt string) (string, error) {
+	if model == "" {
+		model = "llama2" // Default fallback model
+	}
+	out, err := p.Runtime.Execute(ctx, "ollama", "run", model, prompt)
+	if err != nil {
+		if out != nil {
+			return "", fmt.Errorf("ollama inference failed: %w (stderr: %s)", err, out.Stderr)
+		}
+		return "", fmt.Errorf("ollama inference failed: %w", err)
+	}
+	return out.Stdout, nil
+}

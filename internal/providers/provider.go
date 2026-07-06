@@ -97,6 +97,12 @@ type Provider interface {
 	Validate(ctx context.Context) error
 }
 
+// InferenceProvider is implemented by AI providers capable of generating text.
+type InferenceProvider interface {
+	Provider
+	Generate(ctx context.Context, model string, prompt string) (string, error)
+}
+
 // ProviderCapabilities defines which actions a provider supports.
 type ProviderCapabilities struct {
 	Detect        bool `json:"detect"`

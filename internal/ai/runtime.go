@@ -6,29 +6,33 @@ import (
 	"sync"
 
 	"github.com/Ajayvtl/devserver/internal/core"
+	"github.com/Ajayvtl/devserver/internal/domain/common"
+	"github.com/Ajayvtl/devserver/internal/providers"
 	rt "github.com/Ajayvtl/devserver/internal/runtime"
 	"github.com/rs/zerolog"
 )
 
 // Runtime orchestrates LLM dispatch and context gathering for the DevServer AI features.
 type Runtime struct {
-	log       zerolog.Logger
-	workspace *core.WorkspaceProvider
-	indexer   *core.Indexer
-	assembler *ContextAssembler
+	log        zerolog.Logger
+	workspace  *core.WorkspaceProvider
+	indexer    *core.Indexer
+	assembler  *ContextAssembler
+	dispatcher *Dispatcher
 
 	mu     sync.RWMutex
 	status rt.Status
 }
 
 // NewRuntime creates a new AI Runtime component.
-func NewRuntime(logger zerolog.Logger, workspace *core.WorkspaceProvider, indexer *core.Indexer) *Runtime {
+func NewRuntime(logger zerolog.Logger, workspace *core.WorkspaceProvider, indexer *core.Indexer, pm *providers.Manager) *Runtime {
 	return &Runtime{
-		log:       logger.With().Str("component", "AIRuntime").Logger(),
-		workspace: workspace,
-		indexer:   indexer,
-		assembler: NewContextAssembler(logger, workspace),
-		status:    rt.StatusStopped,
+		log:        logger.With().Str("component", "AIRuntime").Logger(),
+		workspace:  workspace,
+		indexer:    indexer,
+		assembler:  NewContextAssembler(logger, workspace),
+		dispatcher: NewDispatcher(logger, pm),
+		status:     rt.StatusStopped,
 	}
 }
 
@@ -87,4 +91,23 @@ func (r *Runtime) Health() rt.Health {
 		return rt.HealthUnhealthy
 	}
 	return rt.HealthHealthy
+}
+
+// Infer processes an inference request, orchestrating context gathering and dispatching it to the LLM.
+func (r *Runtime) Infer(ctx context.Context, workspaceID common.WorkspaceID, req InferenceRequest) (*InferenceResponse, error) {
+	if r.Status() != rt.StatusRunning {
+		return nil, fmt.Errorf("ai runtime is not running")
+	}
+
+	// 1. Gather Context
+	wsContext, err := r.assembler.Assemble(ctx, workspaceID)
+	if err != nil {
+		r.log.Warn().Err(err).Msg("Failed to assemble full workspace context, continuing with partial context")
+	}
+
+	// 2. Attach Context
+	req.Context = wsContext
+
+	// 3. Dispatch Request
+	return r.dispatcher.Dispatch(ctx, req)
 }
