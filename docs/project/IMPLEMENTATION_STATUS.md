@@ -68,3 +68,11 @@ This phase transitions the platform from a purely local development backend into
 * **WP-7.3 Settings & Integrations**: Global user configuration. Built `internal/settings` tracking scoped metadata at user/org boundaries using MySQL `settings` and `integrations` schemas. Retained abstract configurations strictly decoupled from runtime secret injections.
 * **WP-7.4 Environment Management**: Built `internal/environments` module providing multi-environment contexts (Dev, Staging, Prod). Implemented a zero-trust `AESCryptoService` for encryption-at-rest of credentials (API Keys, Tokens) in MySQL using a centralized configuration MasterKey. Separated plain text variables from ciphered secrets, strictly providing reference-only interfaces over the network.
 * **WP-7.5 Provider Configuration**: Finalized WP-7 backend chaining by implementing `internal/providerconfig`. Defined configuration schema mapping external providers (OpenAI, Gemini, GitHub, etc.) cleanly into logical DB configurations. Isolated Secret management entirely by referencing `environments.SecretID`, performing late-binding via `environments.Resolve()` dynamically during runtime validation, ensuring Zero-Trust token propagation.
+
+## Phase 8: Product Integration & API Surface (Pending)
+This phase will bridge the deeply isolated backend foundational services to the user by exposing secure endpoints and building the Web UI dashboard for a complete end-to-end product flow.
+* **WP-8.1 HTTP API & Middleware Foundation**: JWT interceptors, auth/login endpoints, and RBAC middleware mapping.
+* **WP-8.2 Configuration Endpoints**: REST/GraphQL CRUD routes exposing Settings, Environments, and Providers.
+* **WP-8.3 Web UI Foundations**: Next.js/React flows for Login, User/Org management, and RBAC views.
+* **WP-8.4 Web UI Configuration**: Management dashboards for Environments, encrypted Secrets, AI Provider binding, and the AI testing page.
+* **WP-8.5 End-to-End System Workflows**: Comprehensive E2E tests linking workspace creation, LLM inference via resolved configs, and local execution runtimes.

@@ -87,6 +87,11 @@ Going forward, every completed work package must satisfy all of the following be
 | **WP-7.3** | Phase 7 | Settings & Integrations | Core | WP-7.2 | `COMPLETED` | ✅ | ✅ | ✅ | ✅ |
 | **WP-7.4** | Phase 7 | Environment Management | Core | WP-7.3 | `COMPLETED` | ✅ | ✅ | ✅ | ✅ |
 | **WP-7.5** | Phase 7 | Provider Configuration | Core | WP-7.4 | `COMPLETED` | ✅ | ✅ | ✅ | ✅ |
+| **WP-8.1** | Phase 8 | HTTP API & Middleware Foundation | Core | WP-7.5 | `PENDING` | ❌ | ❌ | ❌ | ❌ |
+| **WP-8.2** | Phase 8 | Configuration Endpoints | Core | WP-8.1 | `PENDING` | ❌ | ❌ | ❌ | ❌ |
+| **WP-8.3** | Phase 8 | Web UI Foundations (Auth & RBAC) | UI | WP-8.2 | `PENDING` | ❌ | ❌ | ❌ | ❌ |
+| **WP-8.4** | Phase 8 | Web UI Configuration (Envs & Providers)| UI | WP-8.3 | `PENDING` | ❌ | ❌ | ❌ | ❌ |
+| **WP-8.5** | Phase 8 | End-to-End System Workflows | Core | WP-8.4 | `PENDING` | ❌ | ❌ | ❌ | ❌ |
 
 ## Governance Rules
 **Architecture Compliance Checklist** (Must be passed for every PR/Work Package):
