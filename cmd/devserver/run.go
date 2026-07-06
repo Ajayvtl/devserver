@@ -25,6 +25,7 @@ import (
 	"github.com/Ajayvtl/devserver/internal/modules/redis"
 	"github.com/Ajayvtl/devserver/internal/platform"
 	"github.com/Ajayvtl/devserver/internal/providers"
+	"github.com/Ajayvtl/devserver/internal/rbac"
 	"github.com/Ajayvtl/devserver/internal/registry"
 	rt "github.com/Ajayvtl/devserver/internal/runtime"
 	"github.com/Ajayvtl/devserver/internal/state"
@@ -211,6 +212,16 @@ func runServer(ctx context.Context, log zerolog.Logger) error {
 
 	authService := auth.NewService(log, bus, authStore)
 	authService.RegisterProvider(auth.NewLocalProvider(authStore))
+
+	// Phase 7: RBAC
+	rbacStore, err := rbac.NewMySQLStore("root:12345678@tcp(127.0.0.1:3306)/devops")
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to initialize rbac database")
+	}
+	defer rbacStore.Close()
+
+	rbacService := rbac.NewService(log, rbacStore)
+	_ = rbacService // Silencing unused warning until wired to HTTP handlers
 
 	// Phase 2: Runtime Bootstrap
 	rtReg := rt.NewRegistry()

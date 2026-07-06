@@ -64,7 +64,7 @@ This document tracks the granular implementation state of DevServer's subsystems
 ## Phase 7: Product Foundations
 This phase transitions the platform from a purely local development backend into a production-ready system capable of managing multi-tenant identity, environment security, and configuration states.
 * **WP-7.1 Authentication & Identity**: Secure user lifecycle. Implemented core identity models (`User`, `Session`, `TokenPair`), robust abstract `Provider` interface supporting Password/OAuth extensibility, memory-backed session tracking, refresh flows, token revocation, and centralized `AuthAuditLog` event telemetry.
-* **WP-7.2 RBAC & Organizations**: Multi-tenant isolation and permissions.
+* **WP-7.2 RBAC & Organizations**: Multi-tenant isolation and permissions. Built an enterprise-grade `internal/rbac` module comprising `Organization`, `Membership`, `Role`, and `ResourcePolicy` models. Created a MySQL-backed authorization store mapping resources directly to organizations to securely evaluate boundary-spanning permissions independent of the authentication phase.
 * **WP-7.3 Settings & Integrations**: Global user configuration.
 * **WP-7.4 Environment Management**: UI and API for environment secrets and lifecycle.
 * **WP-7.5 Provider Configuration**: User-configurable endpoints and keys for AI/Cloud providers (OpenAI, Gemini, etc.).
