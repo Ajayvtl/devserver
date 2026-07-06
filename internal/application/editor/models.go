@@ -105,4 +105,6 @@ type EventBridge interface {
 	// Start begins listening to the editor IPC channel.
 	Start(ctx context.Context, workspaceID common.WorkspaceID) error
 	Stop(ctx context.Context, workspaceID common.WorkspaceID) error
+	Send(ctx context.Context, workspaceID common.WorkspaceID, eventType string, payload any) error
+	Receive(ctx context.Context, workspaceID common.WorkspaceID, payload []byte) error
 }

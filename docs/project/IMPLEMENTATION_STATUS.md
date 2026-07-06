@@ -45,5 +45,6 @@ This document tracks the granular implementation state of DevServer's subsystems
 * Design completed in `docs/architecture/editor_provider.md`.
 * Scaffolding and Component registry complete in `internal/application/editor/orchestrator.go` (WP-4.2).
 * Process Manager, Session Manager, Proxy Manager, and Event Bridge implemented and wired (WP-4.1).
+* DevServer VS Code Extension IPC Bridge implemented for bidirectional event synchronization (WP-4.3).
 * Extension Manager and VSCodeExtensionProvider implemented (WP-4.4), mapping VS Code extensions as first-class DevServer Providers, integrated with real runtime.
-* *Next Steps*: Implement DevServer VS Code Extension IPC bridge (WP-4.3).
+* *Next Steps*: Finalize production hardening and AI context integration via IPC bridge.
