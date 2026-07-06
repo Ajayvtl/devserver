@@ -2,13 +2,19 @@ package auth
 
 import (
 	"context"
-	"time"
+	"errors"
 
-	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // LocalProvider implements password-based authentication.
-type LocalProvider struct{}
+type LocalProvider struct {
+	store *MySQLStore
+}
+
+func NewLocalProvider(store *MySQLStore) *LocalProvider {
+	return &LocalProvider{store: store}
+}
 
 func (p *LocalProvider) Name() string { return "local" }
 
@@ -20,16 +26,17 @@ func (p *LocalProvider) Authenticate(ctx context.Context, req map[string]any) (*
 		return nil, ErrInvalidCredentials
 	}
 
-	// Mock verification for WP-7.1
-	if username == "admin" && password == "admin" {
-		return &User{
-			ID:        uuid.NewString(),
-			Username:  "admin",
-			Email:     "admin@devserver.local",
-			CreatedAt: time.Now().UTC(),
-			UpdatedAt: time.Now().UTC(),
-		}, nil
+	user, hash, err := p.store.GetUserByUsername(ctx, username)
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			return nil, ErrInvalidCredentials
+		}
+		return nil, err
 	}
 
-	return nil, ErrInvalidCredentials
+	if err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)); err != nil {
+		return nil, ErrInvalidCredentials
+	}
+
+	return user, nil
 }

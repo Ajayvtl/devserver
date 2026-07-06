@@ -203,8 +203,14 @@ func runServer(ctx context.Context, log zerolog.Logger) error {
 	server := core.NewAPIServer(log, db, indexer, provider, taskEngine, taskStream, commandEngine, capRegistry, ":8080")
 
 	// Phase 7: Authentication
-	authService := auth.NewService(log, bus)
-	authService.RegisterProvider(&auth.LocalProvider{})
+	authStore, err := auth.NewMySQLStore("root:12345678@tcp(127.0.0.1:3306)/devops")
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to initialize auth database")
+	}
+	defer authStore.Close()
+
+	authService := auth.NewService(log, bus, authStore)
+	authService.RegisterProvider(auth.NewLocalProvider(authStore))
 
 	// Phase 2: Runtime Bootstrap
 	rtReg := rt.NewRegistry()

@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/Ajayvtl/devserver/internal/events"
@@ -37,18 +38,15 @@ type DefaultService struct {
 	log       zerolog.Logger
 	bus       events.Bus
 	providers map[string]Provider
-	// In-memory stores for WP-7.1. Later migrated to DB.
-	users    map[string]*User
-	sessions map[string]*Session
+	store     *MySQLStore
 }
 
-func NewService(log zerolog.Logger, bus events.Bus) *DefaultService {
+func NewService(log zerolog.Logger, bus events.Bus, store *MySQLStore) *DefaultService {
 	return &DefaultService{
 		log:       log.With().Str("component", "AuthService").Logger(),
 		bus:       bus,
 		providers: make(map[string]Provider),
-		users:     make(map[string]*User),
-		sessions:  make(map[string]*Session),
+		store:     store,
 	}
 }
 
@@ -68,10 +66,10 @@ func (s *DefaultService) Login(ctx context.Context, providerName string, credent
 		return nil, err
 	}
 
-	// Upsert user (In-memory mock for WP-7.1)
-	s.users[user.ID] = user
-
-	session := s.createSession(user.ID)
+	session, err := s.createSession(ctx, user.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create session: %w", err)
+	}
 
 	s.publishAudit(user, "login_success")
 
@@ -83,13 +81,20 @@ func (s *DefaultService) Login(ctx context.Context, providerName string, credent
 }
 
 func (s *DefaultService) Logout(ctx context.Context, sessionID string) error {
-	session, exists := s.sessions[sessionID]
-	if !exists || session.Revoked {
+	session, err := s.store.GetSession(ctx, sessionID)
+	if err != nil {
+		return err
+	}
+	if session.Revoked {
 		return ErrSessionRevoked
 	}
-	session.Revoked = true
 
-	user := s.users[session.UserID]
+	session.Revoked = true
+	if err := s.store.UpdateSession(ctx, session); err != nil {
+		return err
+	}
+
+	user, _ := s.store.GetUserByID(ctx, session.UserID)
 	s.publishAudit(user, "logout")
 
 	return nil
@@ -101,16 +106,19 @@ func (s *DefaultService) Refresh(ctx context.Context, refreshToken string) (*Tok
 }
 
 func (s *DefaultService) ValidateSession(ctx context.Context, sessionID string) (*User, error) {
-	session, exists := s.sessions[sessionID]
-	if !exists {
+	session, err := s.store.GetSession(ctx, sessionID)
+	if err != nil {
 		return nil, ErrSessionExpired
 	}
 	if session.Revoked {
 		return nil, ErrSessionRevoked
 	}
+	if time.Now().UTC().After(session.ExpiresAt) {
+		return nil, ErrSessionExpired
+	}
 
-	user, exists := s.users[session.UserID]
-	if !exists {
+	user, err := s.store.GetUserByID(ctx, session.UserID)
+	if err != nil {
 		return nil, ErrUserNotFound
 	}
 
@@ -118,19 +126,17 @@ func (s *DefaultService) ValidateSession(ctx context.Context, sessionID string) 
 }
 
 func (s *DefaultService) RevokeAll(ctx context.Context, userID string) error {
-	for _, session := range s.sessions {
-		if session.UserID == userID {
-			session.Revoked = true
-		}
+	if err := s.store.RevokeAllSessionsForUser(ctx, userID); err != nil {
+		return err
 	}
 
-	user := s.users[userID]
+	user, _ := s.store.GetUserByID(ctx, userID)
 	s.publishAudit(user, "revoke_all_sessions")
 
 	return nil
 }
 
-func (s *DefaultService) createSession(userID string) *Session {
+func (s *DefaultService) createSession(ctx context.Context, userID string) (*Session, error) {
 	sessionID := uuid.NewString()
 	session := &Session{
 		ID:        sessionID,
@@ -139,8 +145,12 @@ func (s *DefaultService) createSession(userID string) *Session {
 		CreatedAt: time.Now().UTC(),
 		ExpiresAt: time.Now().Add(1 * time.Hour).UTC(),
 	}
-	s.sessions[sessionID] = session
-	return session
+
+	if err := s.store.CreateSession(ctx, session); err != nil {
+		return nil, err
+	}
+
+	return session, nil
 }
 
 func (s *DefaultService) publishAudit(user *User, action string) {
