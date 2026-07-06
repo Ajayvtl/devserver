@@ -107,6 +107,7 @@ func runServer(ctx context.Context, log zerolog.Logger) error {
 	execRuntime := legacy.NewLocalRuntime()
 	providerManager.Register(providers.NewRedisProvider(execRuntime))
 	providerManager.Register(providers.NewNodeProvider(execRuntime))
+	providerManager.Register(providers.NewAIProvider(execRuntime))
 	providerManager.Register(&providers.LocalProvider{
 		Runtime:   execRuntime,
 		Meta:      providers.ProviderMetadata{Name: "docker", Description: "Docker container runtime", Version: "latest"},

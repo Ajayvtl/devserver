@@ -13,7 +13,7 @@ This document tracks the granular implementation state of DevServer's subsystems
 | **<a name="ui"></a>UI/UX Shell** | ✅ | 🟡 | ❌ | 🟡 | ❌ |
 | **<a name="editor"></a>Editor Orchestrator** | ✅ | 🟡 | ❌ | ❌ | ❌ |
 | **<a name="terminal"></a>Terminal Runtime** | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **<a name="ai"></a>AI Runtime** | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **<a name="ai"></a>AI Runtime** | 🟡 | 🟡 | ❌ | ❌ | ❌ |
 
 *(Legend: ✅ = Complete, 🟡 = In Progress, ❌ = Not Started)*
 
@@ -48,3 +48,7 @@ This document tracks the granular implementation state of DevServer's subsystems
 * DevServer VS Code Extension IPC Bridge implemented for bidirectional event synchronization (WP-4.3).
 * Extension Manager and VSCodeExtensionProvider implemented (WP-4.4), mapping VS Code extensions as first-class DevServer Providers, integrated with real runtime.
 * *Next Steps*: Finalize production hardening and AI context integration via IPC bridge.
+
+### AI Runtime
+* **WP-5.1 AI Providers**: Implemented `AIProvider` to detect and manage local AI models (e.g., Ollama) alongside traditional services, wiring them into the generic Provider Manager.
+* *Next Steps*: Implement LLM dispatch & context gathering workflows.
