@@ -44,10 +44,10 @@ Every development effort must map to a specific Work Package (WP).
 - Platform Settings UI (`/settings`)
 - Backend hooks exposed for `ListVariables` and `ListSecrets`
 **Consumed By**: End-users, Workspaces
-**Commit SHA**: Pending
+**Commit SHA**: 4fb5d4fc
 **Completion Date**: 2026-07-06
 **Remaining Work**: None
-**Human Testing**: Ready
+**Human Testing**: Completed
 **Production Ready**: Backend YES | API YES | Frontend YES
 
 ### WP-8.3 — Web UI Foundations (Auth & RBAC)

@@ -831,12 +831,20 @@ func (s *APIServer) submitTask(scope, name, detail string, work func() error) st
 
 func writeJSON(w http.ResponseWriter, payload any) {
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(payload)
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"success": true,
+		"data":    payload,
+	})
 }
 
 func writeJSONError(w http.ResponseWriter, status int, err error) {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	writeJSON(w, map[string]string{"error": err.Error()})
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"success": false,
+		"message": err.Error(),
+		"code":    "INTERNAL_ERROR",
+	})
 }
 
 func statusFor(condition bool, fallback string) string {
