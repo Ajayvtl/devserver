@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/Ajayvtl/devserver/internal/domain/common"
 	"github.com/Ajayvtl/devserver/internal/environments"
 	"github.com/Ajayvtl/devserver/internal/providerconfig"
 	"github.com/Ajayvtl/devserver/internal/rbac"
@@ -12,13 +13,13 @@ import (
 
 func (router *Router) handleLogin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		WriteError(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
+		WriteError(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
 		return
 	}
 
 	var req map[string]any
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		WriteError(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid JSON payload", nil)
+		WriteError(w, r, http.StatusBadRequest, "INVALID_REQUEST", "Invalid JSON payload", nil)
 		return
 	}
 
@@ -29,16 +30,16 @@ func (router *Router) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	tokens, err := router.authService.Login(r.Context(), providerName, req)
 	if err != nil {
-		WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", err.Error(), nil)
+		WriteError(w, r, http.StatusUnauthorized, "UNAUTHORIZED", err.Error(), nil)
 		return
 	}
 
-	WriteSuccess(w, http.StatusOK, tokens)
+	WriteSuccess(w, r, http.StatusOK, tokens)
 }
 
 func (router *Router) handleRefresh(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		WriteError(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
+		WriteError(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
 		return
 	}
 
@@ -46,89 +47,97 @@ func (router *Router) handleRefresh(w http.ResponseWriter, r *http.Request) {
 		RefreshToken string `json:"refreshToken"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		WriteError(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid JSON payload", nil)
+		WriteError(w, r, http.StatusBadRequest, "INVALID_REQUEST", "Invalid JSON payload", nil)
 		return
 	}
 
 	tokens, err := router.authService.Refresh(r.Context(), req.RefreshToken)
 	if err != nil {
-		WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", err.Error(), nil)
+		WriteError(w, r, http.StatusUnauthorized, "UNAUTHORIZED", err.Error(), nil)
 		return
 	}
 
-	WriteSuccess(w, http.StatusOK, tokens)
+	WriteSuccess(w, r, http.StatusOK, tokens)
 }
 
 func (router *Router) handleOrganizations(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(ContextKeyUserID).(string)
 	if !ok || userID == "" {
-		WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Authentication required", nil)
+		WriteError(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Authentication required", nil)
 		return
 	}
 
 	if r.Method == http.MethodGet {
-		orgs, err := router.rbacService.ListOrganizations(r.Context(), userID)
+		params, err := common.ParseQueryParams(r, []string{"created_at", "name", "key"})
 		if err != nil {
-			WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to retrieve organizations", nil)
+			WriteError(w, r, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), nil)
 			return
 		}
-		WriteSuccess(w, http.StatusOK, orgs)
+		orgs, total, err := router.rbacService.ListOrganizations(r.Context(), userID, params)
+		if err != nil {
+			WriteError(w, r, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to retrieve organizations", nil)
+			return
+		}
+
+		totalPages := (total + params.PerPage - 1) / params.PerPage
+		meta := PaginationMeta{
+			Total:      total,
+			Page:       params.Page,
+			PerPage:    params.PerPage,
+			TotalPages: totalPages,
+		}
+
+		WriteSuccessPaginated(w, r, http.StatusOK, orgs, meta)
 		return
 	} else if r.Method == http.MethodPost {
 		var req rbac.Organization
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			WriteError(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid JSON payload", nil)
+			WriteError(w, r, http.StatusBadRequest, "INVALID_REQUEST", "Invalid JSON payload", nil)
 			return
 		}
 
 		if req.Name == "" {
-			WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Organization name is required", nil)
+			WriteError(w, r, http.StatusBadRequest, "VALIDATION_ERROR", "Organization name is required", nil)
 			return
 		}
 
-		if err := router.rbacService.CreateOrganization(r.Context(), &req); err != nil {
-			WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to create organization", nil)
-			return
-		}
-
-		// Also make the creator an admin
 		role := &rbac.Role{
-			OrgID:       req.ID,
 			Name:        "admin",
 			Permissions: []string{"*"},
 		}
-		if err := router.rbacService.CreateRole(r.Context(), role); err == nil {
-			_ = router.rbacService.AddMembership(r.Context(), &rbac.Membership{
-				UserID: userID,
-				OrgID:  req.ID,
-				RoleID: role.ID,
-			})
+		mem := &rbac.Membership{
+			UserID: userID,
 		}
 
-		WriteSuccess(w, http.StatusCreated, req)
+		if err := router.rbacService.ProvisionOrganization(r.Context(), &req, role, mem); err != nil {
+			WriteError(w, r, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to provision organization", nil)
+			return
+		}
+
+		WriteSuccess(w, r, http.StatusCreated, req)
 		return
 	}
 
-	WriteError(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
+	WriteError(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
 }
 
 func (router *Router) handleUsersMe(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(ContextKeyUserID).(string)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "UNAUTHORIZED", "Authentication required", nil)
+		WriteError(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Authentication required", nil)
 		return
 	}
 
-	WriteSuccess(w, http.StatusOK, map[string]string{"id": userID, "status": "active"})
+	WriteSuccess(w, r, http.StatusOK, map[string]string{"id": userID, "status": "active"})
 }
 
 func (router *Router) handleRoles(w http.ResponseWriter, r *http.Request) {
 	// Simple stub mapping for WP-8.1 REST endpoints wrapper.
 	if r.Method == http.MethodGet {
-		WriteSuccess(w, http.StatusOK, []map[string]string{{"id": "role-1", "name": "admin"}})
+		WriteSuccess(w, r, http.StatusOK, []map[string]string{{"id": "role-1", "name": "admin"}})
 		return
 	}
-	WriteError(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
+	WriteError(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
 }
 
 func (router *Router) handleSettings(w http.ResponseWriter, r *http.Request) {
@@ -136,46 +145,72 @@ func (router *Router) handleSettings(w http.ResponseWriter, r *http.Request) {
 		scope := r.URL.Query().Get("scope")
 		ownerID := r.URL.Query().Get("ownerId")
 		if scope == "" || ownerID == "" {
-			WriteError(w, http.StatusBadRequest, "INVALID_REQUEST", "scope and ownerId are required", nil)
+			WriteError(w, r, http.StatusBadRequest, "INVALID_REQUEST", "scope and ownerId are required", nil)
 			return
 		}
 
-		sets, err := router.settingsService.ListSettings(r.Context(), settings.Scope(scope), ownerID)
+		params, err := common.ParseQueryParams(r, []string{"created_at", "name", "key"})
 		if err != nil {
-			WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to retrieve settings", nil)
+			WriteError(w, r, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), nil)
 			return
 		}
-		WriteSuccess(w, http.StatusOK, sets)
+		sets, total, err := router.settingsService.ListSettings(r.Context(), settings.Scope(scope), ownerID, params)
+		if err != nil {
+			WriteError(w, r, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to retrieve settings", nil)
+			return
+		}
+		totalPages := (total + params.PerPage - 1) / params.PerPage
+		meta := PaginationMeta{
+			Total:      total,
+			Page:       params.Page,
+			PerPage:    params.PerPage,
+			TotalPages: totalPages,
+		}
+		WriteSuccessPaginated(w, r, http.StatusOK, sets, meta)
 		return
 	} else if r.Method == http.MethodPost {
 		var req settings.Setting
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			WriteError(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid JSON payload", nil)
+			WriteError(w, r, http.StatusBadRequest, "INVALID_REQUEST", "Invalid JSON payload", nil)
 			return
 		}
 		if err := router.settingsService.SaveSetting(r.Context(), req.Scope, req.OwnerID, req.Key, req.Value); err != nil {
-			WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to save setting", nil)
+			WriteError(w, r, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to save setting", nil)
 			return
 		}
-		WriteSuccess(w, http.StatusOK, req)
+		WriteSuccess(w, r, http.StatusOK, req)
 		return
 	}
-	WriteError(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
+	WriteError(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
 }
 
 func (router *Router) handleEnvironments(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		ownerID := r.URL.Query().Get("ownerId")
 		if ownerID == "" {
-			WriteError(w, http.StatusBadRequest, "INVALID_REQUEST", "ownerId is required", nil)
+			WriteError(w, r, http.StatusBadRequest, "INVALID_REQUEST", "ownerId is required", nil)
 			return
 		}
-		envs, err := router.envService.ListEnvironments(r.Context(), ownerID)
+		params, err := common.ParseQueryParams(r, []string{"created_at", "name", "key"})
 		if err != nil {
-			WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to retrieve environments", nil)
+			WriteError(w, r, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), nil)
 			return
 		}
-		WriteSuccess(w, http.StatusOK, envs)
+		envs, total, err := router.envService.ListEnvironments(r.Context(), ownerID, params)
+		if err != nil {
+			WriteError(w, r, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to retrieve environments", nil)
+			return
+		}
+
+		totalPages := (total + params.PerPage - 1) / params.PerPage
+		meta := PaginationMeta{
+			Total:      total,
+			Page:       params.Page,
+			PerPage:    params.PerPage,
+			TotalPages: totalPages,
+		}
+
+		WriteSuccessPaginated(w, r, http.StatusOK, envs, meta)
 		return
 	} else if r.Method == http.MethodPost {
 		var req struct {
@@ -184,22 +219,22 @@ func (router *Router) handleEnvironments(w http.ResponseWriter, r *http.Request)
 			Type    string `json:"type"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			WriteError(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid JSON payload", nil)
+			WriteError(w, r, http.StatusBadRequest, "INVALID_REQUEST", "Invalid JSON payload", nil)
 			return
 		}
 		if req.OwnerID == "" || req.Name == "" || req.Type == "" {
-			WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Missing required fields", nil)
+			WriteError(w, r, http.StatusBadRequest, "VALIDATION_ERROR", "Missing required fields", nil)
 			return
 		}
 		env, err := router.envService.CreateEnvironment(r.Context(), req.OwnerID, req.Name, environments.EnvType(req.Type))
 		if err != nil {
-			WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to create environment", nil)
+			WriteError(w, r, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to create environment", nil)
 			return
 		}
-		WriteSuccess(w, http.StatusCreated, env)
+		WriteSuccess(w, r, http.StatusCreated, env)
 		return
 	}
-	WriteError(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
+	WriteError(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
 }
 
 func (router *Router) handleSecrets(w http.ResponseWriter, r *http.Request) {
@@ -210,47 +245,71 @@ func (router *Router) handleSecrets(w http.ResponseWriter, r *http.Request) {
 			Plaintext string `json:"plaintext"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			WriteError(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid JSON payload", nil)
+			WriteError(w, r, http.StatusBadRequest, "INVALID_REQUEST", "Invalid JSON payload", nil)
 			return
 		}
 
 		if err := router.envService.SetSecret(r.Context(), req.EnvID, req.Key, req.Plaintext); err != nil {
-			WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to save secret", nil)
+			WriteError(w, r, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to save secret", nil)
 			return
 		}
-		WriteSuccess(w, http.StatusOK, map[string]string{"status": "saved"})
+		WriteSuccess(w, r, http.StatusOK, map[string]string{"status": "saved"})
 		return
 	} else if r.Method == http.MethodGet {
 		envID := r.URL.Query().Get("envId")
 		if envID == "" {
-			WriteError(w, http.StatusBadRequest, "INVALID_REQUEST", "envId is required", nil)
+			WriteError(w, r, http.StatusBadRequest, "INVALID_REQUEST", "envId is required", nil)
 			return
 		}
 		// We only want to return secret references, not raw values.
-		secrets, err := router.envService.ListSecrets(r.Context(), envID)
+		params, err := common.ParseQueryParams(r, []string{"created_at", "name", "key"})
 		if err != nil {
-			WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to retrieve secrets", nil)
+			WriteError(w, r, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), nil)
 			return
 		}
-		WriteSuccess(w, http.StatusOK, secrets)
+		secrets, total, err := router.envService.ListSecrets(r.Context(), envID, params)
+		if err != nil {
+			WriteError(w, r, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to retrieve secrets", nil)
+			return
+		}
+		totalPages := (total + params.PerPage - 1) / params.PerPage
+		meta := PaginationMeta{
+			Total:      total,
+			Page:       params.Page,
+			PerPage:    params.PerPage,
+			TotalPages: totalPages,
+		}
+		WriteSuccessPaginated(w, r, http.StatusOK, secrets, meta)
 		return
 	}
-	WriteError(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
+	WriteError(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
 }
 
 func (router *Router) handleVariables(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		envID := r.URL.Query().Get("envId")
 		if envID == "" {
-			WriteError(w, http.StatusBadRequest, "INVALID_REQUEST", "envId is required", nil)
+			WriteError(w, r, http.StatusBadRequest, "INVALID_REQUEST", "envId is required", nil)
 			return
 		}
-		vars, err := router.envService.ListVariables(r.Context(), envID)
+		params, err := common.ParseQueryParams(r, []string{"created_at", "name", "key"})
 		if err != nil {
-			WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to retrieve variables", nil)
+			WriteError(w, r, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), nil)
 			return
 		}
-		WriteSuccess(w, http.StatusOK, vars)
+		vars, total, err := router.envService.ListVariables(r.Context(), envID, params)
+		if err != nil {
+			WriteError(w, r, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to retrieve variables", nil)
+			return
+		}
+		totalPages := (total + params.PerPage - 1) / params.PerPage
+		meta := PaginationMeta{
+			Total:      total,
+			Page:       params.Page,
+			PerPage:    params.PerPage,
+			TotalPages: totalPages,
+		}
+		WriteSuccessPaginated(w, r, http.StatusOK, vars, meta)
 		return
 	} else if r.Method == http.MethodPost {
 		var req struct {
@@ -259,44 +318,56 @@ func (router *Router) handleVariables(w http.ResponseWriter, r *http.Request) {
 			Value string `json:"value"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			WriteError(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid JSON payload", nil)
+			WriteError(w, r, http.StatusBadRequest, "INVALID_REQUEST", "Invalid JSON payload", nil)
 			return
 		}
 		if err := router.envService.SetVariable(r.Context(), req.EnvID, req.Key, req.Value); err != nil {
-			WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to save variable", nil)
+			WriteError(w, r, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to save variable", nil)
 			return
 		}
-		WriteSuccess(w, http.StatusOK, map[string]string{"status": "saved"})
+		WriteSuccess(w, r, http.StatusOK, map[string]string{"status": "saved"})
 		return
 	}
-	WriteError(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
+	WriteError(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
 }
 
 func (router *Router) handleProviders(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		scope := r.URL.Query().Get("scope")
 		owner := r.URL.Query().Get("ownerId")
-		cfgs, err := router.providerService.ListConfigs(r.Context(), scope, owner)
+		params, err := common.ParseQueryParams(r, []string{"created_at", "name", "key"})
 		if err != nil {
-			WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to retrieve provider configs", nil)
+			WriteError(w, r, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), nil)
 			return
 		}
-		WriteSuccess(w, http.StatusOK, cfgs)
+		cfgs, total, err := router.providerService.ListConfigs(r.Context(), scope, owner, params)
+		if err != nil {
+			WriteError(w, r, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to retrieve provider configs", nil)
+			return
+		}
+		totalPages := (total + params.PerPage - 1) / params.PerPage
+		meta := PaginationMeta{
+			Total:      total,
+			Page:       params.Page,
+			PerPage:    params.PerPage,
+			TotalPages: totalPages,
+		}
+		WriteSuccessPaginated(w, r, http.StatusOK, cfgs, meta)
 		return
 	} else if r.Method == http.MethodPost {
 		var req providerconfig.ProviderConfig
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			WriteError(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid JSON payload", nil)
+			WriteError(w, r, http.StatusBadRequest, "INVALID_REQUEST", "Invalid JSON payload", nil)
 			return
 		}
 		if err := router.providerService.SaveConfig(r.Context(), &req); err != nil {
-			WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to save provider config", nil)
+			WriteError(w, r, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to save provider config", nil)
 			return
 		}
-		WriteSuccess(w, http.StatusCreated, req)
+		WriteSuccess(w, r, http.StatusCreated, req)
 		return
 	}
-	WriteError(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
+	WriteError(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
 }
 
 func (router *Router) handleProviderTest(w http.ResponseWriter, r *http.Request) {
@@ -307,7 +378,7 @@ func (router *Router) handleProviderTest(w http.ResponseWriter, r *http.Request)
 			SecretRef string `json:"secretRef"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			WriteError(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid JSON payload", nil)
+			WriteError(w, r, http.StatusBadRequest, "INVALID_REQUEST", "Invalid JSON payload", nil)
 			return
 		}
 
@@ -317,12 +388,12 @@ func (router *Router) handleProviderTest(w http.ResponseWriter, r *http.Request)
 			if err != nil {
 				msg = err.Error()
 			}
-			WriteError(w, http.StatusBadRequest, "TEST_FAILED", msg, nil)
+			WriteError(w, r, http.StatusBadRequest, "TEST_FAILED", msg, nil)
 			return
 		}
 
-		WriteSuccess(w, http.StatusOK, map[string]string{"status": "ok"})
+		WriteSuccess(w, r, http.StatusOK, map[string]string{"status": "ok"})
 		return
 	}
-	WriteError(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
+	WriteError(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
 }

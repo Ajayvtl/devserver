@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/Ajayvtl/devserver/internal/domain/common"
 	"github.com/rs/zerolog"
 )
 
@@ -22,7 +23,8 @@ type Store interface {
 	UpsertOrganization(ctx context.Context, org *Organization) error
 	UpsertRole(ctx context.Context, role *Role) error
 	UpsertMembership(ctx context.Context, mem *Membership) error
-	ListOrganizationsForUser(ctx context.Context, userID string) ([]*Organization, error)
+	ProvisionOrganizationTx(ctx context.Context, org *Organization, role *Role, mem *Membership) error
+	ListOrganizationsForUser(ctx context.Context, userID string, params common.QueryParams) ([]*Organization, int, error)
 }
 
 // Service handles authorization evaluations.
@@ -32,7 +34,8 @@ type Service interface {
 	CreateOrganization(ctx context.Context, org *Organization) error
 	CreateRole(ctx context.Context, role *Role) error
 	AddMembership(ctx context.Context, mem *Membership) error
-	ListOrganizations(ctx context.Context, userID string) ([]*Organization, error)
+	ProvisionOrganization(ctx context.Context, org *Organization, role *Role, mem *Membership) error
+	ListOrganizations(ctx context.Context, userID string, params common.QueryParams) ([]*Organization, int, error)
 }
 
 // DefaultService implements core RBAC authorization rules.
@@ -94,6 +97,10 @@ func (s *DefaultService) AddMembership(ctx context.Context, mem *Membership) err
 	return s.store.UpsertMembership(ctx, mem)
 }
 
-func (s *DefaultService) ListOrganizations(ctx context.Context, userID string) ([]*Organization, error) {
-	return s.store.ListOrganizationsForUser(ctx, userID)
+func (s *DefaultService) ProvisionOrganization(ctx context.Context, org *Organization, role *Role, mem *Membership) error {
+	return s.store.ProvisionOrganizationTx(ctx, org, role, mem)
+}
+
+func (s *DefaultService) ListOrganizations(ctx context.Context, userID string, params common.QueryParams) ([]*Organization, int, error) {
+	return s.store.ListOrganizationsForUser(ctx, userID, params)
 }

@@ -9,6 +9,8 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
+
+	"github.com/Ajayvtl/devserver/internal/domain/common"
 )
 
 type MySQLStore struct {
@@ -116,10 +118,27 @@ func (s *MySQLStore) GetEnvironment(ctx context.Context, id string) (*Environmen
 	return &env, nil
 }
 
-func (s *MySQLStore) ListEnvironments(ctx context.Context, ownerID string) ([]*Environment, error) {
-	rows, err := s.db.QueryContext(ctx, "SELECT id, owner_id, name, type, created_at, updated_at FROM environments WHERE owner_id = ?", ownerID)
+func (s *MySQLStore) ListEnvironments(ctx context.Context, ownerID string, params common.QueryParams) ([]*Environment, int, error) {
+	var total int
+	err := s.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM environments WHERE owner_id = ?", ownerID).Scan(&total)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
+	}
+
+	sortCol := "created_at"
+	if params.Sort == "name" {
+		sortCol = "name"
+	}
+
+	dir := "DESC"
+	if params.Dir == "ASC" {
+		dir = "ASC"
+	}
+
+	query := fmt.Sprintf("SELECT id, owner_id, name, type, created_at, updated_at FROM environments WHERE owner_id = ? ORDER BY %s %s LIMIT ? OFFSET ?", sortCol, dir)
+	rows, err := s.db.QueryContext(ctx, query, ownerID, params.Limit(), params.Offset())
+	if err != nil {
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -128,19 +147,19 @@ func (s *MySQLStore) ListEnvironments(ctx context.Context, ownerID string) ([]*E
 		var env Environment
 		var ca, ua []uint8
 		if err := rows.Scan(&env.ID, &env.OwnerID, &env.Name, &env.Type, &ca, &ua); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 
 		var parseErr error
 		if env.CreatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ca)); parseErr != nil {
-			return nil, fmt.Errorf("failed to parse created_at: %w", parseErr)
+			return nil, 0, fmt.Errorf("failed to parse created_at: %w", parseErr)
 		}
 		if env.UpdatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ua)); parseErr != nil {
-			return nil, fmt.Errorf("failed to parse updated_at: %w", parseErr)
+			return nil, 0, fmt.Errorf("failed to parse updated_at: %w", parseErr)
 		}
 		envs = append(envs, &env)
 	}
-	return envs, nil
+	return envs, total, nil
 }
 
 func (s *MySQLStore) DeleteEnvironment(ctx context.Context, id string) error {
@@ -190,10 +209,27 @@ func (s *MySQLStore) GetVariable(ctx context.Context, envID, key string) (*Varia
 	return &v, nil
 }
 
-func (s *MySQLStore) ListVariables(ctx context.Context, envID string) ([]*Variable, error) {
-	rows, err := s.db.QueryContext(ctx, "SELECT id, env_id, var_key, var_value, created_at, updated_at FROM env_variables WHERE env_id = ?", envID)
+func (s *MySQLStore) ListVariables(ctx context.Context, envID string, params common.QueryParams) ([]*Variable, int, error) {
+	var total int
+	err := s.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM env_variables WHERE env_id = ?", envID).Scan(&total)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
+	}
+
+	sortCol := "created_at"
+	if params.Sort == "key" {
+		sortCol = "var_key"
+	}
+
+	dir := "DESC"
+	if params.Dir == "ASC" {
+		dir = "ASC"
+	}
+
+	query := fmt.Sprintf("SELECT id, env_id, var_key, var_value, created_at, updated_at FROM env_variables WHERE env_id = ? ORDER BY %s %s LIMIT ? OFFSET ?", sortCol, dir)
+	rows, err := s.db.QueryContext(ctx, query, envID, params.Limit(), params.Offset())
+	if err != nil {
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -202,19 +238,19 @@ func (s *MySQLStore) ListVariables(ctx context.Context, envID string) ([]*Variab
 		var v Variable
 		var ca, ua []uint8
 		if err := rows.Scan(&v.ID, &v.EnvID, &v.Key, &v.Value, &ca, &ua); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 
 		var parseErr error
 		if v.CreatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ca)); parseErr != nil {
-			return nil, fmt.Errorf("failed to parse created_at: %w", parseErr)
+			return nil, 0, fmt.Errorf("failed to parse created_at: %w", parseErr)
 		}
 		if v.UpdatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ua)); parseErr != nil {
-			return nil, fmt.Errorf("failed to parse updated_at: %w", parseErr)
+			return nil, 0, fmt.Errorf("failed to parse updated_at: %w", parseErr)
 		}
 		vars = append(vars, &v)
 	}
-	return vars, nil
+	return vars, total, nil
 }
 
 func (s *MySQLStore) DeleteVariable(ctx context.Context, envID, key string) error {
@@ -264,11 +300,27 @@ func (s *MySQLStore) GetSecret(ctx context.Context, envID, key string) (*Secret,
 	return &sec, nil
 }
 
-func (s *MySQLStore) ListSecrets(ctx context.Context, envID string) ([]*SecretReference, error) {
-	// ONLY returns references! Plaintext is NEVER returned in list queries.
-	rows, err := s.db.QueryContext(ctx, "SELECT id, secret_key FROM env_secrets WHERE env_id = ?", envID)
+func (s *MySQLStore) ListSecrets(ctx context.Context, envID string, params common.QueryParams) ([]*SecretReference, int, error) {
+	var total int
+	err := s.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM env_secrets WHERE env_id = ?", envID).Scan(&total)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
+	}
+
+	sortCol := "id"
+	if params.Sort == "key" {
+		sortCol = "secret_key"
+	}
+
+	dir := "DESC"
+	if params.Dir == "ASC" {
+		dir = "ASC"
+	}
+
+	query := fmt.Sprintf("SELECT id, secret_key FROM env_secrets WHERE env_id = ? ORDER BY %s %s LIMIT ? OFFSET ?", sortCol, dir)
+	rows, err := s.db.QueryContext(ctx, query, envID, params.Limit(), params.Offset())
+	if err != nil {
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -276,11 +328,11 @@ func (s *MySQLStore) ListSecrets(ctx context.Context, envID string) ([]*SecretRe
 	for rows.Next() {
 		var ref SecretReference
 		if err := rows.Scan(&ref.ID, &ref.Key); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		secrets = append(secrets, &ref)
 	}
-	return secrets, nil
+	return secrets, total, nil
 }
 
 func (s *MySQLStore) ListRawSecrets(ctx context.Context, envID string) ([]*Secret, error) {

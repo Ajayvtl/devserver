@@ -10,8 +10,8 @@ import { requestOrFallback, request } from '@/lib/api/client'
 import { useToast } from '../toast'
 
 export function OrgsPanel() {
-  const { currentOrgId, switchOrganization, loadAuth } = useAuth()
-  const { push } = useToast()
+	const { currentOrgId, setCurrentOrgId } = useAuth()
+	const { push } = useToast()
 
   const [orgs, setOrgs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -43,7 +43,7 @@ export function OrgsPanel() {
       push({ title: 'Success', message: 'Organization created.', tone: 'success' })
       setNewOrgName('')
       await loadOrgs()
-      await loadAuth()
+      window.location.reload()
     } catch (err: any) {
       push({ title: 'Error', message: err.message, tone: 'danger' })
     } finally {
@@ -66,7 +66,7 @@ export function OrgsPanel() {
               <Button 
                 variant={o.id === currentOrgId ? 'secondary' : 'primary'} 
                 disabled={o.id === currentOrgId}
-                onClick={() => switchOrganization(o.id)}
+                onClick={() => setCurrentOrgId(o.id)}
               >
                 {o.id === currentOrgId ? 'Current' : 'Switch'}
               </Button>

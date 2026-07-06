@@ -116,7 +116,7 @@ export function SettingsPage() {
       </div>
 
       {activeTab === 'general' && (
-
+      <>
       <div className="page-grid--two">
         <Card>
           <div className="card__eyebrow">Preferences</div>
@@ -167,6 +167,7 @@ export function SettingsPage() {
           />
         </Card>
       </div>
+      </>
       )}
 
       {activeTab === 'orgs' && (

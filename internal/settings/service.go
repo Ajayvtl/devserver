@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/Ajayvtl/devserver/internal/domain/common"
 	"github.com/rs/zerolog"
 )
 
@@ -15,7 +16,7 @@ var (
 // Store defines persistent storage for settings and integrations.
 type Store interface {
 	GetSetting(ctx context.Context, scope Scope, ownerID, key string) (*Setting, error)
-	ListSettings(ctx context.Context, scope Scope, ownerID string) ([]*Setting, error)
+	ListSettings(ctx context.Context, scope Scope, ownerID string, params common.QueryParams) ([]*Setting, int, error)
 	UpsertSetting(ctx context.Context, setting *Setting) error
 	DeleteSetting(ctx context.Context, scope Scope, ownerID, key string) error
 
@@ -28,7 +29,7 @@ type Store interface {
 // Service manages the business logic for settings and integrations.
 type Service interface {
 	GetSettingValue(ctx context.Context, scope Scope, ownerID, key string) (string, error)
-	ListSettings(ctx context.Context, scope Scope, ownerID string) ([]*Setting, error)
+	ListSettings(ctx context.Context, scope Scope, ownerID string, params common.QueryParams) ([]*Setting, int, error)
 	SaveSetting(ctx context.Context, scope Scope, ownerID, key, value string) error
 
 	GetIntegration(ctx context.Context, id string) (*Integration, error)
@@ -57,8 +58,8 @@ func (s *DefaultService) GetSettingValue(ctx context.Context, scope Scope, owner
 	return setting.Value, nil
 }
 
-func (s *DefaultService) ListSettings(ctx context.Context, scope Scope, ownerID string) ([]*Setting, error) {
-	return s.store.ListSettings(ctx, scope, ownerID)
+func (s *DefaultService) ListSettings(ctx context.Context, scope Scope, ownerID string, params common.QueryParams) ([]*Setting, int, error) {
+	return s.store.ListSettings(ctx, scope, ownerID, params)
 }
 
 func (s *DefaultService) SaveSetting(ctx context.Context, scope Scope, ownerID, key, value string) error {

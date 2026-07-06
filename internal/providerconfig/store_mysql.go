@@ -9,6 +9,8 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
+
+	"github.com/Ajayvtl/devserver/internal/domain/common"
 )
 
 type MySQLStore struct {
@@ -79,10 +81,27 @@ func (s *MySQLStore) GetConfig(ctx context.Context, id string) (*ProviderConfig,
 	return &cfg, nil
 }
 
-func (s *MySQLStore) ListConfigs(ctx context.Context, scope, ownerID string) ([]*ProviderConfig, error) {
-	rows, err := s.db.QueryContext(ctx, "SELECT id, scope, owner_id, type, name, enabled, base_url, default_model, secret_id, created_at, updated_at FROM provider_configs WHERE scope = ? AND owner_id = ?", scope, ownerID)
+func (s *MySQLStore) ListConfigs(ctx context.Context, scope, ownerID string, params common.QueryParams) ([]*ProviderConfig, int, error) {
+	var total int
+	err := s.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM provider_configs WHERE scope = ? AND owner_id = ?", scope, ownerID).Scan(&total)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
+	}
+
+	sortCol := "name"
+	if params.Sort == "created_at" {
+		sortCol = "created_at"
+	}
+
+	dir := "DESC"
+	if params.Dir == "ASC" {
+		dir = "ASC"
+	}
+
+	query := fmt.Sprintf("SELECT id, scope, owner_id, type, name, enabled, base_url, default_model, secret_id, created_at, updated_at FROM provider_configs WHERE scope = ? AND owner_id = ? ORDER BY %s %s LIMIT ? OFFSET ?", sortCol, dir)
+	rows, err := s.db.QueryContext(ctx, query, scope, ownerID, params.Limit(), params.Offset())
+	if err != nil {
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -91,18 +110,18 @@ func (s *MySQLStore) ListConfigs(ctx context.Context, scope, ownerID string) ([]
 		var cfg ProviderConfig
 		var ca, ua []uint8
 		if err := rows.Scan(&cfg.ID, &cfg.Scope, &cfg.OwnerID, &cfg.Type, &cfg.Name, &cfg.Enabled, &cfg.BaseURL, &cfg.DefaultModel, &cfg.SecretID, &ca, &ua); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		var parseErr error
 		if cfg.CreatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ca)); parseErr != nil {
-			return nil, fmt.Errorf("failed to parse created_at: %w", parseErr)
+			return nil, 0, fmt.Errorf("failed to parse created_at: %w", parseErr)
 		}
 		if cfg.UpdatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ua)); parseErr != nil {
-			return nil, fmt.Errorf("failed to parse updated_at: %w", parseErr)
+			return nil, 0, fmt.Errorf("failed to parse updated_at: %w", parseErr)
 		}
 		configs = append(configs, &cfg)
 	}
-	return configs, nil
+	return configs, total, nil
 }
 
 func (s *MySQLStore) UpsertConfig(ctx context.Context, cfg *ProviderConfig) error {

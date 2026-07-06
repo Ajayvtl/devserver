@@ -10,6 +10,8 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
+
+	"github.com/Ajayvtl/devserver/internal/domain/common"
 )
 
 type MySQLStore struct {
@@ -252,15 +254,101 @@ func (s *MySQLStore) UpsertMembership(ctx context.Context, mem *Membership) erro
 	return err
 }
 
-func (s *MySQLStore) ListOrganizationsForUser(ctx context.Context, userID string) ([]*Organization, error) {
-	rows, err := s.db.QueryContext(ctx, `
-		SELECT o.id, o.name, o.created_at, o.updated_at 
-		FROM organizations o
-		JOIN memberships m ON o.id = m.org_id
-		WHERE m.user_id = ?
-	`, userID)
+func (s *MySQLStore) ProvisionOrganizationTx(ctx context.Context, org *Organization, role *Role, mem *Membership) error {
+	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, err
+		return err
+	}
+	defer tx.Rollback()
+
+	now := time.Now().UTC()
+	if org.ID == "" {
+		org.ID = uuid.NewString()
+		org.CreatedAt = now
+	}
+	org.UpdatedAt = now
+
+	_, err = tx.ExecContext(ctx,
+		`INSERT INTO organizations (id, name, created_at, updated_at) VALUES (?, ?, ?, ?)`,
+		org.ID, org.Name, org.CreatedAt.Format("2006-01-02 15:04:05"), org.UpdatedAt.Format("2006-01-02 15:04:05"),
+	)
+	if err != nil {
+		return err
+	}
+
+	role.OrgID = org.ID
+	if role.ID == "" {
+		role.ID = uuid.NewString()
+		role.CreatedAt = now
+	}
+	role.UpdatedAt = now
+
+	permsJSON, _ := json.Marshal(role.Permissions)
+	_, err = tx.ExecContext(ctx,
+		`INSERT INTO roles (id, org_id, name, permissions, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`,
+		role.ID, role.OrgID, role.Name, string(permsJSON), role.CreatedAt.Format("2006-01-02 15:04:05"), role.UpdatedAt.Format("2006-01-02 15:04:05"),
+	)
+	if err != nil {
+		return err
+	}
+
+	mem.OrgID = org.ID
+	mem.RoleID = role.ID
+	if mem.ID == "" {
+		mem.ID = uuid.NewString()
+		mem.CreatedAt = now
+	}
+	mem.UpdatedAt = now
+
+	_, err = tx.ExecContext(ctx,
+		`INSERT INTO memberships (id, user_id, org_id, role_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`,
+		mem.ID, mem.UserID, mem.OrgID, mem.RoleID, mem.CreatedAt.Format("2006-01-02 15:04:05"), mem.UpdatedAt.Format("2006-01-02 15:04:05"),
+	)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (s *MySQLStore) ListOrganizationsForUser(ctx context.Context, userID string, params common.QueryParams) ([]*Organization, int, error) {
+	// First get total count
+	var total int
+	err := s.db.QueryRowContext(ctx, `
+		SELECT COUNT(o.id)
+		FROM rbac_organizations o
+		JOIN rbac_memberships m ON o.id = m.org_id
+		WHERE m.user_id = ?
+	`, userID).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Determine sort column to avoid SQL injection
+	sortCol := "o.created_at"
+	if params.Sort == "name" {
+		sortCol = "o.name"
+	} else if params.Sort == "updated_at" {
+		sortCol = "o.updated_at"
+	}
+
+	dir := "DESC"
+	if params.Dir == "ASC" {
+		dir = "ASC"
+	}
+
+	query := fmt.Sprintf(`
+		SELECT o.id, o.name, o.created_at, o.updated_at 
+		FROM rbac_organizations o
+		JOIN rbac_memberships m ON o.id = m.org_id
+		WHERE m.user_id = ?
+		ORDER BY %s %s
+		LIMIT ? OFFSET ?
+	`, sortCol, dir)
+
+	rows, err := s.db.QueryContext(ctx, query, userID, params.Limit(), params.Offset())
+	if err != nil {
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -269,18 +357,18 @@ func (s *MySQLStore) ListOrganizationsForUser(ctx context.Context, userID string
 		var org Organization
 		var ca, ua []uint8
 		if err := rows.Scan(&org.ID, &org.Name, &ca, &ua); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		var parseErr error
 		if org.CreatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ca)); parseErr != nil {
-			return nil, fmt.Errorf("failed to parse created_at: %w", parseErr)
+			return nil, 0, fmt.Errorf("failed to parse created_at: %w", parseErr)
 		}
 		if org.UpdatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ua)); parseErr != nil {
-			return nil, fmt.Errorf("failed to parse updated_at: %w", parseErr)
+			return nil, 0, fmt.Errorf("failed to parse updated_at: %w", parseErr)
 		}
 		orgs = append(orgs, &org)
 	}
-	return orgs, nil
+	return orgs, total, nil
 }
 
 func (s *MySQLStore) GetResourcePolicy(ctx context.Context, resourceID, resourceType string) (*ResourcePolicy, error) {

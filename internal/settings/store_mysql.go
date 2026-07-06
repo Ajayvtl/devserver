@@ -9,6 +9,8 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
+
+	"github.com/Ajayvtl/devserver/internal/domain/common"
 )
 
 type MySQLStore struct {
@@ -93,10 +95,27 @@ func (s *MySQLStore) GetSetting(ctx context.Context, scope Scope, ownerID, key s
 	return &setting, nil
 }
 
-func (s *MySQLStore) ListSettings(ctx context.Context, scope Scope, ownerID string) ([]*Setting, error) {
-	rows, err := s.db.QueryContext(ctx, "SELECT id, scope, owner_id, setting_key, setting_value, created_at, updated_at FROM settings WHERE scope = ? AND owner_id = ?", string(scope), ownerID)
+func (s *MySQLStore) ListSettings(ctx context.Context, scope Scope, ownerID string, params common.QueryParams) ([]*Setting, int, error) {
+	var total int
+	err := s.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM settings WHERE scope = ? AND owner_id = ?", string(scope), ownerID).Scan(&total)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
+	}
+
+	sortCol := "setting_key"
+	if params.Sort == "created_at" {
+		sortCol = "created_at"
+	}
+
+	dir := "DESC"
+	if params.Dir == "ASC" {
+		dir = "ASC"
+	}
+
+	query := fmt.Sprintf("SELECT id, scope, owner_id, setting_key, setting_value, created_at, updated_at FROM settings WHERE scope = ? AND owner_id = ? ORDER BY %s %s LIMIT ? OFFSET ?", sortCol, dir)
+	rows, err := s.db.QueryContext(ctx, query, string(scope), ownerID, params.Limit(), params.Offset())
+	if err != nil {
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -105,21 +124,21 @@ func (s *MySQLStore) ListSettings(ctx context.Context, scope Scope, ownerID stri
 		var setting Setting
 		var ca, ua []uint8
 		if err := rows.Scan(&setting.ID, &setting.Scope, &setting.OwnerID, &setting.Key, &setting.Value, &ca, &ua); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		var parseErr error
 		setting.CreatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ca))
 		if parseErr != nil {
-			return nil, fmt.Errorf("failed to parse created_at: %w", parseErr)
+			return nil, 0, fmt.Errorf("failed to parse created_at: %w", parseErr)
 		}
 		setting.UpdatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ua))
 		if parseErr != nil {
-			return nil, fmt.Errorf("failed to parse updated_at: %w", parseErr)
+			return nil, 0, fmt.Errorf("failed to parse updated_at: %w", parseErr)
 		}
 		settings = append(settings, &setting)
 	}
 
-	return settings, nil
+	return settings, total, nil
 }
 
 func (s *MySQLStore) UpsertSetting(ctx context.Context, setting *Setting) error {

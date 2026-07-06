@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/Ajayvtl/devserver/internal/domain/common"
 	"github.com/rs/zerolog"
 )
 
@@ -16,17 +17,17 @@ var (
 // Store defines persistence for environments, variables, and secrets.
 type Store interface {
 	GetEnvironment(ctx context.Context, id string) (*Environment, error)
-	ListEnvironments(ctx context.Context, ownerID string) ([]*Environment, error)
+	ListEnvironments(ctx context.Context, ownerID string, params common.QueryParams) ([]*Environment, int, error)
 	UpsertEnvironment(ctx context.Context, env *Environment) error
 	DeleteEnvironment(ctx context.Context, id string) error
 
 	GetVariable(ctx context.Context, envID, key string) (*Variable, error)
-	ListVariables(ctx context.Context, envID string) ([]*Variable, error)
+	ListVariables(ctx context.Context, envID string, params common.QueryParams) ([]*Variable, int, error)
 	UpsertVariable(ctx context.Context, variable *Variable) error
 	DeleteVariable(ctx context.Context, envID, key string) error
 
 	GetSecret(ctx context.Context, envID, key string) (*Secret, error)
-	ListSecrets(ctx context.Context, envID string) ([]*SecretReference, error)
+	ListSecrets(ctx context.Context, envID string, params common.QueryParams) ([]*SecretReference, int, error)
 	ListRawSecrets(ctx context.Context, envID string) ([]*Secret, error) // INTERNAL USE ONLY
 	UpsertSecret(ctx context.Context, secret *Secret) error
 	DeleteSecret(ctx context.Context, envID, key string) error
@@ -36,15 +37,15 @@ type Store interface {
 type Service interface {
 	// Management
 	CreateEnvironment(ctx context.Context, ownerID, name string, envType EnvType) (*Environment, error)
-	ListEnvironments(ctx context.Context, ownerID string) ([]*Environment, error)
+	ListEnvironments(ctx context.Context, ownerID string, params common.QueryParams) ([]*Environment, int, error)
 
 	// Variables
 	SetVariable(ctx context.Context, envID, key, value string) error
-	ListVariables(ctx context.Context, envID string) ([]*Variable, error)
+	ListVariables(ctx context.Context, envID string, params common.QueryParams) ([]*Variable, int, error)
 
 	// Secrets
 	SetSecret(ctx context.Context, envID, key, plaintext string) error
-	ListSecrets(ctx context.Context, envID string) ([]*SecretReference, error)
+	ListSecrets(ctx context.Context, envID string, params common.QueryParams) ([]*SecretReference, int, error)
 
 	// Resolution
 	Resolve(ctx context.Context, envID string) (map[string]string, error)
@@ -77,8 +78,8 @@ func (s *DefaultService) CreateEnvironment(ctx context.Context, ownerID, name st
 	return env, nil
 }
 
-func (s *DefaultService) ListEnvironments(ctx context.Context, ownerID string) ([]*Environment, error) {
-	return s.store.ListEnvironments(ctx, ownerID)
+func (s *DefaultService) ListEnvironments(ctx context.Context, ownerID string, params common.QueryParams) ([]*Environment, int, error) {
+	return s.store.ListEnvironments(ctx, ownerID, params)
 }
 
 func (s *DefaultService) SetVariable(ctx context.Context, envID, key, value string) error {
@@ -90,8 +91,8 @@ func (s *DefaultService) SetVariable(ctx context.Context, envID, key, value stri
 	return s.store.UpsertVariable(ctx, variable)
 }
 
-func (s *DefaultService) ListVariables(ctx context.Context, envID string) ([]*Variable, error) {
-	return s.store.ListVariables(ctx, envID)
+func (s *DefaultService) ListVariables(ctx context.Context, envID string, params common.QueryParams) ([]*Variable, int, error) {
+	return s.store.ListVariables(ctx, envID, params)
 }
 
 func (s *DefaultService) SetSecret(ctx context.Context, envID, key, plaintext string) error {
@@ -108,8 +109,8 @@ func (s *DefaultService) SetSecret(ctx context.Context, envID, key, plaintext st
 	return s.store.UpsertSecret(ctx, secret)
 }
 
-func (s *DefaultService) ListSecrets(ctx context.Context, envID string) ([]*SecretReference, error) {
-	return s.store.ListSecrets(ctx, envID)
+func (s *DefaultService) ListSecrets(ctx context.Context, envID string, params common.QueryParams) ([]*SecretReference, int, error) {
+	return s.store.ListSecrets(ctx, envID, params)
 }
 
 // Resolve fully expands an environment context.
@@ -118,7 +119,7 @@ func (s *DefaultService) ListSecrets(ctx context.Context, envID string) ([]*Secr
 func (s *DefaultService) Resolve(ctx context.Context, envID string) (map[string]string, error) {
 	result := make(map[string]string)
 
-	vars, err := s.store.ListVariables(ctx, envID)
+	vars, _, err := s.store.ListVariables(ctx, envID, common.QueryParams{PerPage: 1000, Page: 1})
 	if err != nil {
 		return nil, err
 	}

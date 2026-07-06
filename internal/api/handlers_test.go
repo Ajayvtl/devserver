@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/Ajayvtl/devserver/internal/domain/common"
 	"github.com/Ajayvtl/devserver/internal/rbac"
 )
 
@@ -15,8 +16,8 @@ type mockRBACForHandlers struct {
 	rbac.Service
 }
 
-func (m *mockRBACForHandlers) ListOrganizations(ctx context.Context, userID string) ([]*rbac.Organization, error) {
-	return []*rbac.Organization{{ID: "org-1", Name: "Test Org"}}, nil
+func (m *mockRBACForHandlers) ListOrganizations(ctx context.Context, userID string, params common.QueryParams) ([]*rbac.Organization, int, error) {
+	return []*rbac.Organization{{ID: "org-1", Name: "Test Org"}}, 1, nil
 }
 
 func (m *mockRBACForHandlers) CreateOrganization(ctx context.Context, org *rbac.Organization) error {
@@ -26,6 +27,13 @@ func (m *mockRBACForHandlers) CreateOrganization(ctx context.Context, org *rbac.
 
 func (m *mockRBACForHandlers) CreateRole(ctx context.Context, role *rbac.Role) error {
 	role.ID = "new-role-id"
+	return nil
+}
+
+func (m *mockRBACForHandlers) ProvisionOrganization(ctx context.Context, org *rbac.Organization, role *rbac.Role, mem *rbac.Membership) error {
+	org.ID = "new-org-id"
+	role.ID = "new-role-id"
+	mem.ID = "new-mem-id"
 	return nil
 }
 

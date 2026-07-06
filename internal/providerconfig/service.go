@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/Ajayvtl/devserver/internal/domain/common"
 	"github.com/Ajayvtl/devserver/internal/environments"
 	"github.com/rs/zerolog"
 )
@@ -12,7 +13,7 @@ import (
 // Store defines persistence for provider configurations.
 type Store interface {
 	GetConfig(ctx context.Context, id string) (*ProviderConfig, error)
-	ListConfigs(ctx context.Context, scope, ownerID string) ([]*ProviderConfig, error)
+	ListConfigs(ctx context.Context, scope, ownerID string, params common.QueryParams) ([]*ProviderConfig, int, error)
 	UpsertConfig(ctx context.Context, cfg *ProviderConfig) error
 	DeleteConfig(ctx context.Context, id string) error
 }
@@ -21,7 +22,7 @@ type Store interface {
 type Service interface {
 	SaveConfig(ctx context.Context, cfg *ProviderConfig) error
 	GetConfig(ctx context.Context, id string) (*ProviderConfig, error)
-	ListConfigs(ctx context.Context, scope, ownerID string) ([]*ProviderConfig, error)
+	ListConfigs(ctx context.Context, scope, ownerID string, params common.QueryParams) ([]*ProviderConfig, int, error)
 	TestConnection(ctx context.Context, ownerID, providerName, secretRef string) (bool, error)
 }
 
@@ -48,15 +49,15 @@ func (s *DefaultService) GetConfig(ctx context.Context, id string) (*ProviderCon
 	return s.store.GetConfig(ctx, id)
 }
 
-func (s *DefaultService) ListConfigs(ctx context.Context, scope, ownerID string) ([]*ProviderConfig, error) {
-	return s.store.ListConfigs(ctx, scope, ownerID)
+func (s *DefaultService) ListConfigs(ctx context.Context, scope, ownerID string, params common.QueryParams) ([]*ProviderConfig, int, error) {
+	return s.store.ListConfigs(ctx, scope, ownerID, params)
 }
 
 // TestConnection resolves the secretRef in any available environment and tests the connection
 func (s *DefaultService) TestConnection(ctx context.Context, ownerID, providerName, secretRef string) (bool, error) {
 	// For production readiness, we need to verify the secret against a real API endpoint
 	// 1. Find the secret in any of the environments
-	envs, err := s.envService.ListEnvironments(ctx, ownerID)
+	envs, _, err := s.envService.ListEnvironments(ctx, ownerID, common.QueryParams{PerPage: 1000, Page: 1})
 	if err != nil {
 		return false, err
 	}
