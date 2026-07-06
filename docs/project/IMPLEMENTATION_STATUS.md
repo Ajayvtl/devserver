@@ -90,5 +90,24 @@ This phase bridges the deeply isolated backend foundational services to the user
 * **WP-8.6.22 Product Copy Review**: (Not Started) Purging dummy and dev-only explanatory placeholder texts.
 * **WP-8.6.23 Screen Inventory**: (Not Started) Functional screen catalog verification.
 * **WP-8.6.24 API ➔ UI Mapping**: (Not Started) Dynamic endpoint coverage and active views matrix.
+* **WP-8.6.25 Design Review & Approval**: (Not Started) Visual mockup and structural architecture approvals.
+* **WP-8.6.26 Design System Documentation**: (Not Started) Showcase of elements and variant playground (Storybook).
+* **WP-8.6.27 Visual Regression Testing**: (Not Started) CSS regression and pixel diff snapshots suite.
+* **WP-8.6.28 Performance Audit**: (Not Started) Network response latency and Core Web Vitals profiling.
+* **WP-8.6.29 Browser Compatibility Matrix**: (Not Started) Multi-engine compatibility logs.
+* **WP-8.6.30 Security UX Review**: (Not Started) Validation of sensitive confirmation popups and masking.
+* **WP-8.6.31 Internationalization / Localization Readiness**: (Not Started) Localization library structure and translatable bundle strings.
+* **WP-8.6.32 Notification & Toast System**: (Not Started) Dynamic action notifications and async feedback toasts.
+* **WP-8.6.33 Form Validation UX Consistency**: (Not Started) Form-wide inline validations and visual error cues.
+* **WP-8.6.34 Keyboard Navigation**: (Not Started) WCAG-compliant tab indexing and focus indicators.
+* **WP-8.6.35 Search / Filter UX Consistency**: (Not Started) Unified search fields, grid selectors, and pagination controls.
+* **WP-8.6.36 User Documentation / Help Center**: (Not Started) Customer-facing feature support and manuals.
+* **WP-8.6.37 Administrator Manual**: (Not Started) System provisioning and configuration manuals.
+* **WP-8.6.38 Developer Manual**: (Not Started) Extension and modular integration guides.
+* **WP-8.6.39 API Documentation Synchronization**: (Not Started) Automated OpenAPI structure spec updates.
+* **WP-8.6.40 Database Migration Verification**: (Not Started) Migration scripts rollback testing.
+* **WP-8.6.41 Backup / Restore Validation**: (Not Started) E2E recovery checks.
+* **WP-8.6.42 Production Deployment Validation**: (Not Started) Live deploy and server check scripts.
+
 
 

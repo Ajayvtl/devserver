@@ -22,7 +22,7 @@ Every development effort must map to a specific Work Package (WP).
 **Status**: 85% Complete (Audited Product Gaps pending implementation in WP-8.6.12 through WP-8.6.15)
 **Integration Readiness**: Backend API Routing Complete | Business CRUD Complete | UI Foundations Complete | UI Configuration Complete
 **Test Readiness**: Unit Tests Complete | API Tests Complete | E2E Pending
-**Production Readiness**: Backend YES | Frontend NO (UX/UI redesign tracked in WP-8.6.12-24)
+**Production Readiness**: Backend YES | Frontend NO (UX/UI redesign tracked in WP-8.6.12-42)
 **Packages**:
 - WP-8.1: HTTP API Layer (Completed)
 - WP-8.2: Configuration Endpoints (Business CRUD) (Completed)
@@ -53,6 +53,25 @@ Every development effort must map to a specific Work Package (WP).
 - WP-8.6.22: Product Copy Review (Not Started)
 - WP-8.6.23: Screen Inventory (Not Started)
 - WP-8.6.24: API ➔ UI Mapping (Not Started)
+- WP-8.6.25: Design Review & Approval (Not Started)
+- WP-8.6.26: Design System Documentation (Not Started)
+- WP-8.6.27: Visual Regression Testing (Not Started)
+- WP-8.6.28: Performance Audit (Not Started)
+- WP-8.6.29: Browser Compatibility Matrix (Not Started)
+- WP-8.6.30: Security UX Review (Not Started)
+- WP-8.6.31: Internationalization / Localization Readiness (Not Started)
+- WP-8.6.32: Notification & Toast System (Not Started)
+- WP-8.6.33: Form Validation UX Consistency (Not Started)
+- WP-8.6.34: Keyboard Navigation (Not Started)
+- WP-8.6.35: Search / Filter UX Consistency (Not Started)
+- WP-8.6.36: User Documentation / Help Center (Not Started)
+- WP-8.6.37: Administrator Manual (Not Started)
+- WP-8.6.38: Developer Manual (Not Started)
+- WP-8.6.39: API Documentation Synchronization (Not Started)
+- WP-8.6.40: Database Migration Verification (Not Started)
+- WP-8.6.41: Backup / Restore Validation (Not Started)
+- WP-8.6.42: Production Deployment Validation (Not Started)
+
 
 
 
@@ -278,8 +297,278 @@ Every active and future Work Package tracks status across the following stages:
 **Consumed By**: DevServer Platform Release
 **Human Testing**: Pending
 
+### WP-8.6.25 — Design Review & Approval
+**Status**: Not Started
+**Stages**:
+- [ ] Design
+- [ ] Implementation
+- [ ] Unit Tested
+- [ ] Integration Tested
+- [ ] Human QA
+- [ ] Production Accepted
+**Dependencies**: WP-8.6.16
+**Produces**:
+- Formal architecture, layout diagrams, and visual mockups approved by UX/UI and backend leads.
+**Consumed By**: DevServer Platform Release
+**Human Testing**: Pending
+
+### WP-8.6.26 — Design System Documentation
+**Status**: Not Started
+**Stages**:
+- [ ] Design
+- [ ] Implementation
+- [ ] Unit Tested
+- [ ] Integration Tested
+- [ ] Human QA
+- [ ] Production Accepted
+**Dependencies**: WP-8.6.16
+**Produces**:
+- Integrated component playground or showcase (e.g. Storybook or equivalent UI page) showing components in all their variants.
+**Consumed By**: DevServer Platform Release
+**Human Testing**: Pending
+
+### WP-8.6.27 — Visual Regression Testing
+**Status**: Not Started
+**Stages**:
+- [ ] Design
+- [ ] Implementation
+- [ ] Unit Tested
+- [ ] Integration Tested
+- [ ] Human QA
+- [ ] Production Accepted
+**Dependencies**: WP-8.6.17
+**Produces**:
+- Snapshots validation suite running on changes to check CSS regression and pixel diffs.
+**Consumed By**: DevServer Platform Release
+**Human Testing**: Pending
+
+### WP-8.6.28 — Performance Audit
+**Status**: Not Started
+**Stages**:
+- [ ] Design
+- [ ] Implementation
+- [ ] Unit Tested
+- [ ] Integration Tested
+- [ ] Human QA
+- [ ] Production Accepted
+**Dependencies**: WP-8.6.17
+**Produces**:
+- Automated reports measuring Core Web Vitals (LCP, FID, CLS) and API network response benchmarks.
+**Consumed By**: DevServer Platform Release
+**Human Testing**: Pending
+
+### WP-8.6.29 — Browser Compatibility Matrix
+**Status**: Not Started
+**Stages**:
+- [ ] Design
+- [ ] Implementation
+- [ ] Unit Tested
+- [ ] Integration Tested
+- [ ] Human QA
+- [ ] Production Accepted
+**Dependencies**: WP-8.6.17
+**Produces**:
+- Compatibility testing log for Chromium, WebKit, and Gecko browser engines.
+**Consumed By**: DevServer Platform Release
+**Human Testing**: Pending
+
+### WP-8.6.30 — Security UX Review
+**Status**: Not Started
+**Stages**:
+- [ ] Design
+- [ ] Implementation
+- [ ] Unit Tested
+- [ ] Integration Tested
+- [ ] Human QA
+- [ ] Production Accepted
+**Dependencies**: WP-8.6.11
+**Produces**:
+- Explicit confirmation dialog layouts, multi-factor UX flows, and masking of credentials/secrets in user inputs.
+**Consumed By**: DevServer Platform Release
+**Human Testing**: Pending
+
+### WP-8.6.31 — Internationalization / Localization Readiness
+**Status**: Not Started
+**Stages**:
+- [ ] Design
+- [ ] Implementation
+- [ ] Unit Tested
+- [ ] Integration Tested
+- [ ] Human QA
+- [ ] Production Accepted
+**Dependencies**: WP-8.6.17
+**Produces**:
+- Setup of localization framework/libraries and extraction of hardcoded strings into locale files.
+**Consumed By**: DevServer Platform Release
+**Human Testing**: Pending
+
+### WP-8.6.32 — Notification & Toast System
+**Status**: Not Started
+**Stages**:
+- [ ] Design
+- [ ] Implementation
+- [ ] Unit Tested
+- [ ] Integration Tested
+- [ ] Human QA
+- [ ] Production Accepted
+**Dependencies**: WP-8.6.16
+**Produces**:
+- Toast stack system, banner notifications, and standard feedback cues for all asynchronous backend operations.
+**Consumed By**: DevServer Platform Release
+**Human Testing**: Pending
+
+### WP-8.6.33 — Form Validation UX Consistency
+**Status**: Not Started
+**Stages**:
+- [ ] Design
+- [ ] Implementation
+- [ ] Unit Tested
+- [ ] Integration Tested
+- [ ] Human QA
+- [ ] Production Accepted
+**Dependencies**: WP-8.6.16
+**Produces**:
+- Standard inline validation rules, dynamic error styling, and clear instructions for form fields.
+**Consumed By**: DevServer Platform Release
+**Human Testing**: Pending
+
+### WP-8.6.34 — Keyboard Navigation
+**Status**: Not Started
+**Stages**:
+- [ ] Design
+- [ ] Implementation
+- [ ] Unit Tested
+- [ ] Integration Tested
+- [ ] Human QA
+- [ ] Production Accepted
+**Dependencies**: WP-8.6.16
+**Produces**:
+- Tab index mappings, focus indicator rings, and keyboard hotkeys for navigation without point-and-click.
+**Consumed By**: DevServer Platform Release
+**Human Testing**: Pending
+
+### WP-8.6.35 — Search / Filter UX Consistency
+**Status**: Not Started
+**Stages**:
+- [ ] Design
+- [ ] Implementation
+- [ ] Unit Tested
+- [ ] Integration Tested
+- [ ] Human QA
+- [ ] Production Accepted
+**Dependencies**: WP-8.6.16
+**Produces**:
+- Consistent search bars, filter dropdown grids, and pagination widgets across all lists.
+**Consumed By**: DevServer Platform Release
+**Human Testing**: Pending
+
+### WP-8.6.36 — User Documentation / Help Center
+**Status**: Not Started
+**Stages**:
+- [ ] Design
+- [ ] Implementation
+- [ ] Unit Tested
+- [ ] Integration Tested
+- [ ] Human QA
+- [ ] Production Accepted
+**Dependencies**: WP-8.6.11
+**Produces**:
+- Web-accessible customer-facing help guides, product usage documentation, and inline tooltips.
+**Consumed By**: DevServer Platform Release
+**Human Testing**: Pending
+
+### WP-8.6.37 — Administrator Manual
+**Status**: Not Started
+**Stages**:
+- [ ] Design
+- [ ] Implementation
+- [ ] Unit Tested
+- [ ] Integration Tested
+- [ ] Human QA
+- [ ] Production Accepted
+**Dependencies**: WP-8.6.11
+**Produces**:
+- Detailed operational guides for server deployment, user provisioning, and audit log analysis.
+**Consumed By**: DevServer Platform Release
+**Human Testing**: Pending
+
+### WP-8.6.38 — Developer Manual
+**Status**: Not Started
+**Stages**:
+- [ ] Design
+- [ ] Implementation
+- [ ] Unit Tested
+- [ ] Integration Tested
+- [ ] Human QA
+- [ ] Production Accepted
+**Dependencies**: WP-8.6.11
+**Produces**:
+- Guides detailing code conventions, plugin API structures, and how to write custom execution modules.
+**Consumed By**: DevServer Platform Release
+**Human Testing**: Pending
+
+### WP-8.6.39 — API Documentation Synchronization
+**Status**: Not Started
+**Stages**:
+- [ ] Design
+- [ ] Implementation
+- [ ] Unit Tested
+- [ ] Integration Tested
+- [ ] Human QA
+- [ ] Production Accepted
+**Dependencies**: WP-8.6.11
+**Produces**:
+- Swagger/OpenAPI specs synced automatically with Go structure parameters and payloads.
+**Consumed By**: DevServer Platform Release
+**Human Testing**: Pending
+
+### WP-8.6.40 — Database Migration Verification
+**Status**: Not Started
+**Stages**:
+- [ ] Design
+- [ ] Implementation
+- [ ] Unit Tested
+- [ ] Integration Tested
+- [ ] Human QA
+- [ ] Production Accepted
+**Dependencies**: WP-8.5
+**Produces**:
+- Migration test scripts verifying roll-forward and roll-back consistency on the database schema.
+**Consumed By**: DevServer Platform Release
+**Human Testing**: Pending
+
+### WP-8.6.41 — Backup / Restore Validation
+**Status**: Not Started
+**Stages**:
+- [ ] Design
+- [ ] Implementation
+- [ ] Unit Tested
+- [ ] Integration Tested
+- [ ] Human QA
+- [ ] Production Accepted
+**Dependencies**: WP-8.5
+**Produces**:
+- E2E data restoration tests verifying recovery from DB snapshots without data corruption.
+**Consumed By**: DevServer Platform Release
+**Human Testing**: Pending
+
+### WP-8.6.42 — Production Deployment Validation
+**Status**: Not Started
+**Stages**:
+- [ ] Design
+- [ ] Implementation
+- [ ] Unit Tested
+- [ ] Integration Tested
+- [ ] Human QA
+- [ ] Production Accepted
+**Dependencies**: WP-8.5
+**Produces**:
+- E2E setup execution on live instances and health checks execution validating readiness.
+**Consumed By**: DevServer Platform Release
+**Human Testing**: Pending
+
 ### Milestone: Phase 8 Release Gate
-**Status**: Pending WP-8.6.12 through WP-8.6.24 Completion
+**Status**: Pending WP-8.6.12 through WP-8.6.42 Completion
 **Exit Criteria**:
 - [ ] Members Management UI complete (WP-8.6.12)
 - [ ] Audit Viewer UI complete (WP-8.6.13)
@@ -294,6 +583,24 @@ Every active and future Work Package tracks status across the following stages:
 - [ ] Product Copy Review complete (WP-8.6.22)
 - [ ] Screen Inventory complete (WP-8.6.23)
 - [ ] API ➔ UI Mapping complete (WP-8.6.24)
+- [ ] Design Review & Approval complete (WP-8.6.25)
+- [ ] Design System Documentation complete (WP-8.6.26)
+- [ ] Visual Regression Testing complete (WP-8.6.27)
+- [ ] Performance Audit complete (WP-8.6.28)
+- [ ] Browser Compatibility Matrix complete (WP-8.6.29)
+- [ ] Security UX Review complete (WP-8.6.30)
+- [ ] Internationalization / Localization Readiness complete (WP-8.6.31)
+- [ ] Notification & Toast System complete (WP-8.6.32)
+- [ ] Form Validation UX Consistency complete (WP-8.6.33)
+- [ ] Keyboard Navigation complete (WP-8.6.34)
+- [ ] Search / Filter UX Consistency complete (WP-8.6.35)
+- [ ] User Documentation / Help Center complete (WP-8.6.36)
+- [ ] Administrator Manual complete (WP-8.6.37)
+- [ ] Developer Manual complete (WP-8.6.38)
+- [ ] API Documentation Synchronization complete (WP-8.6.39)
+- [ ] Database Migration Verification complete (WP-8.6.40)
+- [ ] Backup / Restore Validation complete (WP-8.6.41)
+- [ ] Production Deployment Validation complete (WP-8.6.42)
 - [ ] Complete Manual QA & user flow run-through
 - [ ] Cross-browser validation (Chrome, Firefox, Safari)
 - [ ] Accessibility review (contrast, tab-indexes, screen-readers)
