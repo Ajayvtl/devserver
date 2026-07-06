@@ -44,5 +44,5 @@ This document tracks the granular implementation state of DevServer's subsystems
 ### Editor Orchestrator
 * Design completed in `docs/architecture/editor_provider.md`.
 * Scaffolding and Component registry complete in `internal/application/editor/orchestrator.go` (WP-4.2).
-* Extension Manager and VSCodeExtensionProvider implemented (WP-4.4), mapping VS Code extensions as first-class DevServer Providers.
+* Extension Manager and VSCodeExtensionProvider implemented (WP-4.4) - Pending WP-4.1 runtime integration.
 * *Next Steps*: Implement process spawning, OpenVSCode proxying, and session persistence.
