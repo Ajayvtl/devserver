@@ -19,10 +19,10 @@ Every development effort must map to a specific Work Package (WP).
 - WP-7.5: Provider Configuration
 
 ### Phase 8: Product Integration & API Surface
-**Status**: 80% Complete
+**Status**: 85% Complete (Audited Product Gaps pending implementation in WP-8.6.12 through WP-8.6.15)
 **Integration Readiness**: Backend API Routing Complete | Business CRUD Complete | UI Foundations Complete | UI Configuration Complete
 **Test Readiness**: Unit Tests Complete | API Tests Complete | E2E Pending
-**Production Readiness**: Backend YES | Frontend YES (Config)
+**Production Readiness**: Backend YES | Frontend YES (Config UI only, core application gaps identified & tracked in WP-8.6.12-15)
 **Packages**:
 - WP-8.1: HTTP API Layer (Completed)
 - WP-8.2: Configuration Endpoints (Business CRUD) (Completed)
@@ -40,6 +40,10 @@ Every development effort must map to a specific Work Package (WP).
 - WP-8.6.9: Screen-by-Screen Functional Audit (Completed)
 - WP-8.6.10: Product Acceptance Audit (Completed)
 - WP-8.6.11: Complete Product Experience (PX) Audit & User Operation Manual (Completed)
+- WP-8.6.12: Members Management UI (Not Started)
+- WP-8.6.13: Audit Viewer UI (Not Started)
+- WP-8.6.14: Deployment Module (Not Started)
+- WP-8.6.15: Monitoring Dashboard (Not Started)
 
 ---
 
@@ -54,7 +58,39 @@ Every development effort must map to a specific Work Package (WP).
 - Complete PX Audit & User Operation Manual detailing screen guides, standard statuses, and data gaps
 **Consumed By**: DevServer Platform Release
 **Human Testing**: Completed
-**Production Ready**: YES
+**Production Ready**: YES (Audits Only - Product Gaps Tracked in WP-8.6.12-15)
+
+### WP-8.6.12 — Members Management UI
+**Status**: Not Started
+**Dependencies**: WP-8.3, WP-8.6.2
+**Produces**:
+- Organization Members view & role management controls in settings UI.
+**Consumed By**: DevServer Platform Release
+**Human Testing**: Pending
+
+### WP-8.6.13 — Audit Viewer UI
+**Status**: Not Started
+**Dependencies**: WP-8.5, WP-8.6.11
+**Produces**:
+- Unified admin UI console displaying EventBus/database audit log streams.
+**Consumed By**: DevServer Platform Release
+**Human Testing**: Pending
+
+### WP-8.6.14 — Deployment Module
+**Status**: Not Started
+**Dependencies**: WP-8.6.11
+**Produces**:
+- Live deployment trigger interface with backend builder integration.
+**Consumed By**: DevServer Platform Release
+**Human Testing**: Pending
+
+### WP-8.6.15 — Monitoring Dashboard
+**Status**: Not Started
+**Dependencies**: WP-8.6.11
+**Produces**:
+- Health status charts & telemetry dashboard in the Web UI.
+**Consumed By**: DevServer Platform Release
+**Human Testing**: Pending
 
 ### WP-8.4 — Web UI Configuration (Envs & Providers)
 **Status**: Completed
