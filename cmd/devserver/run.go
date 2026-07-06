@@ -12,6 +12,7 @@ import (
 	"github.com/Ajayvtl/devserver/internal/commands"
 	"github.com/Ajayvtl/devserver/internal/config"
 	"github.com/Ajayvtl/devserver/internal/core"
+	"github.com/Ajayvtl/devserver/internal/environments"
 	"github.com/Ajayvtl/devserver/internal/events"
 	"github.com/Ajayvtl/devserver/internal/executor/legacy"
 	"github.com/Ajayvtl/devserver/internal/filesystem"
@@ -233,6 +234,21 @@ func runServer(ctx context.Context, log zerolog.Logger, cfg config.Config) error
 
 	settingsService := settings.NewService(log, settingsStore)
 	_ = settingsService // Silencing unused warning until wired to HTTP handlers
+
+	// Phase 7: Environment Management
+	envStore, err := environments.NewMySQLStore(cfg.Database.DSN)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to initialize environments database")
+	}
+	defer envStore.Close()
+
+	cryptoService, err := environments.NewAESCryptoService([]byte(cfg.Security.MasterKey))
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to initialize crypto service")
+	}
+
+	envService := environments.NewService(log, envStore, cryptoService)
+	_ = envService // Silencing unused warning until wired to HTTP handlers
 
 	// Phase 2: Runtime Bootstrap
 	rtReg := rt.NewRegistry()

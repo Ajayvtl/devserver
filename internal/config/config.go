@@ -11,6 +11,7 @@ import (
 
 type Config struct {
 	Service  ServiceConfig  `yaml:"service"`
+	Security SecurityConfig `yaml:"security"`
 	Logging  LoggingConfig  `yaml:"logging"`
 	State    StateConfig    `yaml:"state"`
 	Database DatabaseConfig `yaml:"database"`
@@ -35,6 +36,10 @@ type DatabaseConfig struct {
 	DSN string `yaml:"dsn"`
 }
 
+type SecurityConfig struct {
+	MasterKey string `yaml:"masterKey"`
+}
+
 type CommandsConfig struct {
 	Default string `yaml:"default"`
 }
@@ -44,6 +49,9 @@ func Default() Config {
 		Service: ServiceConfig{
 			Name: "devserver",
 			Host: "localhost",
+		},
+		Security: SecurityConfig{
+			MasterKey: "00000000000000000000000000000000", // 32 byte default key
 		},
 		Logging: LoggingConfig{
 			Level: "info",
@@ -103,6 +111,9 @@ func applyEnv(cfg *Config) {
 	if value := os.Getenv("DEVSERVER_SERVICE_HOST"); value != "" {
 		cfg.Service.Host = value
 	}
+	if value := os.Getenv("DEVSERVER_MASTER_KEY"); value != "" {
+		cfg.Security.MasterKey = value
+	}
 	if value := os.Getenv("DEVSERVER_LOG_LEVEL"); value != "" {
 		cfg.Logging.Level = value
 	}
@@ -137,6 +148,9 @@ func (c *Config) normalize() {
 	}
 	if c.Service.Host == "" {
 		c.Service.Host = "localhost"
+	}
+	if c.Security.MasterKey == "" {
+		c.Security.MasterKey = "00000000000000000000000000000000"
 	}
 	if c.Logging.Level == "" {
 		c.Logging.Level = "info"
