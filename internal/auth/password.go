@@ -26,6 +26,10 @@ func (p *LocalProvider) Authenticate(ctx context.Context, req map[string]any) (*
 		return nil, ErrInvalidCredentials
 	}
 
+	if len(password) > 72 { // bcrypt limit is 72 bytes
+		return nil, ErrInvalidCredentials
+	}
+
 	user, hash, err := p.store.GetUserByUsername(ctx, username)
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {

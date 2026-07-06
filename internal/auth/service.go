@@ -7,9 +7,13 @@ import (
 	"time"
 
 	"github.com/Ajayvtl/devserver/internal/events"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 )
+
+// A hardcoded secret for WP-7.1. In production, load from environment.
+var jwtSecret = []byte("super-secret-key-for-devserver")
 
 var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
@@ -73,9 +77,14 @@ func (s *DefaultService) Login(ctx context.Context, providerName string, credent
 
 	s.publishAudit(user, "login_success")
 
+	accessToken, err := s.generateJWT(user.ID)
+	if err != nil {
+		return nil, err
+	}
+
 	return &TokenPair{
-		AccessToken:  session.Token,
-		RefreshToken: uuid.NewString(), // Mock refresh token
+		AccessToken:  accessToken,
+		RefreshToken: session.Token, // Opaque refresh token
 		ExpiresIn:    3600,
 	}, nil
 }
@@ -101,8 +110,41 @@ func (s *DefaultService) Logout(ctx context.Context, sessionID string) error {
 }
 
 func (s *DefaultService) Refresh(ctx context.Context, refreshToken string) (*TokenPair, error) {
-	// Simple mock implementation for WP-7.1
-	return nil, errors.New("refresh flow requires persistent store (upcoming)")
+	session, err := s.store.GetSessionByToken(ctx, refreshToken)
+	if err != nil {
+		return nil, ErrSessionExpired
+	}
+
+	if session.Revoked || time.Now().UTC().After(session.ExpiresAt) {
+		return nil, ErrSessionExpired
+	}
+
+	user, err := s.store.GetUserByID(ctx, session.UserID)
+	if err != nil {
+		return nil, ErrUserNotFound
+	}
+
+	// Rotate session
+	session.Revoked = true
+	_ = s.store.UpdateSession(ctx, session)
+
+	newSession, err := s.createSession(ctx, user.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	accessToken, err := s.generateJWT(user.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	s.publishAudit(user, "token_refreshed")
+
+	return &TokenPair{
+		AccessToken:  accessToken,
+		RefreshToken: newSession.Token,
+		ExpiresIn:    3600,
+	}, nil
 }
 
 func (s *DefaultService) ValidateSession(ctx context.Context, sessionID string) (*User, error) {
@@ -153,11 +195,31 @@ func (s *DefaultService) createSession(ctx context.Context, userID string) (*Ses
 	return session, nil
 }
 
+func (s *DefaultService) generateJWT(userID string) (string, error) {
+	claims := jwt.MapClaims{
+		"sub": userID,
+		"iat": time.Now().UTC().Unix(),
+		"exp": time.Now().Add(1 * time.Hour).UTC().Unix(),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString(jwtSecret)
+}
+
 func (s *DefaultService) publishAudit(user *User, action string) {
 	var uid string
 	if user != nil {
 		uid = user.ID
 	}
+
+	event := AuditEvent{
+		EventID:   uuid.NewString(),
+		UserID:    uid,
+		Action:    action,
+		Timestamp: time.Now().UTC(),
+	}
+
+	// Persist to DB
+	_ = s.store.SaveAuditEvent(context.Background(), event)
 
 	// Emit audit event to central event bus
 	if s.bus != nil {

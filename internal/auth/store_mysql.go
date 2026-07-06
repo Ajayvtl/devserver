@@ -41,7 +41,9 @@ func initSchema(db *sql.DB) error {
 			email VARCHAR(255) NOT NULL UNIQUE,
 			password_hash VARCHAR(255) NOT NULL,
 			created_at DATETIME NOT NULL,
-			updated_at DATETIME NOT NULL
+			updated_at DATETIME NOT NULL,
+			INDEX idx_username (username),
+			INDEX idx_email (email)
 		);`,
 		`CREATE TABLE IF NOT EXISTS sessions (
 			id VARCHAR(36) PRIMARY KEY,
@@ -50,7 +52,18 @@ func initSchema(db *sql.DB) error {
 			expires_at DATETIME NOT NULL,
 			created_at DATETIME NOT NULL,
 			revoked BOOLEAN NOT NULL DEFAULT 0,
-			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+			INDEX idx_user_id (user_id),
+			INDEX idx_token (token)
+		);`,
+		`CREATE TABLE IF NOT EXISTS audit_events (
+			id VARCHAR(36) PRIMARY KEY,
+			user_id VARCHAR(36),
+			action VARCHAR(255) NOT NULL,
+			ip_address VARCHAR(255),
+			user_agent TEXT,
+			created_at DATETIME NOT NULL,
+			INDEX idx_user_action (user_id, action)
 		);`,
 	}
 
@@ -143,6 +156,26 @@ func (s *MySQLStore) GetSession(ctx context.Context, sessionID string) (*Session
 	return &session, nil
 }
 
+func (s *MySQLStore) GetSessionByToken(ctx context.Context, token string) (*Session, error) {
+	var session Session
+	var ea, ca []uint8
+
+	err := s.db.QueryRowContext(ctx, "SELECT id, user_id, token, expires_at, created_at, revoked FROM sessions WHERE token = ?", token).
+		Scan(&session.ID, &session.UserID, &session.Token, &ea, &ca, &session.Revoked)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrSessionExpired
+		}
+		return nil, err
+	}
+
+	session.ExpiresAt, _ = time.Parse("2006-01-02 15:04:05", string(ea))
+	session.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", string(ca))
+
+	return &session, nil
+}
+
 func (s *MySQLStore) UpdateSession(ctx context.Context, session *Session) error {
 	_, err := s.db.ExecContext(ctx, "UPDATE sessions SET revoked = ? WHERE id = ?", session.Revoked, session.ID)
 	return err
@@ -150,6 +183,14 @@ func (s *MySQLStore) UpdateSession(ctx context.Context, session *Session) error 
 
 func (s *MySQLStore) RevokeAllSessionsForUser(ctx context.Context, userID string) error {
 	_, err := s.db.ExecContext(ctx, "UPDATE sessions SET revoked = 1 WHERE user_id = ?", userID)
+	return err
+}
+
+func (s *MySQLStore) SaveAuditEvent(ctx context.Context, event AuditEvent) error {
+	_, err := s.db.ExecContext(ctx,
+		"INSERT INTO audit_events (id, user_id, action, ip_address, user_agent, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+		event.EventID, event.UserID, event.Action, event.IPAddress, event.UserAgent, event.Timestamp.Format("2006-01-02 15:04:05"),
+	)
 	return err
 }
 
