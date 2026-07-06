@@ -14,12 +14,19 @@ import (
 
 type sshAdapter struct {
 	id     string
-	config *ssh.ClientConfig
+	envID  common.EnvironmentID
 	host   string
+	config *ssh.ClientConfig
+	client *ssh.Client
 }
 
-func New(id string, host string, config *ssh.ClientConfig) contracts.Executor {
-	return &sshAdapter{id: id, host: host, config: config}
+func New(id string, envID common.EnvironmentID, host string, config *ssh.ClientConfig) contracts.Executor {
+	return &sshAdapter{
+		id:     id,
+		envID:  envID,
+		host:   host,
+		config: config,
+	}
 }
 
 func (a *sshAdapter) Execute(ctx context.Context, act *action.Action) (*contracts.ExecutionResult, error) {
@@ -47,7 +54,7 @@ func (a *sshAdapter) Execute(ctx context.Context, act *action.Action) (*contract
 	for _, arg := range act.Arguments {
 		cmdName += " " + arg // simple naive quoting for tests
 	}
-	
+
 	start := time.Now()
 	err = session.Run(cmdName)
 	duration := time.Since(start)
@@ -100,5 +107,5 @@ func (a *sshAdapter) Health(ctx context.Context) (common.HealthState, error) {
 }
 
 func (a *sshAdapter) Metadata() contracts.ExecutorMetadata {
-	return contracts.ExecutorMetadata{ID: a.id, Type: common.ExecutorTypeSSH, Version: "1.0"}
+	return contracts.ExecutorMetadata{ID: a.id, EnvironmentID: a.envID, Type: common.ExecutorTypeSSH, Version: "1.0"}
 }

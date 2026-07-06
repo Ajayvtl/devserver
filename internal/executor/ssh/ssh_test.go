@@ -13,8 +13,8 @@ import (
 
 func TestSSHAdapter_Validate(t *testing.T) {
 	config := &ssh.ClientConfig{Timeout: 1 * time.Second}
-	adapter := New("ssh-1", "localhost:22", config)
-	
+	adapter := New("ssh-1", "development", "localhost:22", config)
+
 	err := adapter.Validate(context.Background(), nil)
 	if err != contracts.ErrValidationFailed {
 		t.Errorf("expected ErrValidationFailed for nil action, got %v", err)
@@ -34,8 +34,10 @@ func TestSSHAdapter_Validate(t *testing.T) {
 func TestSSHAdapter_Detect(t *testing.T) {
 	config := &ssh.ClientConfig{Timeout: 10 * time.Millisecond}
 	// connect to invalid port to ensure failure diagnostic
-	adapter := New("ssh-test", "127.0.0.1:0", config)
-	ok, diag, _ := adapter.Detect(context.Background())
+	adapter := New("ssh-test", "development", "127.0.0.1:0", config)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	defer cancel()
+	ok, diag, _ := adapter.Detect(ctx)
 	if ok {
 		t.Errorf("expected detect to fail on invalid port")
 	}

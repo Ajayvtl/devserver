@@ -1,16 +1,16 @@
 package knowledge
 
 import (
+	"bytes"
 	"go/ast"
+	"go/format"
 	"go/parser"
 	"go/token"
 	"io/fs"
+	"os"
 	"path/filepath"
-	"bytes"
-    "go/format"
-    "os"
-    "strings"
-    "unicode"
+	"strings"
+	"unicode"
 )
 
 type SymbolScanner struct{}
@@ -131,20 +131,20 @@ func (s *SymbolScanner) Scan(root string) (*WorkspaceKnowledge, error) {
 				pos := fset.Position(node.Pos())
 
 				result.Symbols = append(result.Symbols, Symbol{
-						Name:          node.Name.Name,
-						Kind:          kind,
-						Package:       pkg,
-						Receiver:      receiver,
-						Exported:      exported(node.Name.Name),
-						Signature:     signature(fset, node),
-						Documentation: comments(node.Doc),
-						EndLine:       fset.Position(node.End()).Line,
-						Position: Position{
-							File:   path,
-							Line:   pos.Line,
-							Column: pos.Column,
-						},
-					})
+					Name:          node.Name.Name,
+					Kind:          kind,
+					Package:       pkg,
+					Receiver:      receiver,
+					Exported:      exported(node.Name.Name),
+					Signature:     signature(fset, node),
+					Documentation: comments(node.Doc),
+					EndLine:       fset.Position(node.End()).Line,
+					Position: Position{
+						File:   path,
+						Line:   pos.Line,
+						Column: pos.Column,
+					},
+				})
 
 			case *ast.GenDecl:
 
@@ -154,31 +154,31 @@ func (s *SymbolScanner) Scan(root string) (*WorkspaceKnowledge, error) {
 
 					case *ast.TypeSpec:
 
-	kind := SymbolType
+						kind := SymbolType
 
-	switch s.Type.(type) {
-	case *ast.StructType:
-		kind = SymbolStruct
-	case *ast.InterfaceType:
-		kind = SymbolInterface
-	}
+						switch s.Type.(type) {
+						case *ast.StructType:
+							kind = SymbolStruct
+						case *ast.InterfaceType:
+							kind = SymbolInterface
+						}
 
-	pos := fset.Position(s.Pos())
+						pos := fset.Position(s.Pos())
 
-	result.Symbols = append(result.Symbols, Symbol{
-		Name:          s.Name.Name,
-		Kind:          kind,
-		Package:       pkg,
-		Exported:      exported(s.Name.Name),
-		Signature:     signature(fset, s),
-		Documentation: comments(node.Doc),
-		EndLine:       fset.Position(s.End()).Line,
-		Position: Position{
-			File:   path,
-			Line:   pos.Line,
-			Column: pos.Column,
-		},
-	})
+						result.Symbols = append(result.Symbols, Symbol{
+							Name:          s.Name.Name,
+							Kind:          kind,
+							Package:       pkg,
+							Exported:      exported(s.Name.Name),
+							Signature:     signature(fset, s),
+							Documentation: comments(node.Doc),
+							EndLine:       fset.Position(s.End()).Line,
+							Position: Position{
+								File:   path,
+								Line:   pos.Line,
+								Column: pos.Column,
+							},
+						})
 
 					case *ast.ValueSpec:
 
@@ -231,17 +231,25 @@ func scanNonGoFile(path string, result *WorkspaceKnowledge) {
 	lines := strings.Split(content, "\n")
 	ext := filepath.Ext(path)
 	pkg := filepath.Base(filepath.Dir(path))
-	
+
 	for i, line := range lines {
 		trim := strings.TrimSpace(line)
 		if ext == ".ts" || ext == ".tsx" || ext == ".js" || ext == ".jsx" {
 			if strings.HasPrefix(trim, "export function ") || strings.HasPrefix(trim, "export class ") || strings.HasPrefix(trim, "export interface ") || strings.HasPrefix(trim, "export type ") || strings.HasPrefix(trim, "export const ") {
-				
+
 				kind := SymbolFunction
-				if strings.HasPrefix(trim, "export class") { kind = SymbolStruct }
-				if strings.HasPrefix(trim, "export interface") { kind = SymbolInterface }
-				if strings.HasPrefix(trim, "export type") { kind = SymbolType }
-				if strings.HasPrefix(trim, "export const") { kind = SymbolConst }
+				if strings.HasPrefix(trim, "export class") {
+					kind = SymbolStruct
+				}
+				if strings.HasPrefix(trim, "export interface") {
+					kind = SymbolInterface
+				}
+				if strings.HasPrefix(trim, "export type") {
+					kind = SymbolType
+				}
+				if strings.HasPrefix(trim, "export const") {
+					kind = SymbolConst
+				}
 
 				parts := strings.Fields(trim)
 				name := ""
@@ -259,18 +267,20 @@ func scanNonGoFile(path string, result *WorkspaceKnowledge) {
 				}
 				if name != "" {
 					result.Symbols = append(result.Symbols, Symbol{
-						Name: name,
-						Kind: kind,
-						Package: pkg,
+						Name:     name,
+						Kind:     kind,
+						Package:  pkg,
 						Exported: true,
-						Position: Position{File: path, Line: i+1, Column: 1},
+						Position: Position{File: path, Line: i + 1, Column: 1},
 					})
 				}
 			}
 		} else if ext == ".py" {
 			if strings.HasPrefix(trim, "def ") || strings.HasPrefix(trim, "class ") {
 				kind := SymbolFunction
-				if strings.HasPrefix(trim, "class ") { kind = SymbolStruct }
+				if strings.HasPrefix(trim, "class ") {
+					kind = SymbolStruct
+				}
 				parts := strings.Fields(trim)
 				if len(parts) > 1 {
 					name := parts[1]
@@ -279,11 +289,11 @@ func scanNonGoFile(path string, result *WorkspaceKnowledge) {
 						name = name[:idx]
 					}
 					result.Symbols = append(result.Symbols, Symbol{
-						Name: name,
-						Kind: kind,
-						Package: pkg,
+						Name:     name,
+						Kind:     kind,
+						Package:  pkg,
 						Exported: true,
-						Position: Position{File: path, Line: i+1, Column: 1},
+						Position: Position{File: path, Line: i + 1, Column: 1},
 					})
 				}
 			}

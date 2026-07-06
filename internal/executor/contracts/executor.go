@@ -28,9 +28,9 @@ type Executor interface {
 	Metadata() ExecutorMetadata
 }
 
-// ExecutorMetadata describes a specific instance of an executor.
 type ExecutorMetadata struct {
-	ID      string
-	Type    common.ExecutorType
-	Version string
+	ID            string
+	EnvironmentID common.EnvironmentID
+	Type          common.ExecutorType
+	Version       string
 }

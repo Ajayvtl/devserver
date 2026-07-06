@@ -12,13 +12,15 @@ import (
 
 type dockerAdapter struct {
 	id        string
+	envID     common.EnvironmentID
 	localExec contracts.Executor
 }
 
-func New(id string) contracts.Executor {
+func New(id string, envID common.EnvironmentID) contracts.Executor {
 	return &dockerAdapter{
 		id:        id,
-		localExec: local.New(id + "-local-delegate"),
+		envID:     envID,
+		localExec: local.New(id+"-local-delegate", envID),
 	}
 }
 
@@ -33,7 +35,7 @@ func (a *dockerAdapter) Execute(ctx context.Context, act *action.Action) (*contr
 	}
 
 	dockerTarget, _ := valueobjects.NewReference("docker")
-	
+
 	args := []string{"exec", containerID, "-i", "--", act.Target.String()}
 	if len(act.Arguments) > 1 {
 		args = append(args, act.Arguments[1:]...)
@@ -85,5 +87,5 @@ func (a *dockerAdapter) Health(ctx context.Context) (common.HealthState, error) 
 }
 
 func (a *dockerAdapter) Metadata() contracts.ExecutorMetadata {
-	return contracts.ExecutorMetadata{ID: a.id, Type: common.ExecutorTypeDocker, Version: "1.0"}
+	return contracts.ExecutorMetadata{ID: a.id, EnvironmentID: a.envID, Type: common.ExecutorTypeDocker, Version: "1.0"}
 }

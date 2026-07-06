@@ -9,8 +9,8 @@ import (
 	"github.com/Ajayvtl/devserver/internal/domain/valueobjects"
 )
 
-func TestLocalAdapter_Execute_Success(t *testing.T) {
-	adapter := New("test-local-1")
+func TestLocalExecute(t *testing.T) {
+	adapter := New("test-local-1", "development")
 
 	targetRef, _ := valueobjects.NewReference("hostname")
 	act := &action.Action{
@@ -28,8 +28,8 @@ func TestLocalAdapter_Execute_Success(t *testing.T) {
 	}
 }
 
-func TestLocalAdapter_Execute_Timeout(t *testing.T) {
-	adapter := New("test-local-timeout")
+func TestLocalExecuteTimeout(t *testing.T) {
+	adapter := New("test-local-timeout", "development")
 
 	targetRef, _ := valueobjects.NewReference("powershell")
 	act := &action.Action{
@@ -37,7 +37,7 @@ func TestLocalAdapter_Execute_Timeout(t *testing.T) {
 		Arguments: []string{"-Command", "Start-Sleep -Seconds 2"},
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer cancel()
 
 	_, err := adapter.Execute(ctx, act)

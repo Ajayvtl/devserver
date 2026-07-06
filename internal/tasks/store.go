@@ -8,9 +8,9 @@ import (
 // store is an in-memory task store, thread-safe.
 // It holds the runtime state of all tasks known to the engine.
 type store struct {
-	mu      sync.RWMutex
-	tasks   map[string]*Task
-	order   []string
+	mu    sync.RWMutex
+	tasks map[string]*Task
+	order []string
 }
 
 func newStore() *store {

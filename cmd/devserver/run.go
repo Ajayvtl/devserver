@@ -130,7 +130,7 @@ func runServer(ctx context.Context, log zerolog.Logger) error {
 	taskRegistry := tasks.NewRegistry()
 	taskRegistry.Register("workspace.index", &tasks.WorkspaceIndexRunner{})
 	taskRegistry.Register("workspace.setup", &tasks.WorkspaceSetupRunner{})
-	
+
 	serviceRunner := &tasks.ServiceRunner{Manager: providerManager}
 	taskRegistry.Register("service.start", serviceRunner)
 	taskRegistry.Register("service.stop", serviceRunner)
@@ -139,7 +139,6 @@ func runServer(ctx context.Context, log zerolog.Logger) error {
 	taskRegistry.Register("service.update", serviceRunner)
 	taskRegistry.Register("service.configure", serviceRunner)
 	taskRegistry.Register("service.remove", serviceRunner)
-
 
 	runtime := &tasks.Runtime{
 		Logger:   log,
@@ -222,7 +221,7 @@ func runServer(ctx context.Context, log zerolog.Logger) error {
 
 	// Block until context is cancelled
 	<-ctx.Done()
-	
+
 	if err := coordinator.Stop(context.Background()); err != nil {
 		log.Error().Err(err).Msg("runtime stop failed")
 	}

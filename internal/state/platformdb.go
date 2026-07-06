@@ -688,6 +688,21 @@ func (s *StoreDB) ListProjects(ctx context.Context) ([]ProjectData, error) {
 	return out, rows.Err()
 }
 
+func (s *StoreDB) UpdateProjectEnvironment(ctx context.Context, slug string, environment string) error {
+	res, err := s.db.ExecContext(ctx, `UPDATE projects SET environment = ? WHERE slug = ?`, environment, slug)
+	if err != nil {
+		return err
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return fmt.Errorf("project %q not found", slug)
+	}
+	return nil
+}
+
 func (s *StoreDB) ProjectDetail(ctx context.Context, slug string) (ProjectDetailDataStore, error) {
 	var project ProjectData
 	if err := s.db.QueryRowContext(ctx, `SELECT slug, name, description, owner, repository, environment, status, updated_at, progress FROM projects WHERE slug = ?`, slug).Scan(&project.Slug, &project.Name, &project.Description, &project.Owner, &project.Repository, &project.Environment, &project.Status, &project.UpdatedAt, &project.Progress); err != nil {

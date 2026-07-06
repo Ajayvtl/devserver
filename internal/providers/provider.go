@@ -115,5 +115,3 @@ type ProviderCapabilities struct {
 	OpenUI        bool `json:"open_ui"`
 	Documentation bool `json:"documentation"`
 }
-
-

@@ -12,15 +12,17 @@ import (
 
 type kubernetesAdapter struct {
 	id        string
+	envID     common.EnvironmentID
 	namespace string
 	localExec contracts.Executor
 }
 
-func New(id string, namespace string) contracts.Executor {
+func New(id string, envID common.EnvironmentID, namespace string) contracts.Executor {
 	return &kubernetesAdapter{
 		id:        id,
+		envID:     envID,
 		namespace: namespace,
-		localExec: local.New(id + "-local-delegate"),
+		localExec: local.New(id+"-local-delegate", envID),
 	}
 }
 
@@ -32,7 +34,7 @@ func (a *kubernetesAdapter) Execute(ctx context.Context, act *action.Action) (*c
 	podName := act.Arguments[0]
 
 	kubectlTarget, _ := valueobjects.NewReference("kubectl")
-	
+
 	args := []string{"exec", podName, "-n", a.namespace, "--", act.Target.String()}
 	if len(act.Arguments) > 1 {
 		args = append(args, act.Arguments[1:]...)
@@ -84,5 +86,5 @@ func (a *kubernetesAdapter) Health(ctx context.Context) (common.HealthState, err
 }
 
 func (a *kubernetesAdapter) Metadata() contracts.ExecutorMetadata {
-	return contracts.ExecutorMetadata{ID: a.id, Type: common.ExecutorTypeKubernetes, Version: "1.0"}
+	return contracts.ExecutorMetadata{ID: a.id, EnvironmentID: a.envID, Type: common.ExecutorTypeKubernetes, Version: "1.0"}
 }

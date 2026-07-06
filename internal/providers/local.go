@@ -80,14 +80,14 @@ func (p *LocalProvider) Info(ctx context.Context) (ProviderInfo, error) {
 	}
 
 	return ProviderInfo{
-		Name:         p.Meta.Name,
-		Version:      version,
-		Installed:    installed,
+		Name:      p.Meta.Name,
+		Version:   version,
+		Installed: installed,
 		State: ProviderState{
 			Status: status,
 			Health: health,
 		},
-		Metrics: ProviderMetrics{},
+		Metrics:      ProviderMetrics{},
 		Capabilities: p.Capabilities(),
 	}, nil
 }

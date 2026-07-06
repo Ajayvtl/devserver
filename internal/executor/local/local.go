@@ -13,14 +13,14 @@ import (
 )
 
 type localAdapter struct {
-	id      string
-	version string
+	id    string
+	envID common.EnvironmentID
 }
 
-func New(id string) contracts.Executor {
+func New(id string, envID common.EnvironmentID) contracts.Executor {
 	return &localAdapter{
-		id:      id,
-		version: "1.0.0",
+		id:    id,
+		envID: envID,
 	}
 }
 
@@ -65,9 +65,9 @@ func (l *localAdapter) Detect(ctx context.Context) (bool, []contracts.Diagnostic
 
 func (l *localAdapter) Capabilities() contracts.Capabilities {
 	return contracts.Capabilities{
-		Shell: &contracts.ShellCapability{Supported: true, Type: "os_default"},
+		Shell:      &contracts.ShellCapability{Supported: true, Type: "os_default"},
 		Filesystem: &contracts.FilesystemCapability{Supported: true},
-		Process: &contracts.ProcessCapability{Supported: true},
+		Process:    &contracts.ProcessCapability{Supported: true},
 	}
 }
 
@@ -87,8 +87,9 @@ func (l *localAdapter) Health(ctx context.Context) (common.HealthState, error) {
 
 func (l *localAdapter) Metadata() contracts.ExecutorMetadata {
 	return contracts.ExecutorMetadata{
-		ID:      l.id,
-		Type:    common.ExecutorTypeLocal,
-		Version: l.version,
+		ID:            l.id,
+		EnvironmentID: l.envID,
+		Type:          common.ExecutorTypeLocal,
+		Version:       "1.0",
 	}
 }

@@ -60,7 +60,7 @@ func TestIntegrationBootstrap(t *testing.T) {
 	if len(health.Components) != 4 {
 		t.Errorf("Expected 4 component health entries, got %d", len(health.Components))
 	}
-	
+
 	// Step 5: Shutdown
 	if err := coordinator.Stop(context.Background()); err != nil {
 		t.Fatalf("Coordinator Stop failed: %v", err)

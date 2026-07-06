@@ -6,6 +6,6 @@ func (b *eventBus) Subscribe(eventType EventType) Subscriber {
 
 	ch := make(chan Event, 100)
 	b.subscribers[eventType] = append(b.subscribers[eventType], ch)
-	
+
 	return ch
 }

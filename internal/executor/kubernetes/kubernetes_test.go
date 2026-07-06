@@ -10,8 +10,8 @@ import (
 )
 
 func TestKubernetesAdapter_Validate(t *testing.T) {
-	adapter := New("k8s-1", "default")
-	
+	adapter := New("k8s-1", "development", "default")
+
 	err := adapter.Validate(context.Background(), nil)
 	if err != contracts.ErrValidationFailed {
 		t.Errorf("expected ErrValidationFailed for nil action, got %v", err)
@@ -35,7 +35,7 @@ func TestKubernetesAdapter_Validate(t *testing.T) {
 }
 
 func TestKubernetesAdapter_Detect(t *testing.T) {
-	adapter := New("k8s-test", "default")
+	adapter := New("k8s-test", "development", "default")
 	ok, diag, _ := adapter.Detect(context.Background())
 	if !ok && len(diag) == 0 {
 		t.Errorf("expected diagnostics if detection fails")

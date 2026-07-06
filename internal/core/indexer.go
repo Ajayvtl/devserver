@@ -17,10 +17,10 @@ import (
 	"sync"
 	"time"
 
-	rt "github.com/Ajayvtl/devserver/internal/runtime"
 	"github.com/Ajayvtl/devserver/internal/events"
 	"github.com/Ajayvtl/devserver/internal/knowledge"
 	"github.com/Ajayvtl/devserver/internal/providers"
+	rt "github.com/Ajayvtl/devserver/internal/runtime"
 	"github.com/rs/zerolog"
 )
 
@@ -131,10 +131,10 @@ type PluginInfo struct {
 }
 
 type KnowledgeInfo struct {
-	Files      []string                  `json:"files"`
-	Topics     []string                  `json:"topics"`
-	Symbols    []knowledge.Symbol        `json:"symbols"`
-	References knowledge.ReferenceIndex  `json:"references"`
+	Files      []string                 `json:"files"`
+	Topics     []string                 `json:"topics"`
+	Symbols    []knowledge.Symbol       `json:"symbols"`
+	References knowledge.ReferenceIndex `json:"references"`
 }
 
 type TaskInfo struct {
@@ -150,10 +150,10 @@ type InfraToolInfo struct {
 }
 
 type InfrastructureInfo struct {
-	Tools      []InfraToolInfo `json:"tools"`
-	OS         string          `json:"os"`
-	Arch       string          `json:"arch"`
-	Hostname   string          `json:"hostname"`
+	Tools    []InfraToolInfo `json:"tools"`
+	OS       string          `json:"os"`
+	Arch     string          `json:"arch"`
+	Hostname string          `json:"hostname"`
 }
 
 type ProviderInfo = providers.ProviderInfo
@@ -197,11 +197,11 @@ type AIContextInfo struct {
 }
 
 type MCPProvider struct {
-	Name       string `json:"name"`
-	Enabled    bool   `json:"enabled"`
-	Healthy    bool   `json:"healthy"`
-	Endpoint   string `json:"endpoint"`
-	Protocol   string `json:"protocol"`
+	Name     string `json:"name"`
+	Enabled  bool   `json:"enabled"`
+	Healthy  bool   `json:"healthy"`
+	Endpoint string `json:"endpoint"`
+	Protocol string `json:"protocol"`
 }
 
 type MCPInfo struct {
@@ -216,35 +216,35 @@ type IndexManifest struct {
 }
 
 type CacheManifest struct {
-	UpdatedAt time.Time          `json:"updatedAt"`
-	Fingerprint string           `json:"fingerprint"`
-	Changed    []string          `json:"changed"`
-	Files      []WorkspaceFileInfo `json:"files"`
+	UpdatedAt   time.Time           `json:"updatedAt"`
+	Fingerprint string              `json:"fingerprint"`
+	Changed     []string            `json:"changed"`
+	Files       []WorkspaceFileInfo `json:"files"`
 }
 
 type WorkspaceContext struct {
-	Workspace      WorkspaceSummary   `json:"workspace"`
-	Project        ProjectSummary     `json:"project"`
-	Architecture   ArchitectureInfo   `json:"architecture"`
-	Dependencies   DependenciesInfo   `json:"dependencies"`
-	Routes         RoutesInfo         `json:"routes"`
-	Database       DatabaseInfo       `json:"database"`
-	Environment    EnvironmentInfo    `json:"environment"`
-	Git            GitInfo            `json:"git"`
-	Tasks          TaskInfo           `json:"tasks"`
-	Health         HealthInfo         `json:"health"`
-	Plugins        PluginInfo         `json:"plugins"`
-	Knowledge      KnowledgeInfo      `json:"knowledge"`
-	Infrastructure InfrastructureInfo `json:"infrastructure"`
-	Services       []ProviderInfo     `json:"services"`
-	Deployments    DeploymentInfo     `json:"deployments"`
-	Domains        []DomainInfo       `json:"domains"`
-	Logs           []LogEntry         `json:"logs"`
-	AI             AIContextInfo      `json:"ai"`
-	MCP            MCPInfo            `json:"mcp"`
-	Index          IndexManifest      `json:"index"`
+	Workspace      WorkspaceSummary    `json:"workspace"`
+	Project        ProjectSummary      `json:"project"`
+	Architecture   ArchitectureInfo    `json:"architecture"`
+	Dependencies   DependenciesInfo    `json:"dependencies"`
+	Routes         RoutesInfo          `json:"routes"`
+	Database       DatabaseInfo        `json:"database"`
+	Environment    EnvironmentInfo     `json:"environment"`
+	Git            GitInfo             `json:"git"`
+	Tasks          TaskInfo            `json:"tasks"`
+	Health         HealthInfo          `json:"health"`
+	Plugins        PluginInfo          `json:"plugins"`
+	Knowledge      KnowledgeInfo       `json:"knowledge"`
+	Infrastructure InfrastructureInfo  `json:"infrastructure"`
+	Services       []ProviderInfo      `json:"services"`
+	Deployments    DeploymentInfo      `json:"deployments"`
+	Domains        []DomainInfo        `json:"domains"`
+	Logs           []LogEntry          `json:"logs"`
+	AI             AIContextInfo       `json:"ai"`
+	MCP            MCPInfo             `json:"mcp"`
+	Index          IndexManifest       `json:"index"`
 	Files          []WorkspaceFileInfo `json:"files"`
-	Cache          CacheManifest      `json:"cache"`
+	Cache          CacheManifest       `json:"cache"`
 }
 
 type workspaceState struct {
@@ -342,7 +342,7 @@ func (i *Indexer) Run(ctx context.Context) error {
 	if err := i.RefreshAll(ctx); err != nil {
 		return err
 	}
-	
+
 	ch := i.bus.Subscribe(events.WorkspaceChanged)
 	for {
 		select {
@@ -419,7 +419,7 @@ func (i *Indexer) Refresh(ctx context.Context, id string) error {
 	ws.context = next
 	p := i.provider
 	i.mu.Unlock()
-	
+
 	if p != nil {
 		p.Invalidate(id)
 	}
@@ -430,10 +430,10 @@ func (i *Indexer) Refresh(ctx context.Context, id string) error {
 	})
 
 	for _, file := range dirty {
-    i.log.Debug().
-        Str("workspace", id).
-        Str("file", file).
-        Msg("changed file")
+		i.log.Debug().
+			Str("workspace", id).
+			Str("file", file).
+			Msg("changed file")
 	}
 	i.log.Info().Str("workspace", id).Int("changed_files", len(dirty)).Msg("workspace indexed")
 	return nil
@@ -512,66 +512,66 @@ func diffFiles(prev, current map[string]FileStamp) []string {
 }
 
 func isRelevantFile(rel string) bool {
-    if strings.Contains(rel, ".devserver/context/") ||
-        strings.Contains(rel, ".devserver/cache/") ||
-        strings.Contains(rel, ".devserver/snapshot/") {
-        return false
-    }
+	if strings.Contains(rel, ".devserver/context/") ||
+		strings.Contains(rel, ".devserver/cache/") ||
+		strings.Contains(rel, ".devserver/snapshot/") {
+		return false
+	}
 
-    base := filepath.Base(rel)
+	base := filepath.Base(rel)
 
-    if strings.HasPrefix(base, ".env") ||
-        base == "go.mod" ||
-        base == "go.sum" ||
-        base == "package.json" ||
-        base == "composer.json" ||
-        base == "pyproject.toml" ||
-        strings.HasPrefix(base, "requirements") ||
-        base == "pnpm-lock.yaml" ||
-        base == "yarn.lock" ||
-        base == "package-lock.json" ||
-        base == "docker-compose.yml" ||
-        base == "docker-compose.yaml" ||
-        base == "Dockerfile" ||
-        strings.HasSuffix(base, ".sql") {
-        return true
-    }
+	if strings.HasPrefix(base, ".env") ||
+		base == "go.mod" ||
+		base == "go.sum" ||
+		base == "package.json" ||
+		base == "composer.json" ||
+		base == "pyproject.toml" ||
+		strings.HasPrefix(base, "requirements") ||
+		base == "pnpm-lock.yaml" ||
+		base == "yarn.lock" ||
+		base == "package-lock.json" ||
+		base == "docker-compose.yml" ||
+		base == "docker-compose.yaml" ||
+		base == "Dockerfile" ||
+		strings.HasSuffix(base, ".sql") {
+		return true
+	}
 
-    if strings.HasSuffix(base, ".go") ||
-        strings.HasSuffix(base, ".js") ||
-        strings.HasSuffix(base, ".jsx") ||
-        strings.HasSuffix(base, ".ts") ||
-        strings.HasSuffix(base, ".tsx") ||
-        strings.HasSuffix(base, ".py") ||
-        strings.HasSuffix(base, ".php") ||
-        strings.HasSuffix(base, ".md") ||
-        strings.HasSuffix(base, ".yaml") ||
-        strings.HasSuffix(base, ".yml") ||
-        strings.HasSuffix(base, ".json") {
-        return true
-    }
+	if strings.HasSuffix(base, ".go") ||
+		strings.HasSuffix(base, ".js") ||
+		strings.HasSuffix(base, ".jsx") ||
+		strings.HasSuffix(base, ".ts") ||
+		strings.HasSuffix(base, ".tsx") ||
+		strings.HasSuffix(base, ".py") ||
+		strings.HasSuffix(base, ".php") ||
+		strings.HasSuffix(base, ".md") ||
+		strings.HasSuffix(base, ".yaml") ||
+		strings.HasSuffix(base, ".yml") ||
+		strings.HasSuffix(base, ".json") {
+		return true
+	}
 
-    if strings.Contains(rel, ".devserver/knowledge/") {
-        return true
-    }
+	if strings.Contains(rel, ".devserver/knowledge/") {
+		return true
+	}
 
-    return false
+	return false
 }
 
 func shouldSkipDir(name string) bool {
 	switch name {
 	case ".git",
-     "node_modules",
-     ".next",
-     "build",
-     "dist",
-     "vendor",
-     ".tmp",
-	 ".turbo",
-	 ".vercel",
-     "coverage",
-     ".devserver":
-    return true
+		"node_modules",
+		".next",
+		"build",
+		"dist",
+		"vendor",
+		".tmp",
+		".turbo",
+		".vercel",
+		"coverage",
+		".devserver":
+		return true
 	default:
 		return false
 	}
@@ -640,25 +640,25 @@ func composeContext(ws *workspaceState, files map[string]FileStamp, dirty []stri
 		GeneratedAt: time.Now().UTC(),
 		Workspace:   ws.spec.ID,
 		Files: map[string]string{
-			"workspace":     "workspace.json",
-			"project":       "project.json",
-			"architecture":  "architecture.json",
-			"dependencies":  "dependencies.json",
-			"routes":        "routes.json",
-			"api":           "api.json",
-			"database":      "database.json",
-			"environment":   "environment.json",
-			"git":           "git.json",
-			"tasks":         "tasks.json",
-			"health":        "health.json",
-			"plugins":       "plugins.json",
-			"knowledge":     "knowledge.json",
-			"index":         "index.json",
-			"cache":         "../cache/index.json",
-			"cache-scan":    "../cache/scan.json",
-			"cache-git":     "../cache/git.json",
-			"cache-routes":   "../cache/routes.json",
-			"cache-deps":     "../cache/dependencies.json",
+			"workspace":    "workspace.json",
+			"project":      "project.json",
+			"architecture": "architecture.json",
+			"dependencies": "dependencies.json",
+			"routes":       "routes.json",
+			"api":          "api.json",
+			"database":     "database.json",
+			"environment":  "environment.json",
+			"git":          "git.json",
+			"tasks":        "tasks.json",
+			"health":       "health.json",
+			"plugins":      "plugins.json",
+			"knowledge":    "knowledge.json",
+			"index":        "index.json",
+			"cache":        "../cache/index.json",
+			"cache-scan":   "../cache/scan.json",
+			"cache-git":    "../cache/git.json",
+			"cache-routes": "../cache/routes.json",
+			"cache-deps":   "../cache/dependencies.json",
 		},
 	}
 	return base

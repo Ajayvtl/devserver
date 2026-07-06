@@ -72,7 +72,7 @@ func (p *NodeProvider) Info(ctx context.Context) (ProviderInfo, error) {
 	} else {
 		health = HealthFailed
 	}
-	
+
 	version, _ := p.Version(ctx)
 	installed, _ := p.Detect(ctx)
 
@@ -81,14 +81,14 @@ func (p *NodeProvider) Info(ctx context.Context) (ProviderInfo, error) {
 	}
 
 	return ProviderInfo{
-		Name:         p.Meta.Name,
-		Version:      version,
-		Installed:    installed,
+		Name:      p.Meta.Name,
+		Version:   version,
+		Installed: installed,
 		State: ProviderState{
 			Status: status,
 			Health: health,
 		},
-		Metrics: ProviderMetrics{},
+		Metrics:      ProviderMetrics{},
 		Capabilities: p.Capabilities(),
 	}, nil
 }

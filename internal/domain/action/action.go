@@ -7,7 +7,7 @@ import (
 
 type Action struct {
 	common.Metadata
-	Type     common.ActionType
-	Target   valueobjects.Reference
+	Type      common.ActionType
+	Target    valueobjects.Reference
 	Arguments []string
 }

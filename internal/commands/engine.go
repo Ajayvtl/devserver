@@ -11,7 +11,9 @@ import (
 	"github.com/Ajayvtl/devserver/internal/state"
 	"github.com/Ajayvtl/devserver/internal/tasks"
 	"github.com/rs/zerolog"
-)
+
+	"github.com/Ajayvtl/devserver/internal/application/envcontext"
+	"github.com/Ajayvtl/devserver/internal/domain/common")
 
 // Engine is the command bus. It resolves capabilities and submits tasks.
 type Engine struct {
@@ -85,6 +87,16 @@ func (e *Engine) Submit(ctx context.Context, cmd *Command) (*Record, error) {
 		Provider:   record.Provider,
 	})
 
+	if cmd.WorkspaceID != "" {
+		switcher := envcontext.NewSwitcher(e.db)
+		envID, _ := switcher.GetActiveEnvironment(ctx, common.WorkspaceID(cmd.WorkspaceID))
+		ctx = switcher.WithActiveEnvironment(ctx, envID)
+		if cmd.Metadata == nil {
+			cmd.Metadata = make(map[string]string)
+		}
+		cmd.Metadata["env_id"] = string(envID)
+	}
+
 	switch cmd.Capability {
 	case "auth.login":
 		return e.runLogin(ctx, cmd, record)
@@ -97,13 +109,13 @@ func (e *Engine) Submit(ctx context.Context, cmd *Command) (*Record, error) {
 	}
 
 	// Platform tasks bypass the module resolver
-	if string(cmd.Capability) == "service.start" || 
-	   string(cmd.Capability) == "service.stop" || 
-	   string(cmd.Capability) == "service.restart" ||
-	   string(cmd.Capability) == "service.install" ||
-	   string(cmd.Capability) == "service.update" ||
-	   string(cmd.Capability) == "service.configure" ||
-	   string(cmd.Capability) == "service.remove" {
+	if string(cmd.Capability) == "service.start" ||
+		string(cmd.Capability) == "service.stop" ||
+		string(cmd.Capability) == "service.restart" ||
+		string(cmd.Capability) == "service.install" ||
+		string(cmd.Capability) == "service.update" ||
+		string(cmd.Capability) == "service.configure" ||
+		string(cmd.Capability) == "service.remove" {
 		return e.runServiceTask(ctx, cmd, record)
 	}
 

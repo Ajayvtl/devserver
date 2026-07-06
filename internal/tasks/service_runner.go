@@ -15,7 +15,7 @@ type ServiceRunner struct {
 
 func (r *ServiceRunner) Execute(ctx context.Context, task *Task, runtime *Runtime) error {
 	action := task.Type // e.g. "service.restart"
-	
+
 	target, ok := task.Payload["target"].(string)
 	if !ok || target == "" {
 		return fmt.Errorf("target service not specified in payload")

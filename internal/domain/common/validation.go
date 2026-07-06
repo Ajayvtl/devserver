@@ -6,10 +6,10 @@ import (
 )
 
 var (
-	ErrInvalidName     = errors.New("invalid name: must not be empty and cannot contain special characters")
-	ErrInvalidPath     = errors.New("invalid path: must not be empty")
-	ErrInvalidEndpoint = errors.New("invalid endpoint: must be a valid URL or host:port")
-	ErrInvalidVersion  = errors.New("invalid version: must not be empty")
+	ErrInvalidName      = errors.New("invalid name: must not be empty and cannot contain special characters")
+	ErrInvalidPath      = errors.New("invalid path: must not be empty")
+	ErrInvalidEndpoint  = errors.New("invalid endpoint: must be a valid URL or host:port")
+	ErrInvalidVersion   = errors.New("invalid version: must not be empty")
 	ErrInvalidReference = errors.New("invalid reference: must not be empty")
 )
 

@@ -50,7 +50,7 @@ func (p *RedisProvider) Health(ctx context.Context) error {
 	if !installed {
 		return fmt.Errorf("redis is not installed")
 	}
-	
+
 	// Check if we can ping it.
 	res, err := p.Runtime.Execute(ctx, "redis-cli", "ping")
 	if err != nil || res.ExitCode != 0 {
@@ -97,7 +97,7 @@ func (p *RedisProvider) Info(ctx context.Context) (ProviderInfo, error) {
 	} else if status == StatusNotInstalled {
 		health = HealthNotApplicable
 	}
-	
+
 	version, _ := p.Version(ctx)
 	installed, _ := p.Detect(ctx)
 
@@ -106,9 +106,9 @@ func (p *RedisProvider) Info(ctx context.Context) (ProviderInfo, error) {
 	}
 
 	return ProviderInfo{
-		Name:         p.Meta.Name,
-		Version:      version,
-		Installed:    installed,
+		Name:      p.Meta.Name,
+		Version:   version,
+		Installed: installed,
 		State: ProviderState{
 			Status: status,
 			Health: health,

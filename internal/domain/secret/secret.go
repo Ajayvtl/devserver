@@ -9,7 +9,7 @@ type Secret struct {
 	common.Metadata
 	EnvironmentID  common.EnvironmentID
 	Name           valueobjects.Name
-	Provider       string // e.g. "vault", "aws-secrets"
+	Provider       string                 // e.g. "vault", "aws-secrets"
 	Reference      valueobjects.Reference // External ID/path to the secret
 	RotationPolicy string
 	AccessPolicy   string

@@ -49,11 +49,11 @@ const (
 type WorkflowState string
 
 const (
-	WorkflowStatePending   WorkflowState = "pending"
-	WorkflowStateRunning   WorkflowState = "running"
-	WorkflowStateSuccess   WorkflowState = "success"
-	WorkflowStateFailed    WorkflowState = "failed"
-	WorkflowStateRollback  WorkflowState = "rollback"
+	WorkflowStatePending  WorkflowState = "pending"
+	WorkflowStateRunning  WorkflowState = "running"
+	WorkflowStateSuccess  WorkflowState = "success"
+	WorkflowStateFailed   WorkflowState = "failed"
+	WorkflowStateRollback WorkflowState = "rollback"
 )
 
 // ResourceState tracks the observed condition.

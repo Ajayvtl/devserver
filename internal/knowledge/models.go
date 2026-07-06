@@ -20,18 +20,18 @@ type Position struct {
 }
 
 type Symbol struct {
-	Name        string     `json:"name"`
-	Kind        SymbolKind `json:"kind"`
+	Name string     `json:"name"`
+	Kind SymbolKind `json:"kind"`
 
-	Package     string     `json:"package"`
-	Receiver    string     `json:"receiver,omitempty"`
+	Package  string `json:"package"`
+	Receiver string `json:"receiver,omitempty"`
 
-	Signature   string     `json:"signature,omitempty"`
-	Description string     `json:"description,omitempty"`
+	Signature   string `json:"signature,omitempty"`
+	Description string `json:"description,omitempty"`
 
-	Exported    bool       `json:"exported"`
+	Exported bool `json:"exported"`
 
-	Documentation string   `json:"documentation,omitempty"`
+	Documentation string `json:"documentation,omitempty"`
 
 	Position Position `json:"position"`
 
@@ -41,7 +41,7 @@ type Symbol struct {
 }
 
 type WorkspaceKnowledge struct {
-	Symbols    []Symbol      `json:"symbols"`
+	Symbols    []Symbol       `json:"symbols"`
 	References ReferenceIndex `json:"references"`
 
 	// In-memory indexes for constant-time lookups

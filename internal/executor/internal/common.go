@@ -32,5 +32,3 @@ func WithTimeout(ctx context.Context, duration time.Duration) (context.Context, 
 	}
 	return context.WithCancel(ctx)
 }
-
-

@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"sync"
+
+	"github.com/Ajayvtl/devserver/internal/application/envcontext"
 )
 
 var ErrExecutorNotFound = errors.New("executor not found in registry")
@@ -47,8 +49,21 @@ func (r *memoryRegistry) Get(ctx context.Context, id string) (Executor, error) {
 func (r *memoryRegistry) List(ctx context.Context) ([]Executor, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
+
 	var list []Executor
+	// If context has an active environment, we use it to filter executors.
+	// We create a dummy switcher to just extract the context key.
+	// Actually, we can just use a generic func or the switcher.
+	// A cleaner way is just instantiate envcontext.NewSwitcher(nil) to call FromContext.
+	switcher := envcontext.NewSwitcher(nil)
+	targetEnv, hasEnv := switcher.FromContext(ctx)
+
 	for _, exec := range r.executors {
+		if hasEnv {
+			if exec.Metadata().EnvironmentID != targetEnv {
+				continue
+			}
+		}
 		list = append(list, exec)
 	}
 	return list, nil

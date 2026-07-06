@@ -11,16 +11,18 @@ import (
 )
 
 type wslAdapter struct {
-	id         string
-	distro     string
-	localExec  contracts.Executor
+	id        string
+	envID     common.EnvironmentID
+	distro    string
+	localExec contracts.Executor
 }
 
-func New(id string, distro string) contracts.Executor {
+func New(id string, envID common.EnvironmentID, distro string) contracts.Executor {
 	return &wslAdapter{
 		id:        id,
+		envID:     envID,
 		distro:    distro,
-		localExec: local.New(id + "-local-delegate"),
+		localExec: local.New(id+"-local-delegate", envID),
 	}
 }
 
@@ -30,7 +32,7 @@ func (a *wslAdapter) Execute(ctx context.Context, act *action.Action) (*contract
 	}
 
 	wslTarget, _ := valueobjects.NewReference("wsl.exe")
-	
+
 	args := []string{"-d", a.distro, "-e", act.Target.String()}
 	args = append(args, act.Arguments...)
 
@@ -81,5 +83,5 @@ func (a *wslAdapter) Health(ctx context.Context) (common.HealthState, error) {
 }
 
 func (a *wslAdapter) Metadata() contracts.ExecutorMetadata {
-	return contracts.ExecutorMetadata{ID: a.id, Type: common.ExecutorTypeWSL, Version: "1.0"}
+	return contracts.ExecutorMetadata{ID: a.id, EnvironmentID: a.envID, Type: common.ExecutorTypeWSL, Version: "1.0"}
 }

@@ -139,7 +139,7 @@ func (q *queue) ResumeWait() <-chan struct{} {
 
 type queuedItem struct {
 	task *Task
-	seq uint64
+	seq  uint64
 }
 
 type priorityHeap []*queuedItem

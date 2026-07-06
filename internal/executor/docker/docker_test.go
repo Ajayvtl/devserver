@@ -10,8 +10,8 @@ import (
 )
 
 func TestDockerAdapter_Validate(t *testing.T) {
-	adapter := New("docker-1")
-	
+	adapter := New("docker-1", "development")
+
 	err := adapter.Validate(context.Background(), nil)
 	if err != contracts.ErrValidationFailed {
 		t.Errorf("expected ErrValidationFailed for nil action, got %v", err)
@@ -36,7 +36,7 @@ func TestDockerAdapter_Validate(t *testing.T) {
 
 func TestDockerAdapter_Detect(t *testing.T) {
 	// We only verify it doesn't panic and returns a valid diagnostic since docker might not be running
-	adapter := New("docker-test")
+	adapter := New("docker-test", "development")
 	ok, diag, _ := adapter.Detect(context.Background())
 	if !ok && len(diag) == 0 {
 		t.Errorf("expected diagnostics if detection fails")

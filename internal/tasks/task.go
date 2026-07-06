@@ -44,19 +44,19 @@ type Task struct {
 
 	CreatedBy string
 
-	Payload  map[string]any
-	Result   map[string]any
-	Error    string
+	Payload map[string]any
+	Result  map[string]any
+	Error   string
 
 	Metadata map[string]string
 
 	// Advanced capabilities
-	RetryCount      int
-	MaxRetries      int
-	Timeout         time.Duration
-	Tags            []string
-	ParentTaskID    string
-	ChildTaskIDs    []string
+	RetryCount   int
+	MaxRetries   int
+	Timeout      time.Duration
+	Tags         []string
+	ParentTaskID string
+	ChildTaskIDs []string
 }
 
 // Interfaces to break import cycles and provide compile-time safety

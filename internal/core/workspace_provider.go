@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -8,18 +9,17 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"context"
 
-	rt "github.com/Ajayvtl/devserver/internal/runtime"
 	"github.com/Ajayvtl/devserver/internal/providers"
+	rt "github.com/Ajayvtl/devserver/internal/runtime"
 )
 
 type WorkspaceProvider struct {
 	indexer  *Indexer
 	managers *providers.Manager
 
-	mu    sync.RWMutex
-	cache map[string]map[string]any
+	mu     sync.RWMutex
+	cache  map[string]map[string]any
 	status rt.Status
 }
 
@@ -134,26 +134,66 @@ func (p *WorkspaceProvider) Load(id string) (*WorkspaceContext, error) {
 		return nil, err
 	}
 	ctx := &WorkspaceContext{Workspace: *ws}
-	if v, _ := p.Project(id); v != nil { ctx.Project = *v }
-	if v, _ := p.Architecture(id); v != nil { ctx.Architecture = *v }
-	if v, _ := p.Dependencies(id); v != nil { ctx.Dependencies = *v }
-	if v, _ := p.Routes(id); v != nil { ctx.Routes = *v }
-	if v, _ := p.Database(id); v != nil { ctx.Database = *v }
-	if v, _ := p.Environment(id); v != nil { ctx.Environment = *v }
-	if v, _ := p.Git(id); v != nil { ctx.Git = *v }
-	if v, _ := p.GetHealth(id); v != nil { ctx.Health = *v }
-	if v, _ := p.Knowledge(id); v != nil { ctx.Knowledge = *v }
-	if v, _ := p.Tasks(id); v != nil { ctx.Tasks = *v }
-	if v, _ := p.Plugins(id); v != nil { ctx.Plugins = *v }
-	if v, _ := p.Infrastructure(id); v != nil { ctx.Infrastructure = *v }
-	if v, _ := p.Services(id); v != nil { ctx.Services = v }
-	if v, _ := p.Deployments(id); v != nil { ctx.Deployments = *v }
-	if v, _ := p.Domains(id); v != nil { ctx.Domains = *v }
-	if v, _ := p.Logs(id); v != nil { ctx.Logs = *v }
-	if v, _ := p.AI(id); v != nil { ctx.AI = *v }
-	if v, _ := p.MCP(id); v != nil { ctx.MCP = *v }
-	if v, _ := p.Index(id); v != nil { ctx.Index = *v }
-	if v, _ := p.CacheInfo(id); v != nil { ctx.Cache = *v }
+	if v, _ := p.Project(id); v != nil {
+		ctx.Project = *v
+	}
+	if v, _ := p.Architecture(id); v != nil {
+		ctx.Architecture = *v
+	}
+	if v, _ := p.Dependencies(id); v != nil {
+		ctx.Dependencies = *v
+	}
+	if v, _ := p.Routes(id); v != nil {
+		ctx.Routes = *v
+	}
+	if v, _ := p.Database(id); v != nil {
+		ctx.Database = *v
+	}
+	if v, _ := p.Environment(id); v != nil {
+		ctx.Environment = *v
+	}
+	if v, _ := p.Git(id); v != nil {
+		ctx.Git = *v
+	}
+	if v, _ := p.GetHealth(id); v != nil {
+		ctx.Health = *v
+	}
+	if v, _ := p.Knowledge(id); v != nil {
+		ctx.Knowledge = *v
+	}
+	if v, _ := p.Tasks(id); v != nil {
+		ctx.Tasks = *v
+	}
+	if v, _ := p.Plugins(id); v != nil {
+		ctx.Plugins = *v
+	}
+	if v, _ := p.Infrastructure(id); v != nil {
+		ctx.Infrastructure = *v
+	}
+	if v, _ := p.Services(id); v != nil {
+		ctx.Services = v
+	}
+	if v, _ := p.Deployments(id); v != nil {
+		ctx.Deployments = *v
+	}
+	if v, _ := p.Domains(id); v != nil {
+		ctx.Domains = *v
+	}
+	if v, _ := p.Logs(id); v != nil {
+		ctx.Logs = *v
+	}
+	if v, _ := p.AI(id); v != nil {
+		ctx.AI = *v
+	}
+	if v, _ := p.MCP(id); v != nil {
+		ctx.MCP = *v
+	}
+	if v, _ := p.Index(id); v != nil {
+		ctx.Index = *v
+	}
+	if v, _ := p.CacheInfo(id); v != nil {
+		ctx.Cache = *v
+	}
 	return ctx, nil
 }
 
@@ -265,7 +305,7 @@ func (p *WorkspaceProvider) Services(id string) ([]providers.ProviderInfo, error
 		if err != nil {
 			// Instead of failing the entire list, just add what we know and mark status unknown
 			info = providers.ProviderInfo{
-				Name:   provider.Metadata().Name,
+				Name: provider.Metadata().Name,
 				State: providers.ProviderState{
 					Status: providers.StatusFailed,
 					Health: providers.HealthUnknown,
@@ -384,15 +424,25 @@ func (p *WorkspaceProvider) ReadFile(id, filePath string) (string, error) {
 func (p *WorkspaceProvider) Overview(id string) (map[string]any, error) {
 	// Need Workspace, Project, Health, Git, Plugins
 	ws, err := p.Workspace(id)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	proj, err := p.Project(id)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	health, err := p.GetHealth(id)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	gitInfo, err := p.Git(id)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	plugins, err := p.Plugins(id)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 
 	return map[string]any{
 		"workspace": ws,
@@ -405,24 +455,42 @@ func (p *WorkspaceProvider) Overview(id string) (map[string]any, error) {
 
 func (p *WorkspaceProvider) Doctor(id string) (map[string]any, error) {
 	health, err := p.GetHealth(id)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	proj, err := p.Project(id)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	gitInfo, err := p.Git(id)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	plugins, err := p.Plugins(id)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	deps, err := p.Dependencies(id)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	routes, err := p.Routes(id)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	infra, err := p.Infrastructure(id)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 
 	score := 0
-	if health != nil { score = health.Score }
+	if health != nil {
+		score = health.Score
+	}
 	branch := ""
-	if gitInfo != nil { branch = gitInfo.Branch }
+	if gitInfo != nil {
+		branch = gitInfo.Branch
+	}
 
 	return map[string]any{
 		"health":  health,
@@ -507,7 +575,7 @@ func (p *WorkspaceProvider) Files(id string, query string) (map[string]any, erro
 	if err != nil {
 		return nil, err
 	}
-	
+
 	files := cacheInfo.Files
 	if query != "" {
 		filtered := make([]WorkspaceFileInfo, 0)
@@ -577,11 +645,17 @@ func languageForFile(path string) string {
 
 func (p *WorkspaceProvider) Settings(id string) (map[string]any, error) {
 	ws, err := p.Workspace(id)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	idx, err := p.Index(id)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 	c, err := p.CacheInfo(id)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 
 	return map[string]any{
 		"workspace": ws,
