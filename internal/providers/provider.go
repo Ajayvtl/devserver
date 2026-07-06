@@ -52,10 +52,11 @@ type ProviderInfo struct {
 
 // ProviderMetadata describes the provider.
 type ProviderMetadata struct {
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	Version     string   `json:"version"`
-	Tags        []string `json:"tags"`
+	Name        string         `json:"name"`
+	Description string         `json:"description"`
+	Version     string         `json:"version"`
+	Tags        []string       `json:"tags"`
+	Properties  map[string]any `json:"properties,omitempty"`
 }
 
 // Provider represents a managed dependency (Node, Redis, Docker, etc.).

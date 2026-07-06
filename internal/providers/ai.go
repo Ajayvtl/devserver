@@ -20,6 +20,14 @@ func NewAIProvider(runtime legacy.Runtime) *AIProvider {
 			Name:        "ollama",
 			Description: "Local AI Runtime (Ollama)",
 			Version:     "latest",
+			Tags:        []string{"ai", "llm", "local"},
+			Properties: map[string]any{
+				"capabilities": map[string]bool{
+					"models":     true,
+					"embeddings": true,
+					"streaming":  true,
+				},
+			},
 		},
 	}
 }

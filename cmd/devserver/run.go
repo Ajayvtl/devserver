@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/Ajayvtl/devserver/internal/ai"
 	"github.com/Ajayvtl/devserver/internal/bootstrap"
 	"github.com/Ajayvtl/devserver/internal/capabilities"
 	"github.com/Ajayvtl/devserver/internal/commands"
@@ -191,6 +192,9 @@ func runServer(ctx context.Context, log zerolog.Logger) error {
 
 	server := core.NewAPIServer(log, db, indexer, provider, taskEngine, taskStream, commandEngine, capRegistry, ":8080")
 
+	// Phase 6: AI Runtime
+	aiRuntime := ai.NewRuntime(log, provider, indexer)
+
 	// Phase 2: Runtime Bootstrap
 	rtReg := rt.NewRegistry()
 	_ = rtReg.Register(taskStream)
@@ -200,6 +204,7 @@ func runServer(ctx context.Context, log zerolog.Logger) error {
 	_ = rtReg.Register(taskEngine)
 	_ = rtReg.Register(commandEngine)
 	_ = rtReg.Register(server)
+	_ = rtReg.Register(aiRuntime)
 
 	coordinator := rt.NewCoordinator(rtReg)
 
