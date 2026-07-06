@@ -36,12 +36,15 @@ type Store interface {
 type Service interface {
 	// Management
 	CreateEnvironment(ctx context.Context, ownerID, name string, envType EnvType) (*Environment, error)
+	ListEnvironments(ctx context.Context, ownerID string) ([]*Environment, error)
 
 	// Variables
 	SetVariable(ctx context.Context, envID, key, value string) error
+	ListVariables(ctx context.Context, envID string) ([]*Variable, error)
 
 	// Secrets
 	SetSecret(ctx context.Context, envID, key, plaintext string) error
+	ListSecrets(ctx context.Context, envID string) ([]*SecretReference, error)
 
 	// Resolution
 	Resolve(ctx context.Context, envID string) (map[string]string, error)
@@ -74,6 +77,10 @@ func (s *DefaultService) CreateEnvironment(ctx context.Context, ownerID, name st
 	return env, nil
 }
 
+func (s *DefaultService) ListEnvironments(ctx context.Context, ownerID string) ([]*Environment, error) {
+	return s.store.ListEnvironments(ctx, ownerID)
+}
+
 func (s *DefaultService) SetVariable(ctx context.Context, envID, key, value string) error {
 	variable := &Variable{
 		EnvID: envID,
@@ -81,6 +88,10 @@ func (s *DefaultService) SetVariable(ctx context.Context, envID, key, value stri
 		Value: value,
 	}
 	return s.store.UpsertVariable(ctx, variable)
+}
+
+func (s *DefaultService) ListVariables(ctx context.Context, envID string) ([]*Variable, error) {
+	return s.store.ListVariables(ctx, envID)
 }
 
 func (s *DefaultService) SetSecret(ctx context.Context, envID, key, plaintext string) error {
@@ -95,6 +106,10 @@ func (s *DefaultService) SetSecret(ctx context.Context, envID, key, plaintext st
 		Value: ciphertext,
 	}
 	return s.store.UpsertSecret(ctx, secret)
+}
+
+func (s *DefaultService) ListSecrets(ctx context.Context, envID string) ([]*SecretReference, error) {
+	return s.store.ListSecrets(ctx, envID)
 }
 
 // Resolve fully expands an environment context.

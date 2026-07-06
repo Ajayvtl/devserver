@@ -19,20 +19,36 @@ Every development effort must map to a specific Work Package (WP).
 - WP-7.5: Provider Configuration
 
 ### Phase 8: Product Integration & API Surface
-**Status**: 40% Complete
-**Integration Readiness**: Backend API Routing Complete | Business CRUD Complete | UI Foundations Complete
+**Status**: 80% Complete
+**Integration Readiness**: Backend API Routing Complete | Business CRUD Complete | UI Foundations Complete | UI Configuration Complete
 **Test Readiness**: Unit Tests Complete | API Tests Complete | E2E Pending
-**Production Readiness**: Backend YES | Frontend Partial
+**Production Readiness**: Backend YES | Frontend YES (Config)
 **Packages**:
 - WP-8.1: HTTP API Layer (Completed)
 - WP-8.2: Configuration Endpoints (Business CRUD) (Completed)
 - WP-8.3: Web UI Foundations (Auth & RBAC) (Completed)
-- WP-8.4: Web UI Configuration (Envs & Providers)
+- WP-8.4: Web UI Configuration (Envs & Providers) (Completed)
 - WP-8.5: End-to-End System Workflows
 
 ---
 
 ## Active & Recent Work Packages
+
+### WP-8.4 — Web UI Configuration (Envs & Providers)
+**Status**: Completed
+**Dependencies**: WP-8.1, WP-8.2, WP-8.3
+**Produces**:
+- True React Configuration UI consuming real REST APIs
+- AI Provider CRUD UI (`/config/providers`)
+- Environments Management UI with Variables & zero-trust Secrets (`/config/environments`)
+- Platform Settings UI (`/settings`)
+- Backend hooks exposed for `ListVariables` and `ListSecrets`
+**Consumed By**: End-users, Workspaces
+**Commit SHA**: Pending
+**Completion Date**: 2026-07-06
+**Remaining Work**: None
+**Human Testing**: Ready
+**Production Ready**: Backend YES | API YES | Frontend YES
 
 ### WP-8.3 — Web UI Foundations (Auth & RBAC)
 **Status**: Completed

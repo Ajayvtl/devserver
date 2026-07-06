@@ -133,12 +133,19 @@ func (router *Router) handleRoles(w http.ResponseWriter, r *http.Request) {
 
 func (router *Router) handleSettings(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		val, err := router.settingsService.GetSettingValue(r.Context(), "global", "system", "theme")
-		if err != nil {
-			WriteError(w, http.StatusNotFound, "NOT_FOUND", "Setting not found", nil)
+		scope := r.URL.Query().Get("scope")
+		ownerID := r.URL.Query().Get("ownerId")
+		if scope == "" || ownerID == "" {
+			WriteError(w, http.StatusBadRequest, "INVALID_REQUEST", "scope and ownerId are required", nil)
 			return
 		}
-		WriteSuccess(w, http.StatusOK, map[string]string{"theme": val})
+
+		sets, err := router.settingsService.ListSettings(r.Context(), settings.Scope(scope), ownerID)
+		if err != nil {
+			WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to retrieve settings", nil)
+			return
+		}
+		WriteSuccess(w, http.StatusOK, sets)
 		return
 	} else if r.Method == http.MethodPost {
 		var req settings.Setting
@@ -159,10 +166,37 @@ func (router *Router) handleSettings(w http.ResponseWriter, r *http.Request) {
 func (router *Router) handleEnvironments(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		ownerID := r.URL.Query().Get("ownerId")
-		_ = ownerID
-		envs, _ := router.envService.(*environments.DefaultService) // If we needed to cast for specific queries not in interface
-		_ = envs
-		WriteSuccess(w, http.StatusOK, []map[string]string{})
+		if ownerID == "" {
+			WriteError(w, http.StatusBadRequest, "INVALID_REQUEST", "ownerId is required", nil)
+			return
+		}
+		envs, err := router.envService.ListEnvironments(r.Context(), ownerID)
+		if err != nil {
+			WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to retrieve environments", nil)
+			return
+		}
+		WriteSuccess(w, http.StatusOK, envs)
+		return
+	} else if r.Method == http.MethodPost {
+		var req struct {
+			OwnerID string `json:"ownerId"`
+			Name    string `json:"name"`
+			Type    string `json:"type"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			WriteError(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid JSON payload", nil)
+			return
+		}
+		if req.OwnerID == "" || req.Name == "" || req.Type == "" {
+			WriteError(w, http.StatusBadRequest, "VALIDATION_ERROR", "Missing required fields", nil)
+			return
+		}
+		env, err := router.envService.CreateEnvironment(r.Context(), req.OwnerID, req.Name, environments.EnvType(req.Type))
+		if err != nil {
+			WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to create environment", nil)
+			return
+		}
+		WriteSuccess(w, http.StatusCreated, env)
 		return
 	}
 	WriteError(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
@@ -182,6 +216,54 @@ func (router *Router) handleSecrets(w http.ResponseWriter, r *http.Request) {
 
 		if err := router.envService.SetSecret(r.Context(), req.EnvID, req.Key, req.Plaintext); err != nil {
 			WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to save secret", nil)
+			return
+		}
+		WriteSuccess(w, http.StatusOK, map[string]string{"status": "saved"})
+		return
+	} else if r.Method == http.MethodGet {
+		envID := r.URL.Query().Get("envId")
+		if envID == "" {
+			WriteError(w, http.StatusBadRequest, "INVALID_REQUEST", "envId is required", nil)
+			return
+		}
+		// We only want to return secret references, not raw values.
+		secrets, err := router.envService.ListSecrets(r.Context(), envID)
+		if err != nil {
+			WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to retrieve secrets", nil)
+			return
+		}
+		WriteSuccess(w, http.StatusOK, secrets)
+		return
+	}
+	WriteError(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
+}
+
+func (router *Router) handleVariables(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		envID := r.URL.Query().Get("envId")
+		if envID == "" {
+			WriteError(w, http.StatusBadRequest, "INVALID_REQUEST", "envId is required", nil)
+			return
+		}
+		vars, err := router.envService.ListVariables(r.Context(), envID)
+		if err != nil {
+			WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to retrieve variables", nil)
+			return
+		}
+		WriteSuccess(w, http.StatusOK, vars)
+		return
+	} else if r.Method == http.MethodPost {
+		var req struct {
+			EnvID string `json:"envId"`
+			Key   string `json:"key"`
+			Value string `json:"value"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			WriteError(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid JSON payload", nil)
+			return
+		}
+		if err := router.envService.SetVariable(r.Context(), req.EnvID, req.Key, req.Value); err != nil {
+			WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to save variable", nil)
 			return
 		}
 		WriteSuccess(w, http.StatusOK, map[string]string{"status": "saved"})

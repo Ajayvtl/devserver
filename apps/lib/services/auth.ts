@@ -2,7 +2,7 @@ import { request, setApiToken, submitCommand } from '../api/client'
 import type { CommandRecord, LoginData } from '../types'
 
 export async function getLoginData(): Promise<LoginData> {
-  return { provider: 'local', title: 'Sign In', branding: 'DevServer', supportEmail: 'admin@localhost', features: [] }
+  return { branding: 'DevServer', subtitle: 'Sign in to continue', supportEmail: 'admin@localhost', knowledgeArticles: [] }
 }
 
 export async function authenticate(email: string, password: string, remember: boolean): Promise<{ ok: boolean; message: string }> {

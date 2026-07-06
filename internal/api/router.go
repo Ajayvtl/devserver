@@ -59,8 +59,9 @@ func (router *Router) Register(mux *http.ServeMux) {
 	// 6. Environments
 	mux.Handle("/api/v1/environments", protect(http.HandlerFunc(router.handleEnvironments)))
 
-	// 7. Secrets
+	// 7. Secrets and Variables
 	mux.Handle("/api/v1/secrets", protect(http.HandlerFunc(router.handleSecrets)))
+	mux.Handle("/api/v1/variables", protect(http.HandlerFunc(router.handleVariables)))
 
 	// 8. Provider Configuration
 	mux.Handle("/api/v1/providers", protect(http.HandlerFunc(router.handleProviders)))

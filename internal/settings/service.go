@@ -28,9 +28,11 @@ type Store interface {
 // Service manages the business logic for settings and integrations.
 type Service interface {
 	GetSettingValue(ctx context.Context, scope Scope, ownerID, key string) (string, error)
+	ListSettings(ctx context.Context, scope Scope, ownerID string) ([]*Setting, error)
 	SaveSetting(ctx context.Context, scope Scope, ownerID, key, value string) error
 
 	GetIntegration(ctx context.Context, id string) (*Integration, error)
+	ListIntegrations(ctx context.Context, scope Scope, ownerID string) ([]*Integration, error)
 	SaveIntegration(ctx context.Context, integration *Integration) error
 }
 
@@ -55,6 +57,10 @@ func (s *DefaultService) GetSettingValue(ctx context.Context, scope Scope, owner
 	return setting.Value, nil
 }
 
+func (s *DefaultService) ListSettings(ctx context.Context, scope Scope, ownerID string) ([]*Setting, error) {
+	return s.store.ListSettings(ctx, scope, ownerID)
+}
+
 func (s *DefaultService) SaveSetting(ctx context.Context, scope Scope, ownerID, key, value string) error {
 	setting := &Setting{
 		Scope:   scope,
@@ -67,6 +73,10 @@ func (s *DefaultService) SaveSetting(ctx context.Context, scope Scope, ownerID, 
 
 func (s *DefaultService) GetIntegration(ctx context.Context, id string) (*Integration, error) {
 	return s.store.GetIntegration(ctx, id)
+}
+
+func (s *DefaultService) ListIntegrations(ctx context.Context, scope Scope, ownerID string) ([]*Integration, error) {
+	return s.store.ListIntegrations(ctx, scope, ownerID)
 }
 
 func (s *DefaultService) SaveIntegration(ctx context.Context, integration *Integration) error {
