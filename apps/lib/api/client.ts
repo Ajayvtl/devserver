@@ -1,9 +1,11 @@
 export type ApiMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
-export interface ApiErrorShape {
-  error?: string
+export interface APIResponse<T = unknown> {
+  success: boolean
   code?: string
+  message?: string
   details?: unknown
+  data?: T
 }
 
 export class ApiError extends Error {
@@ -107,15 +109,19 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
       })
 
       if (!response.ok) {
-        const payload = (await safeJson(response)) as ApiErrorShape | undefined
-        throw new ApiError(payload?.error ?? response.statusText, response.status, payload?.code, payload?.details)
+        const payload = (await safeJson(response)) as APIResponse | undefined
+        throw new ApiError(payload?.message ?? response.statusText, response.status, payload?.code, payload?.details)
       }
 
       if (response.status === 204) {
         return undefined as T
       }
 
-      return (await safeJson(response)) as T
+      const payload = (await safeJson(response)) as APIResponse<T>
+      if (!payload.success) {
+        throw new ApiError(payload.message ?? 'Unknown error', response.status, payload.code, payload.details)
+      }
+      return payload.data as T
     } catch (error) {
       if (attempt >= retries) {
         if (error instanceof ApiError) {
