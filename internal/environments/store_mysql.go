@@ -76,13 +76,32 @@ func initSchema(db *sql.DB) error {
 	return nil
 }
 
-func (s *MySQLStore) UpsertEnvironment(ctx context.Context, env *Environment) error {
+func (s *MySQLStore) UpsertEnvironment(ctx context.Context, env *Environment, expectedUpdatedAt *time.Time) error {
 	now := time.Now().UTC()
 	if env.ID == "" {
 		env.ID = uuid.NewString()
 		env.CreatedAt = now
 	}
 	env.UpdatedAt = now
+
+	if expectedUpdatedAt != nil {
+		// Use explicit update for optimistic locking
+		res, err := s.db.ExecContext(ctx,
+			`UPDATE environments SET name = ?, type = ?, updated_at = ? WHERE id = ? AND updated_at = ?`,
+			env.Name, string(env.Type), env.UpdatedAt.Format("2006-01-02 15:04:05"), env.ID, expectedUpdatedAt.Format("2006-01-02 15:04:05"),
+		)
+		if err != nil {
+			return err
+		}
+		rowsAffected, err := res.RowsAffected()
+		if err != nil {
+			return err
+		}
+		if rowsAffected == 0 {
+			return common.ErrOptimisticLock
+		}
+		return nil
+	}
 
 	_, err := s.db.ExecContext(ctx,
 		`INSERT INTO environments (id, owner_id, name, type, created_at, updated_at) 

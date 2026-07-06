@@ -316,8 +316,8 @@ func (s *MySQLStore) ListOrganizationsForUser(ctx context.Context, userID string
 	var total int
 	err := s.db.QueryRowContext(ctx, `
 		SELECT COUNT(o.id)
-		FROM rbac_organizations o
-		JOIN rbac_memberships m ON o.id = m.org_id
+		FROM organizations o
+		JOIN memberships m ON o.id = m.org_id
 		WHERE m.user_id = ?
 	`, userID).Scan(&total)
 	if err != nil {
@@ -339,8 +339,8 @@ func (s *MySQLStore) ListOrganizationsForUser(ctx context.Context, userID string
 
 	query := fmt.Sprintf(`
 		SELECT o.id, o.name, o.created_at, o.updated_at 
-		FROM rbac_organizations o
-		JOIN rbac_memberships m ON o.id = m.org_id
+		FROM organizations o
+		JOIN memberships m ON o.id = m.org_id
 		WHERE m.user_id = ?
 		ORDER BY %s %s
 		LIMIT ? OFFSET ?

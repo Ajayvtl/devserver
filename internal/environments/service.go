@@ -3,6 +3,7 @@ package environments
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/Ajayvtl/devserver/internal/domain/common"
 	"github.com/rs/zerolog"
@@ -18,7 +19,7 @@ var (
 type Store interface {
 	GetEnvironment(ctx context.Context, id string) (*Environment, error)
 	ListEnvironments(ctx context.Context, ownerID string, params common.QueryParams) ([]*Environment, int, error)
-	UpsertEnvironment(ctx context.Context, env *Environment) error
+	UpsertEnvironment(ctx context.Context, env *Environment, expectedUpdatedAt *time.Time) error
 	DeleteEnvironment(ctx context.Context, id string) error
 
 	GetVariable(ctx context.Context, envID, key string) (*Variable, error)
@@ -72,7 +73,7 @@ func (s *DefaultService) CreateEnvironment(ctx context.Context, ownerID, name st
 		Name:    name,
 		Type:    envType,
 	}
-	if err := s.store.UpsertEnvironment(ctx, env); err != nil {
+	if err := s.store.UpsertEnvironment(ctx, env, nil); err != nil {
 		return nil, err
 	}
 	return env, nil

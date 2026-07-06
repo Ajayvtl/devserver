@@ -47,7 +47,7 @@ func (router *Router) Register(mux *http.ServeMux) {
 
 	// Protected endpoints wrapper
 	protect := func(h http.Handler) http.Handler {
-		return AuthMiddleware(router.authService)(AuditMiddleware(router.bus)(h))
+		return IdempotencyMiddleware()(AuthMiddleware(router.authService)(AuditMiddleware(router.bus)(h)))
 	}
 
 	// 2. Organizations
