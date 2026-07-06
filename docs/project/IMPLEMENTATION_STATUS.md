@@ -84,4 +84,11 @@ This phase bridges the deeply isolated backend foundational services to the user
 * **WP-8.6.16 Design System 2.0**: (Not Started) Redesign of typography scale, tokens, responsive grid, components, and accessibility.
 * **WP-8.6.17 Production UX Rewrite**: (Not Started) Rewrite of login, workspaces, settings, and navigation screens utilizing the new design system.
 * **WP-8.6.18 Enterprise Dashboard**: (Not Started) Live-data telemetry widgets replacing placeholder CPU, memory, and provider configs.
+* **WP-8.6.19 Responsive UI Validation**: (Not Started) Multi-device layout and navigation drawer tests.
+* **WP-8.6.20 Empty / Loading / Error States**: (Not Started) Skeleton UI and graceful error components.
+* **WP-8.6.21 Accessibility Audit**: (Not Started) WCAG AA contrast, keyboard accessibility mapping, and screen-readers check.
+* **WP-8.6.22 Product Copy Review**: (Not Started) Purging dummy and dev-only explanatory placeholder texts.
+* **WP-8.6.23 Screen Inventory**: (Not Started) Functional screen catalog verification.
+* **WP-8.6.24 API ➔ UI Mapping**: (Not Started) Dynamic endpoint coverage and active views matrix.
+
 
