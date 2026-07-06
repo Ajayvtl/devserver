@@ -10,6 +10,7 @@ import { Input } from '../ui/input'
 import { useAuth } from '@/components/auth/auth-context'
 import { request, requestOrFallback } from '@/lib/api/client'
 import { useToast } from '../toast'
+import { OrgsPanel } from './orgs-panel'
 
 export function SettingsPage() {
   const { currentOrgId, can } = useAuth()
@@ -23,6 +24,7 @@ export function SettingsPage() {
   const [theme, setTheme] = useState('dark')
   const [language, setLanguage] = useState('en-US')
   const [mfaEnabled, setMfaEnabled] = useState('false')
+  const [activeTab, setActiveTab] = useState('general')
 
   const loadSettings = async () => {
     if (!currentOrgId) return
@@ -92,11 +94,28 @@ export function SettingsPage() {
         title="Organization Settings"
         description="Control platform preferences, security posture, and integrations."
         actions={
-          <Button variant="primary" onClick={handleSave} disabled={saving || !hasWriteAccess}>
+          <Button variant="primary" onClick={handleSave} disabled={saving || !hasWriteAccess || activeTab !== 'general'}>
             {saving ? 'Saving...' : 'Save changes'}
           </Button>
         }
       />
+
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem' }}>
+        <button 
+          onClick={() => setActiveTab('general')}
+          style={{ background: 'none', border: 'none', color: activeTab === 'general' ? '#fff' : '#888', cursor: 'pointer', fontSize: '1rem', fontWeight: activeTab === 'general' ? 600 : 400 }}
+        >
+          General
+        </button>
+        <button 
+          onClick={() => setActiveTab('orgs')}
+          style={{ background: 'none', border: 'none', color: activeTab === 'orgs' ? '#fff' : '#888', cursor: 'pointer', fontSize: '1rem', fontWeight: activeTab === 'orgs' ? 600 : 400 }}
+        >
+          Organizations
+        </button>
+      </div>
+
+      {activeTab === 'general' && (
 
       <div className="page-grid--two">
         <Card>
@@ -148,6 +167,11 @@ export function SettingsPage() {
           />
         </Card>
       </div>
+      )}
+
+      {activeTab === 'orgs' && (
+        <OrgsPanel />
+      )}
     </div>
   )
 }

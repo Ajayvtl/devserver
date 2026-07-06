@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/Ajayvtl/devserver/internal/auth"
+	"github.com/Ajayvtl/devserver/internal/events"
 	"github.com/Ajayvtl/devserver/internal/rbac"
 )
 
@@ -64,6 +65,49 @@ func RBACMiddleware(rbacService rbac.Service, requiredPermission string) func(ht
 
 			ctx := context.WithValue(r.Context(), ContextKeyOrgID, orgID)
 			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
+type responseRecorder struct {
+	http.ResponseWriter
+	status int
+}
+
+func (rr *responseRecorder) WriteHeader(code int) {
+	rr.status = code
+	rr.ResponseWriter.WriteHeader(code)
+}
+
+func AuditMiddleware(bus events.Bus) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Only audit mutations
+			if r.Method != http.MethodPost && r.Method != http.MethodPut && r.Method != http.MethodDelete && r.Method != http.MethodPatch {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			rr := &responseRecorder{ResponseWriter: w, status: http.StatusOK}
+			next.ServeHTTP(rr, r)
+
+			if rr.status >= 200 && rr.status < 400 {
+				userID, _ := r.Context().Value(ContextKeyUserID).(string)
+				if userID == "" {
+					userID = "system"
+				}
+
+				action := r.Method + " " + r.URL.Path
+				
+				// In a full implementation, we'd save this to DB directly or via bus
+				// For WP-8.5 Audit Trail requirement:
+				bus.Publish(events.EventType("audit.mutation"), map[string]any{
+					"userId":    userID,
+					"action":    action,
+					"ipAddress": r.RemoteAddr,
+					"userAgent": r.UserAgent(),
+				})
+			}
 		})
 	}
 }

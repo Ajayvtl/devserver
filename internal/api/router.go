@@ -5,6 +5,7 @@ import (
 
 	"github.com/Ajayvtl/devserver/internal/auth"
 	"github.com/Ajayvtl/devserver/internal/environments"
+	"github.com/Ajayvtl/devserver/internal/events"
 	"github.com/Ajayvtl/devserver/internal/providerconfig"
 	"github.com/Ajayvtl/devserver/internal/rbac"
 	"github.com/Ajayvtl/devserver/internal/settings"
@@ -16,6 +17,7 @@ type Router struct {
 	settingsService settings.Service
 	envService      environments.Service
 	providerService providerconfig.Service
+	bus             events.Bus
 }
 
 func NewRouter(
@@ -24,6 +26,7 @@ func NewRouter(
 	settingsService settings.Service,
 	envService environments.Service,
 	providerService providerconfig.Service,
+	bus events.Bus,
 ) *Router {
 	return &Router{
 		authService:     authService,
@@ -31,6 +34,7 @@ func NewRouter(
 		settingsService: settingsService,
 		envService:      envService,
 		providerService: providerService,
+		bus:             bus,
 	}
 }
 
@@ -42,7 +46,9 @@ func (router *Router) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/api/v1/auth/refresh", router.handleRefresh)
 
 	// Protected endpoints wrapper
-	protect := AuthMiddleware(router.authService)
+	protect := func(h http.Handler) http.Handler {
+		return AuthMiddleware(router.authService)(AuditMiddleware(router.bus)(h))
+	}
 
 	// 2. Organizations
 	mux.Handle("/api/v1/organizations", protect(http.HandlerFunc(router.handleOrganizations)))

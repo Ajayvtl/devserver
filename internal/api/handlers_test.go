@@ -34,7 +34,7 @@ func (m *mockRBACForHandlers) AddMembership(ctx context.Context, mem *rbac.Membe
 }
 
 func TestHandleOrganizationsGet(t *testing.T) {
-	router := NewRouter(nil, &mockRBACForHandlers{}, nil, nil, nil)
+	router := NewRouter(nil, &mockRBACForHandlers{}, nil, nil, nil, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/organizations", nil)
 	req = req.WithContext(context.WithValue(req.Context(), ContextKeyUserID, "user-1"))
@@ -54,7 +54,7 @@ func TestHandleOrganizationsGet(t *testing.T) {
 }
 
 func TestHandleOrganizationsPost(t *testing.T) {
-	router := NewRouter(nil, &mockRBACForHandlers{}, nil, nil, nil)
+	router := NewRouter(nil, &mockRBACForHandlers{}, nil, nil, nil, nil)
 
 	body, _ := json.Marshal(map[string]string{"name": "New Org"})
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/organizations", bytes.NewBuffer(body))

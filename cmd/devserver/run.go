@@ -267,6 +267,7 @@ func runServer(ctx context.Context, log zerolog.Logger, cfg config.Config) error
 		settingsService,
 		envService,
 		providerConfigService,
+		bus,
 	)
 
 	server := core.NewAPIServer(log, db, indexer, provider, taskEngine, taskStream, commandEngine, capRegistry, apiRouter, ":8080")
