@@ -28,11 +28,26 @@ Every development effort must map to a specific Work Package (WP).
 - WP-8.2: Configuration Endpoints (Business CRUD) (Completed)
 - WP-8.3: Web UI Foundations (Auth & RBAC) (Completed)
 - WP-8.4: Web UI Configuration (Envs & Providers) (Completed)
-- WP-8.5: End-to-End System Workflows
+- WP-8.5: End-to-End System Workflows (Completed)
+- WP-8.6: Production Validation, Hardening & Acceptance Testing
 
 ---
 
 ## Active & Recent Work Packages
+
+### WP-8.6 — Production Validation, Hardening & Acceptance Testing
+**Status**: Not Started
+**Dependencies**: WP-8.1, WP-8.2, WP-8.3, WP-8.4, WP-8.5
+**Produces**:
+- Persistent Audit Trail with database storage and Viewer UI
+- Deep RBAC validation (Viewer/Editor cross-tenant denial checks)
+- Concurrency and optimistic locking verification
+- Provider failure edge-case testing (timeouts, DNS, invalid keys)
+- Environment inheritance and fallback resolution testing
+- Comprehensive frontend browser E2E workflows and multi-tab state syncing
+**Consumed By**: DevServer Platform Release
+**Human Testing**: Pending
+**Production Ready**: NO
 
 ### WP-8.4 — Web UI Configuration (Envs & Providers)
 **Status**: Completed
