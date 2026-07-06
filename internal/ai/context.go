@@ -32,28 +32,40 @@ func NewContextAssembler(logger zerolog.Logger, workspace *core.WorkspaceProvide
 }
 
 // Assemble pulls together the full workspace context for the given workspace ID.
-func (c *ContextAssembler) Assemble(ctx context.Context, workspaceID common.WorkspaceID) (*AssembledContext, error) {
+func (c *ContextAssembler) Assemble(ctx context.Context, workspaceID common.WorkspaceID, editorState map[string]any) (*AssembledContext, error) {
 	wsContext, err := c.workspace.Load(string(workspaceID))
 	if err != nil {
 		return nil, fmt.Errorf("failed to load workspace context: %w", err)
 	}
 
-	// In the future, we will also fetch the Editor Session (open tabs, cursor position)
-	// from the editor.SessionManager via the EventBridge or direct dependency.
+	if editorState == nil {
+		editorState = make(map[string]any)
+	}
 
-	summary := c.generateSummary(wsContext)
+	summary := c.generateSummary(wsContext, editorState)
 
 	return &AssembledContext{
 		WorkspaceContext: wsContext,
-		EditorState:      make(map[string]any),
+		EditorState:      editorState,
 		Summary:          summary,
 	}, nil
 }
 
-func (c *ContextAssembler) generateSummary(ws *core.WorkspaceContext) string {
+func (c *ContextAssembler) generateSummary(ws *core.WorkspaceContext, editor map[string]any) string {
 	var builder strings.Builder
 
 	builder.WriteString(fmt.Sprintf("Workspace: %s\n", ws.Workspace.Name))
+
+	// Inject Editor Context if present
+	if file, ok := editor["file"].(string); ok && file != "" {
+		builder.WriteString(fmt.Sprintf("Active File: %s\n", file))
+	}
+	if language, ok := editor["language"].(string); ok && language != "" {
+		builder.WriteString(fmt.Sprintf("Language: %s\n", language))
+	}
+	if selectedText, ok := editor["selectedText"].(string); ok && selectedText != "" {
+		builder.WriteString(fmt.Sprintf("Selected Text:\n```\n%s\n```\n", selectedText))
+	}
 
 	if ws.Git.Branch != "" {
 		builder.WriteString(fmt.Sprintf("Git Branch: %s\n", ws.Git.Branch))

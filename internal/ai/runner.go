@@ -37,9 +37,30 @@ func (r *TaskRunner) Execute(ctx context.Context, task *tasks.Task, runtime *tas
 
 	model, _ := task.Payload["model"].(string)
 
+	// Extract editor state from payload
+	editorState := make(map[string]any)
+	if ctxMap, ok := task.Payload["context"].(map[string]any); ok {
+		editorState = ctxMap
+	} else {
+		// Fallback for flat structure
+		if file, ok := task.Payload["file"].(string); ok {
+			editorState["file"] = file
+		}
+		if language, ok := task.Payload["language"].(string); ok {
+			editorState["language"] = language
+		}
+		if selectedText, ok := task.Payload["selectedText"].(string); ok {
+			editorState["selectedText"] = selectedText
+		}
+		if cursor, ok := task.Payload["cursor"].(float64); ok {
+			editorState["cursor"] = cursor
+		}
+	}
+
 	req := InferenceRequest{
-		Prompt: prompt,
-		Model:  model,
+		Prompt:      prompt,
+		Model:       model,
+		EditorState: editorState,
 	}
 
 	resp, err := r.AIRuntime.Infer(ctx, common.WorkspaceID(task.WorkspaceID), req)

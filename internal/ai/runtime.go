@@ -100,7 +100,7 @@ func (r *Runtime) Infer(ctx context.Context, workspaceID common.WorkspaceID, req
 	}
 
 	// 1. Gather Context
-	wsContext, err := r.assembler.Assemble(ctx, workspaceID)
+	wsContext, err := r.assembler.Assemble(ctx, workspaceID, req.EditorState)
 	if err != nil {
 		r.log.Warn().Err(err).Msg("Failed to assemble full workspace context, continuing with partial context")
 	}

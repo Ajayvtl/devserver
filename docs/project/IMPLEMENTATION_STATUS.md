@@ -55,4 +55,5 @@ This document tracks the granular implementation state of DevServer's subsystems
 * **WP-6.2 Context Assembly**: Implemented `ContextAssembler` to fetch environment data (services, symbols, git) directly from WorkspaceProvider without bypassing existing abstractions.
 * **WP-6.3 LLM Dispatch & Inference Engine**: Implemented `Dispatcher` for routing requests to suitable `AIProviders` based on capabilities (streaming, embeddings, models).
 * **WP-6.4 Command Bus Integration**: Wired AI intents (`ai.generate`, `ai.refactor`, `ai.explain`) into the `commands.Engine` via `tasks.Runner` bypassing module resolution.
-* *Next Steps*: Editor context integration (active tabs, cursor).
+* **WP-6.5 Editor Context Integration**: Enhanced `ContextAssembler` and `AIRunner` to parse editor selection state (file, language, cursor, selectedText) and inject it seamlessly into the LLM context.
+* *Next Steps*: Response streaming & Session/conversation memory.

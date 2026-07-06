@@ -22,6 +22,7 @@ type InferenceRequest struct {
 	Temperature float64
 	MaxTokens   int
 	Stream      bool
+	EditorState map[string]any
 	Context     *AssembledContext
 }
 
