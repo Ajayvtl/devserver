@@ -41,13 +41,13 @@ func Run(ctx context.Context, args []string) error {
 
 	ctx = logger.WithContext(ctx, log)
 
-	if len(args) > 0 && args[0] == "serve" {
-		return runServer(ctx, log)
-	}
-
 	cfg, err := config.NewLoader().Load(ctx, "")
 	if err != nil {
 		return err
+	}
+
+	if len(args) > 0 && args[0] == "serve" {
+		return runServer(ctx, log, cfg)
 	}
 
 	reg := core.NewRegistry()
@@ -83,7 +83,7 @@ func Run(ctx context.Context, args []string) error {
 	return application.Run(ctx, args)
 }
 
-func runServer(ctx context.Context, log zerolog.Logger) error {
+func runServer(ctx context.Context, log zerolog.Logger, cfg config.Config) error {
 	db, err := state.NewDB("configs/devserver.db")
 	if err != nil {
 		return err
@@ -204,7 +204,7 @@ func runServer(ctx context.Context, log zerolog.Logger) error {
 	server := core.NewAPIServer(log, db, indexer, provider, taskEngine, taskStream, commandEngine, capRegistry, ":8080")
 
 	// Phase 7: Authentication
-	authStore, err := auth.NewMySQLStore("root:12345678@tcp(127.0.0.1:3306)/devops")
+	authStore, err := auth.NewMySQLStore(cfg.Database.DSN)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to initialize auth database")
 	}
@@ -214,7 +214,7 @@ func runServer(ctx context.Context, log zerolog.Logger) error {
 	authService.RegisterProvider(auth.NewLocalProvider(authStore))
 
 	// Phase 7: RBAC
-	rbacStore, err := rbac.NewMySQLStore("root:12345678@tcp(127.0.0.1:3306)/devops")
+	rbacStore, err := rbac.NewMySQLStore(cfg.Database.DSN)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to initialize rbac database")
 	}

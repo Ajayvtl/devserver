@@ -13,6 +13,7 @@ type Config struct {
 	Service  ServiceConfig  `yaml:"service"`
 	Logging  LoggingConfig  `yaml:"logging"`
 	State    StateConfig    `yaml:"state"`
+	Database DatabaseConfig `yaml:"database"`
 	Modules  []string       `yaml:"modules"`
 	Commands CommandsConfig `yaml:"commands"`
 }
@@ -30,6 +31,10 @@ type StateConfig struct {
 	Path string `yaml:"path"`
 }
 
+type DatabaseConfig struct {
+	DSN string `yaml:"dsn"`
+}
+
 type CommandsConfig struct {
 	Default string `yaml:"default"`
 }
@@ -45,6 +50,9 @@ func Default() Config {
 		},
 		State: StateConfig{
 			Path: "configs/state.yaml",
+		},
+		Database: DatabaseConfig{
+			DSN: "root:12345678@tcp(127.0.0.1:3306)/devops",
 		},
 		Modules: []string{},
 		Commands: CommandsConfig{
@@ -101,6 +109,9 @@ func applyEnv(cfg *Config) {
 	if value := os.Getenv("DEVSERVER_STATE_PATH"); value != "" {
 		cfg.State.Path = value
 	}
+	if value := os.Getenv("DEVSERVER_DATABASE_DSN"); value != "" {
+		cfg.Database.DSN = value
+	}
 	if value := os.Getenv("DEVSERVER_DEFAULT_COMMAND"); value != "" {
 		cfg.Commands.Default = value
 	}
@@ -132,6 +143,9 @@ func (c *Config) normalize() {
 	}
 	if c.State.Path == "" {
 		c.State.Path = "configs/state.yaml"
+	}
+	if c.Database.DSN == "" {
+		c.Database.DSN = "root:12345678@tcp(127.0.0.1:3306)/devops"
 	}
 	if c.Commands.Default == "" {
 		c.Commands.Default = "doctor"
