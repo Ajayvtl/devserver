@@ -25,6 +25,7 @@ import (
 	"github.com/Ajayvtl/devserver/internal/modules/python"
 	"github.com/Ajayvtl/devserver/internal/modules/redis"
 	"github.com/Ajayvtl/devserver/internal/platform"
+	"github.com/Ajayvtl/devserver/internal/providerconfig"
 	"github.com/Ajayvtl/devserver/internal/providers"
 	"github.com/Ajayvtl/devserver/internal/rbac"
 	"github.com/Ajayvtl/devserver/internal/registry"
@@ -249,6 +250,16 @@ func runServer(ctx context.Context, log zerolog.Logger, cfg config.Config) error
 
 	envService := environments.NewService(log, envStore, cryptoService)
 	_ = envService // Silencing unused warning until wired to HTTP handlers
+
+	// Phase 7: Provider Configuration
+	providerConfigStore, err := providerconfig.NewMySQLStore(cfg.Database.DSN)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to initialize providerconfig database")
+	}
+	defer providerConfigStore.Close()
+
+	providerConfigService := providerconfig.NewService(log, providerConfigStore, envService)
+	_ = providerConfigService // Silencing unused warning until wired to HTTP handlers
 
 	// Phase 2: Runtime Bootstrap
 	rtReg := rt.NewRegistry()
