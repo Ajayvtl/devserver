@@ -102,8 +102,15 @@ func (s *MySQLStore) GetUserByUsername(ctx context.Context, username string) (*U
 		return nil, "", err
 	}
 
-	user.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", string(ca))
-	user.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", string(ua))
+	var parseErr error
+	user.CreatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ca))
+	if parseErr != nil {
+		return nil, "", fmt.Errorf("failed to parse created_at: %w", parseErr)
+	}
+	user.UpdatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ua))
+	if parseErr != nil {
+		return nil, "", fmt.Errorf("failed to parse updated_at: %w", parseErr)
+	}
 
 	return &user, hash, nil
 }
@@ -122,8 +129,15 @@ func (s *MySQLStore) GetUserByID(ctx context.Context, id string) (*User, error) 
 		return nil, err
 	}
 
-	user.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", string(ca))
-	user.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", string(ua))
+	var parseErr error
+	user.CreatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ca))
+	if parseErr != nil {
+		return nil, fmt.Errorf("failed to parse created_at: %w", parseErr)
+	}
+	user.UpdatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ua))
+	if parseErr != nil {
+		return nil, fmt.Errorf("failed to parse updated_at: %w", parseErr)
+	}
 
 	return &user, nil
 }
@@ -150,8 +164,15 @@ func (s *MySQLStore) GetSession(ctx context.Context, sessionID string) (*Session
 		return nil, err
 	}
 
-	session.ExpiresAt, _ = time.Parse("2006-01-02 15:04:05", string(ea))
-	session.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", string(ca))
+	var parseErr error
+	session.ExpiresAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ea))
+	if parseErr != nil {
+		return nil, fmt.Errorf("failed to parse expires_at: %w", parseErr)
+	}
+	session.CreatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ca))
+	if parseErr != nil {
+		return nil, fmt.Errorf("failed to parse created_at: %w", parseErr)
+	}
 
 	return &session, nil
 }
@@ -170,8 +191,15 @@ func (s *MySQLStore) GetSessionByToken(ctx context.Context, token string) (*Sess
 		return nil, err
 	}
 
-	session.ExpiresAt, _ = time.Parse("2006-01-02 15:04:05", string(ea))
-	session.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", string(ca))
+	var parseErr error
+	session.ExpiresAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ea))
+	if parseErr != nil {
+		return nil, fmt.Errorf("failed to parse expires_at: %w", parseErr)
+	}
+	session.CreatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ca))
+	if parseErr != nil {
+		return nil, fmt.Errorf("failed to parse created_at: %w", parseErr)
+	}
 
 	return &session, nil
 }

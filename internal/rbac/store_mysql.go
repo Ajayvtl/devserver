@@ -96,8 +96,15 @@ func (s *MySQLStore) GetOrganization(ctx context.Context, orgID string) (*Organi
 		return nil, err
 	}
 
-	org.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", string(ca))
-	org.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", string(ua))
+	var parseErr error
+	org.CreatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ca))
+	if parseErr != nil {
+		return nil, fmt.Errorf("failed to parse created_at: %w", parseErr)
+	}
+	org.UpdatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ua))
+	if parseErr != nil {
+		return nil, fmt.Errorf("failed to parse updated_at: %w", parseErr)
+	}
 
 	return &org, nil
 }
@@ -116,8 +123,15 @@ func (s *MySQLStore) GetMembership(ctx context.Context, userID, orgID string) (*
 		return nil, err
 	}
 
-	mem.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", string(ca))
-	mem.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", string(ua))
+	var parseErr error
+	mem.CreatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ca))
+	if parseErr != nil {
+		return nil, fmt.Errorf("failed to parse created_at: %w", parseErr)
+	}
+	mem.UpdatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ua))
+	if parseErr != nil {
+		return nil, fmt.Errorf("failed to parse updated_at: %w", parseErr)
+	}
 
 	return &mem, nil
 }
@@ -146,8 +160,15 @@ func (s *MySQLStore) GetRole(ctx context.Context, roleID string) (*Role, error) 
 		return nil, err
 	}
 
-	role.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", string(ca))
-	role.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", string(ua))
+	var parseErr error
+	role.CreatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ca))
+	if parseErr != nil {
+		return nil, fmt.Errorf("failed to parse created_at: %w", parseErr)
+	}
+	role.UpdatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ua))
+	if parseErr != nil {
+		return nil, fmt.Errorf("failed to parse updated_at: %w", parseErr)
+	}
 
 	return &role, nil
 }

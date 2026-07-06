@@ -80,8 +80,15 @@ func (s *MySQLStore) GetSetting(ctx context.Context, scope Scope, ownerID, key s
 		return nil, err
 	}
 
-	setting.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", string(ca))
-	setting.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", string(ua))
+	var parseErr error
+	setting.CreatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ca))
+	if parseErr != nil {
+		return nil, fmt.Errorf("failed to parse created_at: %w", parseErr)
+	}
+	setting.UpdatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ua))
+	if parseErr != nil {
+		return nil, fmt.Errorf("failed to parse updated_at: %w", parseErr)
+	}
 
 	return &setting, nil
 }
@@ -100,8 +107,15 @@ func (s *MySQLStore) ListSettings(ctx context.Context, scope Scope, ownerID stri
 		if err := rows.Scan(&setting.ID, &setting.Scope, &setting.OwnerID, &setting.Key, &setting.Value, &ca, &ua); err != nil {
 			return nil, err
 		}
-		setting.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", string(ca))
-		setting.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", string(ua))
+		var parseErr error
+		setting.CreatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ca))
+		if parseErr != nil {
+			return nil, fmt.Errorf("failed to parse created_at: %w", parseErr)
+		}
+		setting.UpdatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ua))
+		if parseErr != nil {
+			return nil, fmt.Errorf("failed to parse updated_at: %w", parseErr)
+		}
 		settings = append(settings, &setting)
 	}
 
@@ -144,8 +158,15 @@ func (s *MySQLStore) GetIntegration(ctx context.Context, id string) (*Integratio
 		return nil, err
 	}
 
-	integration.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", string(ca))
-	integration.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", string(ua))
+	var parseErr error
+	integration.CreatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ca))
+	if parseErr != nil {
+		return nil, fmt.Errorf("failed to parse created_at: %w", parseErr)
+	}
+	integration.UpdatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ua))
+	if parseErr != nil {
+		return nil, fmt.Errorf("failed to parse updated_at: %w", parseErr)
+	}
 
 	return &integration, nil
 }
@@ -164,8 +185,15 @@ func (s *MySQLStore) ListIntegrations(ctx context.Context, scope Scope, ownerID 
 		if err := rows.Scan(&integration.ID, &integration.Scope, &integration.OwnerID, &integration.Provider, &integration.Status, &integration.Config, &ca, &ua); err != nil {
 			return nil, err
 		}
-		integration.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", string(ca))
-		integration.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", string(ua))
+		var parseErr error
+		integration.CreatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ca))
+		if parseErr != nil {
+			return nil, fmt.Errorf("failed to parse created_at: %w", parseErr)
+		}
+		integration.UpdatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ua))
+		if parseErr != nil {
+			return nil, fmt.Errorf("failed to parse updated_at: %w", parseErr)
+		}
 		integrations = append(integrations, &integration)
 	}
 
