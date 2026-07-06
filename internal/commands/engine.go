@@ -13,7 +13,8 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/Ajayvtl/devserver/internal/application/envcontext"
-	"github.com/Ajayvtl/devserver/internal/domain/common")
+	"github.com/Ajayvtl/devserver/internal/domain/common"
+)
 
 // Engine is the command bus. It resolves capabilities and submits tasks.
 type Engine struct {

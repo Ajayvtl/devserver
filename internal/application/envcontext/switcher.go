@@ -49,11 +49,11 @@ func (s *storeSwitcher) GetActiveEnvironment(ctx context.Context, workspaceID co
 	if err != nil {
 		return common.EnvironmentID("development"), nil
 	}
-	
+
 	if project.Project.Environment != "" {
 		return common.EnvironmentID(project.Project.Environment), nil
 	}
-	
+
 	return common.EnvironmentID("development"), nil
 }
 

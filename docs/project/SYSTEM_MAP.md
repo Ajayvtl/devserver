@@ -29,7 +29,7 @@ This document serves as the canonical root of the DevServer project. It aligns a
   ██████░░░░ 60%
   * [Implementation Details](IMPLEMENTATION_STATUS.md#provider) | [Tests](TEST_MATRIX.md#provider)
 * **Editor**
-  █░░░░░░░░░ 10%
+  ██░░░░░░░░ 20%
   * [Architecture Spec](../architecture/editor_provider.md) | [Implementation Details](IMPLEMENTATION_STATUS.md#editor) | [Blockers](MASTER_ROADMAP.md#blockers)
 * **Terminal**
   ░░░░░░░░░░ 0%

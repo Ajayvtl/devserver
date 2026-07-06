@@ -13,7 +13,7 @@ This registry tracks every active component managed by the DevServer Runtime.
 | `core.APIServer` | `internal/core` | `runtime.Component` | `WorkspaceProvider`, `TaskEngine`, etc. | `Active` | Integration |
 | Component Name | Path | Status | Dependencies | Health | Active Issues |
 |---|---|---|---|---|---|
-| `editor.Orchestrator` | `internal/orchestrator` | *Pending* | `TaskEngine`, `ProcessManager` | `Pending` | None |
+| `editor.Orchestrator` | `internal/application/editor` | `Active` | `ProcessManager`, `SessionManager` | `Pending` | None |
 | `terminal.Manager` | `internal/terminal` | *Pending* | *Pending* | `Pending` | None |
 | `ai.Runtime` | `internal/ai` | *Pending* | `WorkspaceProvider`, `Indexer` | `Pending` | None |
 | `runtime.EnvironmentContext` | `internal/runtime` | *Pending* | `ExecutionContext`, `WorkspaceProvider` | `Pending` | None |

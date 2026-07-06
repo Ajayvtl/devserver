@@ -36,7 +36,7 @@ Every development effort must map to a specific Work Package (WP). Phases are im
 | **WP-3.1.4BC** | Phase 3 | Application Contracts Freeze | Core | WP-3.1.4BB | `COMPLETED` | ✅ | ✅ | ✅ | ✅ |
 | **WP-3.1.4C** | Phase 3 | Infrastructure Adapter Implementations | Core | WP-3.1.4BC | `COMPLETED` | ✅ | ✅ | ✅ | ✅ |
 | **WP-3.1.4D** | Phase 3 | Workflow Engine | Core | WP-3.1.4C | `PENDING` | ❌ | ❌ | ❌ | ❌ |
-| **WP-3.1.5** | Phase 3 | Environment UI Context Switcher | Frontend | WP-3.1.4D | `PENDING` | ❌ | ❌ | ❌ | ❌ |
+| **WP-3.1.5** | Phase 3 | Environment UI Context Switcher | Frontend | WP-3.1.4D | `COMPLETED` | ✅ | ✅ | ✅ | ✅ |
 | **WP-3.1.6** | Phase 3 | Logs & Domains | Frontend | WP-3.1.5 | `PENDING` | ❌ | ❌ | ❌ | ❌ |
 | **WP-3.2** | Phase 3 | Architecture Compliance Review | Core | WP-3.1.6 | `PENDING` | ❌ | ❌ | ❌ | ❌ |
 
@@ -65,7 +65,7 @@ Going forward, every completed work package must satisfy all of the following be
 - [ ] Documentation status matches implementation status
 
 | **WP-4.1** | Phase 4 | OpenVSCode Integration | Dev | WP-3.2 | `PENDING` | ❌ | ❌ | ❌ | ❌ |
-| **WP-4.2** | Phase 4 | Editor Orchestration | Core | WP-4.1 | `PENDING` | ❌ | ❌ | ❌ | ❌ |
+| **WP-4.2** | Phase 4 | Editor Orchestration | Core | WP-4.1 | `COMPLETED` | ✅ | ✅ | ✅ | ✅ |
 | **WP-4.3** | Phase 4 | IPC Bridge | Dev | WP-4.2 | `PENDING` | ❌ | ❌ | ❌ | ❌ |
 | **WP-4.4** | Phase 4 | Extension Manager | Core | WP-4.3 | `PENDING` | ❌ | ❌ | ❌ | ❌ |
 | **WP-5.1** | Phase 5 | AI Providers | Core | WP-4.4 | `PENDING` | ❌ | ❌ | ❌ | ❌ |

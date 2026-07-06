@@ -11,7 +11,7 @@ This document tracks the granular implementation state of DevServer's subsystems
 | **<a name="task"></a>Task Engine** | ✅ | ✅ | ✅ | ❌ | ❌ |
 | **<a name="provider"></a>Provider Manager** | ✅ | 🟡 | 🟡 | ❌ | ❌ |
 | **<a name="ui"></a>UI/UX Shell** | ✅ | 🟡 | ❌ | 🟡 | ❌ |
-| **<a name="editor"></a>Editor Orchestrator** | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **<a name="editor"></a>Editor Orchestrator** | ✅ | 🟡 | ❌ | ❌ | ❌ |
 | **<a name="terminal"></a>Terminal Runtime** | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **<a name="ai"></a>AI Runtime** | ❌ | ❌ | ❌ | ❌ | ❌ |
 
@@ -43,4 +43,5 @@ This document tracks the granular implementation state of DevServer's subsystems
 
 ### Editor Orchestrator
 * Design completed in `docs/architecture/editor_provider.md`.
-* *Next Steps*: Scaffold `internal/orchestrator/editor` and implement OpenVSCode proxying.
+* Scaffolding and Component registry complete in `internal/application/editor/orchestrator.go`.
+* *Next Steps*: Implement process spawning, OpenVSCode proxying, and session persistence.
