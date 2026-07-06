@@ -19,12 +19,20 @@ type Store interface {
 	GetMembership(ctx context.Context, userID, orgID string) (*Membership, error)
 	GetRole(ctx context.Context, roleID string) (*Role, error)
 	GetResourcePolicy(ctx context.Context, resourceID, resourceType string) (*ResourcePolicy, error)
+	UpsertOrganization(ctx context.Context, org *Organization) error
+	UpsertRole(ctx context.Context, role *Role) error
+	UpsertMembership(ctx context.Context, mem *Membership) error
+	ListOrganizationsForUser(ctx context.Context, userID string) ([]*Organization, error)
 }
 
 // Service handles authorization evaluations.
 type Service interface {
 	Authorize(ctx context.Context, userID, orgID, permission string) error
 	AuthorizeResource(ctx context.Context, userID, resourceID, resourceType, permission string) error
+	CreateOrganization(ctx context.Context, org *Organization) error
+	CreateRole(ctx context.Context, role *Role) error
+	AddMembership(ctx context.Context, mem *Membership) error
+	ListOrganizations(ctx context.Context, userID string) ([]*Organization, error)
 }
 
 // DefaultService implements core RBAC authorization rules.
@@ -72,4 +80,20 @@ func (s *DefaultService) AuthorizeResource(ctx context.Context, userID, resource
 	}
 
 	return s.Authorize(ctx, userID, policy.OrgID, permission)
+}
+
+func (s *DefaultService) CreateOrganization(ctx context.Context, org *Organization) error {
+	return s.store.UpsertOrganization(ctx, org)
+}
+
+func (s *DefaultService) CreateRole(ctx context.Context, role *Role) error {
+	return s.store.UpsertRole(ctx, role)
+}
+
+func (s *DefaultService) AddMembership(ctx context.Context, mem *Membership) error {
+	return s.store.UpsertMembership(ctx, mem)
+}
+
+func (s *DefaultService) ListOrganizations(ctx context.Context, userID string) ([]*Organization, error) {
+	return s.store.ListOrganizationsForUser(ctx, userID)
 }
