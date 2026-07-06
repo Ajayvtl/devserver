@@ -142,6 +142,15 @@ func runServer(ctx context.Context, log zerolog.Logger) error {
 	taskRegistry.Register("service.configure", serviceRunner)
 	taskRegistry.Register("service.remove", serviceRunner)
 
+	// Phase 6: AI Runtime
+	aiRuntime := ai.NewRuntime(log, provider, indexer, providerManager)
+
+	// AI Task Runners
+	aiRunner := &ai.TaskRunner{AIRuntime: aiRuntime}
+	taskRegistry.Register("ai.generate", aiRunner)
+	taskRegistry.Register("ai.refactor", aiRunner)
+	taskRegistry.Register("ai.explain", aiRunner)
+
 	runtime := &tasks.Runtime{
 		Logger:   log,
 		Provider: provider,
@@ -191,9 +200,6 @@ func runServer(ctx context.Context, log zerolog.Logger) error {
 	}
 
 	server := core.NewAPIServer(log, db, indexer, provider, taskEngine, taskStream, commandEngine, capRegistry, ":8080")
-
-	// Phase 6: AI Runtime
-	aiRuntime := ai.NewRuntime(log, provider, indexer, providerManager)
 
 	// Phase 2: Runtime Bootstrap
 	rtReg := rt.NewRegistry()

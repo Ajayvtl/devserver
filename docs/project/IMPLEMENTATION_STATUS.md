@@ -54,4 +54,5 @@ This document tracks the granular implementation state of DevServer's subsystems
 * **WP-6.1 AI Runtime Scaffolding**: Implemented `ai.Runtime` as a foundational DevServer component connected to the WorkspaceProvider and Indexer.
 * **WP-6.2 Context Assembly**: Implemented `ContextAssembler` to fetch environment data (services, symbols, git) directly from WorkspaceProvider without bypassing existing abstractions.
 * **WP-6.3 LLM Dispatch & Inference Engine**: Implemented `Dispatcher` for routing requests to suitable `AIProviders` based on capabilities (streaming, embeddings, models).
-* *Next Steps*: Expose AI runtime via standard Command Bus intents (Generate, Refactor, Explain).
+* **WP-6.4 Command Bus Integration**: Wired AI intents (`ai.generate`, `ai.refactor`, `ai.explain`) into the `commands.Engine` via `tasks.Runner` bypassing module resolution.
+* *Next Steps*: Editor context integration (active tabs, cursor).

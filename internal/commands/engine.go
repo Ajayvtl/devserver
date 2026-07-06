@@ -120,6 +120,10 @@ func (e *Engine) Submit(ctx context.Context, cmd *Command) (*Record, error) {
 		return e.runServiceTask(ctx, cmd, record)
 	}
 
+	if len(string(cmd.Capability)) > 3 && string(cmd.Capability)[:3] == "ai." {
+		return e.runAITask(ctx, cmd, record)
+	}
+
 	binding, err := e.resolver.Select(ctx, cmd.Capability, nil)
 	if err != nil {
 		record.Status = StatusFailed
@@ -353,6 +357,27 @@ func (e *Engine) runServiceTask(ctx context.Context, cmd *Command, record *Recor
 		Priority:    tasks.TaskPriorityHigh,
 		Metadata:    cmd.Metadata,
 		Payload:     payload,
+	}
+
+	taskRecord, err := e.tasks.Submit(task)
+	if err != nil {
+		return e.fail(record, err.Error())
+	}
+	record.TaskID = taskRecord.ID
+	record.Result = map[string]any{"taskId": taskRecord.ID, "status": "started"}
+	e.records.Update(record)
+	return record, nil
+}
+
+func (e *Engine) runAITask(ctx context.Context, cmd *Command, record *Record) (*Record, error) {
+	task := &tasks.Task{
+		ID:          record.ID,
+		Name:        record.Name,
+		WorkspaceID: cmd.WorkspaceID,
+		Type:        string(cmd.Capability),
+		Priority:    tasks.TaskPriorityNormal,
+		Metadata:    cmd.Metadata,
+		Payload:     cmd.Parameters,
 	}
 
 	taskRecord, err := e.tasks.Submit(task)
