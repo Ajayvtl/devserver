@@ -10,12 +10,21 @@ import (
 	"github.com/rs/zerolog"
 )
 
+// Diagnostic represents a compiler error, linter warning, or LSP diagnostic.
+type Diagnostic struct {
+	File     string `json:"file"`
+	Line     int    `json:"line"`
+	Message  string `json:"message"`
+	Severity string `json:"severity"`
+}
+
 // EditorState represents the context provided by the UI Editor.
 type EditorState struct {
-	ActiveFile   string  `json:"activeFile,omitempty"`
-	Language     string  `json:"language,omitempty"`
-	Cursor       float64 `json:"cursor,omitempty"`
-	SelectedText string  `json:"selectedText,omitempty"`
+	ActiveFile   string       `json:"activeFile,omitempty"`
+	Language     string       `json:"language,omitempty"`
+	Cursor       float64      `json:"cursor,omitempty"`
+	SelectedText string       `json:"selectedText,omitempty"`
+	Diagnostics  []Diagnostic `json:"diagnostics,omitempty"`
 }
 
 // AssembledContext represents the compiled state of the workspace and editor for AI inference.
@@ -75,6 +84,13 @@ func (c *ContextAssembler) generateSummary(ws *core.WorkspaceContext, editor *Ed
 		builder.WriteString(fmt.Sprintf("Selected Text:\n```\n%s\n```\n", editor.SelectedText))
 	}
 
+	if len(editor.Diagnostics) > 0 {
+		builder.WriteString("Diagnostics:\n")
+		for _, d := range editor.Diagnostics {
+			builder.WriteString(fmt.Sprintf("- [%s] %s:%d: %s\n", d.Severity, d.File, d.Line, d.Message))
+		}
+	}
+
 	if ws.Git.Branch != "" {
 		builder.WriteString(fmt.Sprintf("Git Branch: %s\n", ws.Git.Branch))
 	}
@@ -91,7 +107,22 @@ func (c *ContextAssembler) generateSummary(ws *core.WorkspaceContext, editor *Ed
 		builder.WriteString("\n")
 	}
 
-	builder.WriteString(fmt.Sprintf("Known Symbols: %d\n", len(ws.Knowledge.Symbols)))
+	if len(ws.Knowledge.Symbols) > 0 {
+		builder.WriteString(fmt.Sprintf("Known Symbols: %d\n", len(ws.Knowledge.Symbols)))
+	}
+
+	if ws.Health.Build != "" || ws.Health.Tests != "" || ws.Health.Lint != "" {
+		builder.WriteString("Workspace Health (Diagnostics):\n")
+		if ws.Health.Build != "" && ws.Health.Build != "unknown" {
+			builder.WriteString(fmt.Sprintf("- Build: %s\n", ws.Health.Build))
+		}
+		if ws.Health.Tests != "" && ws.Health.Tests != "unknown" {
+			builder.WriteString(fmt.Sprintf("- Tests: %s\n", ws.Health.Tests))
+		}
+		if ws.Health.Lint != "" && ws.Health.Lint != "unknown" {
+			builder.WriteString(fmt.Sprintf("- Lint: %s\n", ws.Health.Lint))
+		}
+	}
 
 	return builder.String()
 }

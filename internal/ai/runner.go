@@ -54,6 +54,26 @@ func (r *TaskRunner) Execute(ctx context.Context, task *tasks.Task, runtime *tas
 		if cursor, ok := ctxMap["cursor"].(float64); ok {
 			editorState.Cursor = cursor
 		}
+		if diags, ok := ctxMap["diagnostics"].([]any); ok {
+			for _, item := range diags {
+				if dMap, ok := item.(map[string]any); ok {
+					var diag Diagnostic
+					if f, ok := dMap["file"].(string); ok {
+						diag.File = f
+					}
+					if l, ok := dMap["line"].(float64); ok {
+						diag.Line = int(l)
+					}
+					if m, ok := dMap["message"].(string); ok {
+						diag.Message = m
+					}
+					if s, ok := dMap["severity"].(string); ok {
+						diag.Severity = s
+					}
+					editorState.Diagnostics = append(editorState.Diagnostics, diag)
+				}
+			}
+		}
 	} else {
 		// Fallback for flat structure
 		if file, ok := task.Payload["file"].(string); ok {
