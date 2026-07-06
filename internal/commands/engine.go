@@ -7,6 +7,7 @@ import (
 
 	"github.com/Ajayvtl/devserver/internal/capabilities"
 	"github.com/Ajayvtl/devserver/internal/events"
+	rt "github.com/Ajayvtl/devserver/internal/runtime"
 	"github.com/Ajayvtl/devserver/internal/state"
 	"github.com/Ajayvtl/devserver/internal/tasks"
 	"github.com/rs/zerolog"
@@ -21,6 +22,9 @@ type Engine struct {
 	tasks    *tasks.Engine
 	db       *state.StoreDB
 	records  *store
+	ctx      context.Context
+	cancel   context.CancelFunc
+	status   rt.Status
 }
 
 func NewEngine(log zerolog.Logger, bus events.Bus, registry *capabilities.Registry, taskEngine *tasks.Engine, db *state.StoreDB) *Engine {
@@ -32,8 +36,35 @@ func NewEngine(log zerolog.Logger, bus events.Bus, registry *capabilities.Regist
 		tasks:    taskEngine,
 		db:       db,
 		records:  newStore(),
+		status:   rt.StatusStopped,
 	}
 }
+
+func (e *Engine) Name() string { return "commands.Engine" }
+
+func (e *Engine) Initialize(ctx context.Context) error {
+	e.status = rt.StatusStarting
+	return nil
+}
+
+func (e *Engine) Start(ctx context.Context) error {
+	e.ctx, e.cancel = context.WithCancel(context.Background())
+	e.status = rt.StatusRunning
+	go e.runInternal(e.ctx)
+	return nil
+}
+
+func (e *Engine) Stop(ctx context.Context) error {
+	if e.cancel != nil {
+		e.cancel()
+	}
+	e.status = rt.StatusStopped
+	return nil
+}
+
+func (e *Engine) Status() rt.Status { return e.status }
+
+func (e *Engine) Health() rt.Health { return rt.HealthHealthy }
 
 func (e *Engine) Submit(ctx context.Context, cmd *Command) (*Record, error) {
 	if cmd == nil {
@@ -65,6 +96,17 @@ func (e *Engine) Submit(ctx context.Context, cmd *Command) (*Record, error) {
 		return e.runWorkspaceIndex(ctx, cmd, record)
 	}
 
+	// Platform tasks bypass the module resolver
+	if string(cmd.Capability) == "service.start" || 
+	   string(cmd.Capability) == "service.stop" || 
+	   string(cmd.Capability) == "service.restart" ||
+	   string(cmd.Capability) == "service.install" ||
+	   string(cmd.Capability) == "service.update" ||
+	   string(cmd.Capability) == "service.configure" ||
+	   string(cmd.Capability) == "service.remove" {
+		return e.runServiceTask(ctx, cmd, record)
+	}
+
 	binding, err := e.resolver.Select(ctx, cmd.Capability, nil)
 	if err != nil {
 		record.Status = StatusFailed
@@ -83,57 +125,19 @@ func (e *Engine) Submit(ctx context.Context, cmd *Command) (*Record, error) {
 	record.Provider = binding.Metadata.Provider
 	e.records.Update(record)
 
-	def := &tasks.Definition{
+	task := &tasks.Task{
 		ID:          record.ID,
 		Name:        record.Name,
 		WorkspaceID: cmd.WorkspaceID,
-		Priority:    tasks.PriorityNormal,
-		Retries:     cmd.Retries,
+		Type:        string(cmd.Capability),
+		Priority:    tasks.TaskPriorityNormal,
+		MaxRetries:  cmd.Retries,
 		Timeout:     cmd.Timeout,
 		Metadata:    cmd.Metadata,
-		Fn: func(taskCtx *tasks.Context) error {
-			now := time.Now().UTC()
-			record.Status = StatusRunning
-			record.StartedAt = &now
-			record.TaskID = taskCtx.TaskID()
-			e.records.Update(record)
-			e.bus.Publish(events.CommandStarted, events.CommandStartedEvent{
-				CommandID:  record.ID,
-				TaskID:     taskCtx.TaskID(),
-				Name:       record.Name,
-				Capability: record.Capability,
-				Provider:   record.Provider,
-			})
-
-			runCtx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-			go func() {
-				select {
-				case <-taskCtx.Done():
-					cancel()
-				case <-runCtx.Done():
-				}
-			}()
-
-			if err := binding.Provider.Execute(runCtx, cmd.Capability, cmd); err != nil {
-				record.Error = err.Error()
-				e.records.Update(record)
-				return err
-			}
-
-			return nil
-		},
-		RollbackFn: func(taskCtx *tasks.Context) error {
-			if rollbacker, ok := binding.Provider.(interface {
-				Rollback(context.Context, capabilities.Capability, *Command) error
-			}); ok {
-				return rollbacker.Rollback(ctx, cmd.Capability, cmd)
-			}
-			return nil
-		},
+		Payload:     cmd.Parameters,
 	}
 
-	taskRecord, err := e.tasks.Submit(def)
+	taskRecord, err := e.tasks.Submit(task)
 	if err != nil {
 		record.Status = StatusFailed
 		record.Error = err.Error()
@@ -208,43 +212,17 @@ func (e *Engine) runSetup(ctx context.Context, cmd *Command, record *Record) (*R
 		Provider:   record.Provider,
 	})
 
-	def := &tasks.Definition{
+	task := &tasks.Task{
 		ID:          record.ID,
 		Name:        record.Name,
 		WorkspaceID: cmd.WorkspaceID,
-		Priority:    tasks.PriorityNormal,
+		Type:        "workspace.setup",
+		Priority:    tasks.TaskPriorityNormal,
 		Metadata:    cmd.Metadata,
-		Fn: func(taskCtx *tasks.Context) error {
-			taskCtx.ReportProgress(20, "Applying setup configuration")
-			time.Sleep(500 * time.Millisecond)
-			req := state.SetupRequestData{}
-			if v, ok := cmd.Parameters["licenseAccepted"].(bool); ok {
-				req.LicenseAccepted = v
-			}
-			if v, ok := cmd.Parameters["adminName"].(string); ok {
-				req.AdminName = v
-			}
-			if v, ok := cmd.Parameters["adminEmail"].(string); ok {
-				req.AdminEmail = v
-			}
-			if v, ok := cmd.Parameters["adminPassword"].(string); ok {
-				req.AdminPassword = v
-			}
-			if v, ok := cmd.Parameters["provider"].(string); ok {
-				req.Provider = v
-			}
-			if v, ok := cmd.Parameters["installationType"].(string); ok {
-				req.InstallationType = v
-			}
-			if err := e.db.CompleteSetup(context.Background(), req); err != nil {
-				return err
-			}
-			taskCtx.ReportProgress(100, "Setup complete")
-			return nil
-		},
+		Payload:     cmd.Parameters,
 	}
 
-	taskRecord, err := e.tasks.Submit(def)
+	taskRecord, err := e.tasks.Submit(task)
 	if err != nil {
 		return e.fail(record, err.Error())
 	}
@@ -327,27 +305,50 @@ func (e *Engine) runProjectSave(ctx context.Context, cmd *Command, record *Recor
 }
 
 func (e *Engine) runWorkspaceIndex(ctx context.Context, cmd *Command, record *Record) (*Record, error) {
-	now := time.Now().UTC()
-	record.Status = StatusRunning
-	record.StartedAt = &now
+	task := &tasks.Task{
+		ID:          record.ID,
+		Name:        record.Name,
+		WorkspaceID: cmd.WorkspaceID,
+		Type:        "workspace.index",
+		Priority:    tasks.TaskPriorityNormal,
+		Metadata:    cmd.Metadata,
+		Payload:     cmd.Parameters,
+	}
+
+	taskRecord, err := e.tasks.Submit(task)
+	if err != nil {
+		return e.fail(record, err.Error())
+	}
+	record.TaskID = taskRecord.ID
+	record.Result = map[string]any{"taskId": taskRecord.ID, "status": "started"}
 	e.records.Update(record)
-	e.bus.Publish(events.CommandStarted, events.CommandStartedEvent{
-		CommandID:  record.ID,
-		Name:       record.Name,
-		Capability: record.Capability,
-		Provider:   record.Provider,
-	})
-	record.Status = StatusCompleted
-	record.Result = map[string]any{"status": "queued"}
-	now = time.Now().UTC()
-	record.CompletedAt = &now
+	return record, nil
+}
+
+func (e *Engine) runServiceTask(ctx context.Context, cmd *Command, record *Record) (*Record, error) {
+	payload := cmd.Parameters
+	if payload == nil {
+		payload = make(map[string]any)
+	}
+	payload["target"] = cmd.Target
+
+	task := &tasks.Task{
+		ID:          record.ID,
+		Name:        record.Name,
+		WorkspaceID: cmd.WorkspaceID,
+		Type:        string(cmd.Capability),
+		Priority:    tasks.TaskPriorityHigh,
+		Metadata:    cmd.Metadata,
+		Payload:     payload,
+	}
+
+	taskRecord, err := e.tasks.Submit(task)
+	if err != nil {
+		return e.fail(record, err.Error())
+	}
+	record.TaskID = taskRecord.ID
+	record.Result = map[string]any{"taskId": taskRecord.ID, "status": "started"}
 	e.records.Update(record)
-	e.bus.Publish(events.CommandCompleted, events.CommandCompletedEvent{
-		CommandID:  record.ID,
-		Name:       record.Name,
-		Capability: record.Capability,
-		Provider:   record.Provider,
-	})
 	return record, nil
 }
 
@@ -380,7 +381,7 @@ func (e *Engine) Get(id string) (*Record, error) {
 }
 
 // Run keeps the command store synchronized with task lifecycle events.
-func (e *Engine) Run(ctx context.Context) {
+func (e *Engine) runInternal(ctx context.Context) {
 	topics := []events.EventType{
 		events.TaskStarted,
 		events.TaskProgress,

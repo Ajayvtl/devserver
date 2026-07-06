@@ -134,35 +134,6 @@ export function AISection({ data }: { data: AIContextInfo }) {
   )
 }
 
-// Knowledge section
-export function KnowledgeSection({ data }: { data: { files: string[]; topics: string[] } }) {
-  return (
-    <div className="ws-section">
-      <div className="ws-section__header">
-        <div>
-          <div className="card__eyebrow">Knowledge</div>
-          <h2 className="ws-section__title">Knowledge</h2>
-          <p className="ws-section__subtitle">{data.files?.length || 0} docs · {data.topics?.length || 0} topics</p>
-        </div>
-      </div>
-      <div className="ws-grid-2">
-        <Card>
-          <div className="section-header-lite"><h3>Files</h3></div>
-          {data.files?.length ? (
-            <div className="ws-detail-list">{data.files.map((f) => <div key={f} className="ws-detail-row"><code className="ws-mono">{f}</code></div>)}</div>
-          ) : <EmptyState title="No docs" description="Add markdown files or use .devserver/knowledge/." />}
-        </Card>
-        <Card>
-          <div className="section-header-lite"><h3>Topics</h3></div>
-          {data.topics?.length ? (
-            <div className="ws-tag-list">{data.topics.map((t) => <Badge key={t} tone="info">{t}</Badge>)}</div>
-          ) : <EmptyState title="No topics" description="Topics are derived from documentation files." />}
-        </Card>
-      </div>
-    </div>
-  )
-}
-
 // Doctor section
 export function DoctorSection({ data }: { data: WorkspaceDoctorData }) {
   return (

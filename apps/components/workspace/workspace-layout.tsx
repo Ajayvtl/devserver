@@ -13,6 +13,7 @@ const sections: Array<{ key: WorkspaceSection; label: string; icon: string }> = 
   { key: 'environment', label: 'Environment', icon: '⚙' },
   { key: 'infrastructure', label: 'Infrastructure', icon: '⬡' },
   { key: 'services', label: 'Services', icon: '◈' },
+  { key: 'tasks', label: 'Command Center', icon: '⚡' },
   { key: 'deployments', label: 'Deployments', icon: '▲' },
   { key: 'database', label: 'Database', icon: '⊟' },
   { key: 'domains', label: 'Domains', icon: '◉' },

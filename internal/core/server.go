@@ -11,6 +11,7 @@ import (
 
 	"github.com/Ajayvtl/devserver/internal/capabilities"
 	"github.com/Ajayvtl/devserver/internal/commands"
+	rt "github.com/Ajayvtl/devserver/internal/runtime"
 	"github.com/Ajayvtl/devserver/internal/state"
 	"github.com/Ajayvtl/devserver/internal/tasks"
 	"github.com/rs/zerolog"
@@ -26,6 +27,10 @@ type APIServer struct {
 	commands *commands.Engine
 	caps     *capabilities.Registry
 	addr     string
+	ctx      context.Context
+	cancel   context.CancelFunc
+	server   *http.Server
+	status   rt.Status
 }
 
 func NewAPIServer(log zerolog.Logger, store *state.StoreDB, indexer *Indexer, provider *WorkspaceProvider, engine *tasks.Engine, stream *tasks.EventStream, cmdBus *commands.Engine, caps *capabilities.Registry, addr string) *APIServer {
@@ -39,10 +44,42 @@ func NewAPIServer(log zerolog.Logger, store *state.StoreDB, indexer *Indexer, pr
 		commands: cmdBus,
 		caps:     caps,
 		addr:     addr,
+		status:   rt.StatusStopped,
 	}
 }
 
-func (s *APIServer) Run(ctx context.Context) error {
+func (s *APIServer) Name() string { return "core.APIServer" }
+
+func (s *APIServer) Initialize(ctx context.Context) error {
+	s.status = rt.StatusStarting
+	return nil
+}
+
+func (s *APIServer) Start(ctx context.Context) error {
+	s.ctx, s.cancel = context.WithCancel(context.Background())
+	s.status = rt.StatusRunning
+	go s.runInternal(s.ctx)
+	return nil
+}
+
+func (s *APIServer) Stop(ctx context.Context) error {
+	if s.cancel != nil {
+		s.cancel()
+	}
+	if s.server != nil {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = s.server.Shutdown(shutdownCtx)
+	}
+	s.status = rt.StatusStopped
+	return nil
+}
+
+func (s *APIServer) Status() rt.Status { return s.status }
+
+func (s *APIServer) Health() rt.Health { return rt.HealthHealthy }
+
+func (s *APIServer) runInternal(ctx context.Context) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/bootstrap/decision", s.handleBootstrapDecision)
 	mux.HandleFunc("/api/setup", s.handleSetup)
@@ -65,16 +102,7 @@ func (s *APIServer) Run(ctx context.Context) error {
 	mux.HandleFunc("/ws/events", s.stream.HandleWS)
 	mux.HandleFunc("/ws/tasks", s.stream.HandleWS)
 
-	if s.indexer != nil {
-		go func() {
-			_ = s.indexer.Run(ctx)
-		}()
-	}
-	if s.stream != nil {
-		go s.stream.Run(ctx)
-	}
-
-	server := &http.Server{
+	s.server = &http.Server{
 		Addr:    s.addr,
 		Handler: s.withCORS(mux),
 	}
@@ -82,16 +110,15 @@ func (s *APIServer) Run(ctx context.Context) error {
 	errCh := make(chan error, 1)
 	go func() {
 		s.log.Info().Str("addr", s.addr).Msg("api server listening")
-		errCh <- server.ListenAndServe()
+		errCh <- s.server.ListenAndServe()
 	}()
 
 	select {
 	case <-ctx.Done():
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		return server.Shutdown(shutdownCtx)
+		return nil
 	case err := <-errCh:
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			s.status = rt.StatusError
 			return err
 		}
 		return nil
@@ -146,12 +173,10 @@ func (s *APIServer) handleSetupComplete(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	taskID := s.submitTask("setup", "Bootstrap DevServer", "Applying configuration and provisioning services", func(ctx *tasks.Context) error {
-		ctx.ReportProgress(25, "Validating setup request")
+	taskID := s.submitTask("setup", "Bootstrap DevServer", "Applying configuration and provisioning services", func() error {
 		if err := s.store.CompleteSetup(context.Background(), req); err != nil {
 			return err
 		}
-		ctx.ReportProgress(100, "Setup complete")
 		return nil
 	})
 	if taskID == "" {
@@ -219,8 +244,7 @@ func (s *APIServer) handleProjects(w http.ResponseWriter, r *http.Request) {
 			writeJSONError(w, http.StatusInternalServerError, err)
 			return
 		}
-		go s.submitTask("project", "Save project", "Persisting project metadata and settings", func(ctx *tasks.Context) error {
-			ctx.ReportProgress(100, "Project saved")
+		go s.submitTask("project", "Save project", "Persisting project metadata and settings", func() error {
 			return nil
 		})
 		writeJSON(w, saved)
@@ -420,6 +444,18 @@ func (s *APIServer) handleWorkspaces(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		writeJSON(w, data)
+	case "filecontent":
+		filePath := r.URL.Query().Get("path")
+		if filePath == "" {
+			writeJSONError(w, http.StatusBadRequest, fmt.Errorf("path query parameter is required"))
+			return
+		}
+		content, err := s.provider.ReadFile(id, filePath)
+		if err != nil {
+			writeJSONError(w, http.StatusInternalServerError, err)
+			return
+		}
+		writeJSON(w, map[string]string{"content": content})
 	case "files":
 		query := r.URL.Query().Get("q")
 		data, err := s.provider.Files(id, query)
@@ -534,7 +570,7 @@ func (s *APIServer) handleWorkspaces(w http.ResponseWriter, r *http.Request) {
 		}
 		writeJSON(w, data)
 	case "health":
-		data, err := s.provider.Health(id)
+		data, err := s.provider.GetHealth(id)
 		if err != nil {
 			writeJSONError(w, http.StatusInternalServerError, err)
 			return
@@ -756,33 +792,29 @@ func (s *APIServer) handleCapabilities(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, out)
 }
 
-func (s *APIServer) submitTask(scope, name, detail string, work func(ctx *tasks.Context) error) string {
+func (s *APIServer) submitTask(scope, name, detail string, work func() error) string {
 	taskID := fmt.Sprintf("task-%d", time.Now().UnixNano())
 	_, _ = s.store.CreateTaskWithID(context.Background(), taskID, scope, name, detail)
 
-	def := &tasks.Definition{
+	task := &tasks.Task{
 		ID:          taskID,
 		Name:        name,
 		WorkspaceID: scope,
-		Priority:    tasks.PriorityNormal,
-		Metadata:    map[string]string{"scope": scope},
-		Fn: func(ctx *tasks.Context) error {
-			ctx.ReportProgress(10, detail)
-			if work != nil {
-				if err := work(ctx); err != nil {
-					return err
-				}
-			}
-			ctx.ReportProgress(100, "Completed")
-			return nil
-		},
+		Type:        scope,
+		Priority:    tasks.TaskPriorityNormal,
+		Metadata:    map[string]string{"scope": scope, "detail": detail},
 	}
 
-	record, err := s.engine.Submit(def)
+	record, err := s.engine.Submit(task)
 	if err != nil {
 		_ = s.store.UpdateTask(context.Background(), taskID, 0, "Failed", err.Error())
 		s.log.Error().Err(err).Str("task", name).Msg("submit task failed")
 		return ""
+	}
+
+	// Legacy closure execution inline to avoid breaking legacy endpoints before Runners are made
+	if work != nil {
+		go work()
 	}
 
 	return record.ID

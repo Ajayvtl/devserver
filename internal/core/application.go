@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/Ajayvtl/devserver/internal/config"
-	"github.com/Ajayvtl/devserver/internal/executor"
+	"github.com/Ajayvtl/devserver/internal/executor/legacy"
 	"github.com/Ajayvtl/devserver/internal/logger"
 	"github.com/Ajayvtl/devserver/internal/platform"
 	"github.com/Ajayvtl/devserver/internal/state"
@@ -24,7 +24,7 @@ type Application struct {
 	cfg       config.Config
 	store     state.Store
 	detector  platform.Detector
-	executor  executor.Runner
+	executor  legacy.Runner
 	lifecycle *Lifecycle
 }
 
@@ -35,7 +35,7 @@ type Dependencies struct {
 	Config    config.Config
 	State     state.Store
 	Detector  platform.Detector
-	Executor  executor.Runner
+	Executor  legacy.Runner
 }
 
 func New(deps Dependencies) *Application {

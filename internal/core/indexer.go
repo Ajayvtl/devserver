@@ -17,7 +17,10 @@ import (
 	"sync"
 	"time"
 
+	rt "github.com/Ajayvtl/devserver/internal/runtime"
 	"github.com/Ajayvtl/devserver/internal/events"
+	"github.com/Ajayvtl/devserver/internal/knowledge"
+	"github.com/Ajayvtl/devserver/internal/providers"
 	"github.com/rs/zerolog"
 )
 
@@ -128,8 +131,10 @@ type PluginInfo struct {
 }
 
 type KnowledgeInfo struct {
-	Files  []string `json:"files"`
-	Topics []string `json:"topics"`
+	Files      []string                  `json:"files"`
+	Topics     []string                  `json:"topics"`
+	Symbols    []knowledge.Symbol        `json:"symbols"`
+	References knowledge.ReferenceIndex  `json:"references"`
 }
 
 type TaskInfo struct {
@@ -151,12 +156,7 @@ type InfrastructureInfo struct {
 	Hostname   string          `json:"hostname"`
 }
 
-type ServiceInfo struct {
-	Name       string `json:"name"`
-	Status     string `json:"status"`
-	Port       string `json:"port"`
-	PID        string `json:"pid"`
-}
+type ProviderInfo = providers.ProviderInfo
 
 type DeploymentEntry struct {
 	ID          string `json:"id"`
@@ -236,7 +236,7 @@ type WorkspaceContext struct {
 	Plugins        PluginInfo         `json:"plugins"`
 	Knowledge      KnowledgeInfo      `json:"knowledge"`
 	Infrastructure InfrastructureInfo `json:"infrastructure"`
-	Services       []ServiceInfo      `json:"services"`
+	Services       []ProviderInfo     `json:"services"`
 	Deployments    DeploymentInfo     `json:"deployments"`
 	Domains        []DomainInfo       `json:"domains"`
 	Logs           []LogEntry         `json:"logs"`
@@ -259,6 +259,7 @@ type Indexer struct {
 	workspaces map[string]*workspaceState
 	bus        events.Bus
 	provider   *WorkspaceProvider
+	status     rt.Status
 }
 
 func (i *Indexer) SetProvider(p *WorkspaceProvider) {
@@ -285,8 +286,29 @@ func NewIndexer(log zerolog.Logger, specs []WorkspaceSpec, bus events.Bus) *Inde
 		}
 		workspaces[spec.ID] = &workspaceState{spec: spec, snapshot: map[string]FileStamp{}}
 	}
-	return &Indexer{log: log, workspaces: workspaces, bus: bus}
+	return &Indexer{log: log, workspaces: workspaces, bus: bus, status: rt.StatusStopped}
 }
+
+func (i *Indexer) Name() string { return "core.Indexer" }
+
+func (i *Indexer) Initialize(ctx context.Context) error {
+	i.status = rt.StatusStarting
+	return nil
+}
+
+func (i *Indexer) Start(ctx context.Context) error {
+	i.status = rt.StatusRunning
+	return nil
+}
+
+func (i *Indexer) Stop(ctx context.Context) error {
+	i.status = rt.StatusStopped
+	return nil
+}
+
+func (i *Indexer) Status() rt.Status { return i.status }
+
+func (i *Indexer) Health() rt.Health { return rt.HealthHealthy }
 
 // AddWorkspace registers a workspace for indexing at runtime.
 func (i *Indexer) AddWorkspace(id, root string) {
@@ -371,6 +393,20 @@ func (i *Indexer) Refresh(ctx context.Context, id string) error {
 	}
 
 	next := composeContext(ws, current, dirtySections(dirty))
+	scanner := knowledge.NewSymbolScanner()
+
+	knowledgeData, err := scanner.Scan(ws.spec.Root)
+	if err != nil {
+		i.log.Warn().
+			Err(err).
+			Str("workspace", id).
+			Msg("knowledge scan failed")
+	} else {
+		i.log.Debug().
+			Str("workspace", id).
+			Int("symbols", len(knowledgeData.Symbols)).
+			Msg("knowledge indexed")
+	}
 	if err := writeContext(ws.spec.Root, next); err != nil {
 		return err
 	}
@@ -1201,15 +1237,36 @@ func detectHealth(files map[string]FileStamp, git GitInfo) HealthInfo {
 }
 
 func detectKnowledge(root string, files map[string]FileStamp) KnowledgeInfo {
+
 	out := []string{}
 	topics := []string{}
+
 	for rel := range files {
-		if strings.Contains(rel, ".devserver/knowledge/") || strings.HasSuffix(rel, "README.md") || strings.HasSuffix(rel, "architecture.md") {
+
+		if strings.Contains(rel, ".devserver/knowledge/") ||
+			strings.HasSuffix(rel, "README.md") ||
+			strings.HasSuffix(rel, "architecture.md") {
+
 			out = append(out, rel)
 			topics = append(topics, filepath.Base(rel))
 		}
 	}
-	return KnowledgeInfo{Files: normalizeList(out), Topics: normalizeList(topics)}
+
+	info := KnowledgeInfo{
+		Files:  normalizeList(out),
+		Topics: normalizeList(topics),
+	}
+
+	scanner := knowledge.NewSymbolScanner()
+
+	result, err := scanner.Scan(root)
+	if err == nil {
+		result.BuildIndex()
+		info.Symbols = result.Symbols
+		info.References = result.References
+	}
+
+	return info
 }
 
 func summarizeFiles(files map[string]FileStamp) []WorkspaceFileInfo {
@@ -1559,6 +1616,7 @@ func writeContext(root string, ctx WorkspaceContext) error {
 		"services.json":       ctx.Services,
 		"deployments.json":    ctx.Deployments,
 		"domains.json":        ctx.Domains,
+		"logs.json":           ctx.Logs,
 		"ai.json":             ctx.AI,
 		"mcp.json":            ctx.MCP,
 		"index.json":          ctx.Index,
@@ -1656,26 +1714,10 @@ func probeToolVersion(name, binary, flag string) InfraToolInfo {
 	}
 }
 
-func detectServices(infra InfrastructureInfo) []ServiceInfo {
-	services := []ServiceInfo{}
-	for _, tool := range infra.Tools {
-		if !tool.Installed {
-			continue
-		}
-		switch tool.Name {
-		case "Redis":
-			services = append(services, ServiceInfo{Name: "Redis", Status: probeServiceStatus("redis-cli", "ping"), Port: "6379"})
-		case "PostgreSQL":
-			services = append(services, ServiceInfo{Name: "PostgreSQL", Status: probeServiceStatus("pg_isready", ""), Port: "5432"})
-		case "MySQL":
-			services = append(services, ServiceInfo{Name: "MySQL", Status: "installed", Port: "3306"})
-		case "Nginx":
-			services = append(services, ServiceInfo{Name: "Nginx", Status: probeServiceStatus("nginx", "-t"), Port: "80"})
-		case "Docker":
-			services = append(services, ServiceInfo{Name: "Docker", Status: probeServiceStatus("docker", "info"), Port: ""})
-		}
-	}
-	return services
+func detectServices(infra InfrastructureInfo) []ProviderInfo {
+	// Replaced by ProviderManager
+	// Stub to prevent compilation errors in tests
+	return []ProviderInfo{}
 }
 
 func probeServiceStatus(binary, arg string) string {

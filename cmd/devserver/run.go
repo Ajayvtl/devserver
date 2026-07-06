@@ -11,7 +11,7 @@ import (
 	"github.com/Ajayvtl/devserver/internal/config"
 	"github.com/Ajayvtl/devserver/internal/core"
 	"github.com/Ajayvtl/devserver/internal/events"
-	"github.com/Ajayvtl/devserver/internal/executor"
+	"github.com/Ajayvtl/devserver/internal/executor/legacy"
 	"github.com/Ajayvtl/devserver/internal/filesystem"
 	"github.com/Ajayvtl/devserver/internal/logger"
 	"github.com/Ajayvtl/devserver/internal/modules/mysql"
@@ -22,7 +22,9 @@ import (
 	"github.com/Ajayvtl/devserver/internal/modules/python"
 	"github.com/Ajayvtl/devserver/internal/modules/redis"
 	"github.com/Ajayvtl/devserver/internal/platform"
+	"github.com/Ajayvtl/devserver/internal/providers"
 	"github.com/Ajayvtl/devserver/internal/registry"
+	rt "github.com/Ajayvtl/devserver/internal/runtime"
 	"github.com/Ajayvtl/devserver/internal/state"
 	"github.com/Ajayvtl/devserver/internal/tasks"
 	"github.com/rs/zerolog"
@@ -62,7 +64,7 @@ func Run(ctx context.Context, args []string) error {
 
 	store := state.NewMemoryStore()
 	detector := platform.NewDetector()
-	exec := executor.NewNoop(log)
+	exec := legacy.NewNoop(log)
 	boot := bootstrap.New(log, reg.Inner(), store, exec, detector)
 
 	application := core.New(core.Dependencies{
@@ -93,13 +95,61 @@ func runServer(ctx context.Context, log zerolog.Logger) error {
 	// Core runtime infrastructure.
 	bus := events.NewBus()
 	localFS := filesystem.NewLocal()
-	taskEngine := tasks.NewEngine(log, bus, core.NewTaskExecutor(log), tasks.EngineConfig{Workers: 4, QueueMax: 128})
 	taskStream := tasks.NewEventStream(log, bus)
 
 	// Create subsystems — they start empty, Manager fills them.
 	indexer := core.NewIndexer(log, nil, bus)
-	provider := core.NewWorkspaceProvider(indexer)
+	providerManager := providers.NewManager()
+	provider := core.NewWorkspaceProvider(indexer, providerManager)
 	capRegistry := capabilities.NewRegistry()
+
+	// Initialize Provider Runtime (Milestone 3)
+	execRuntime := legacy.NewLocalRuntime()
+	providerManager.Register(providers.NewRedisProvider(execRuntime))
+	providerManager.Register(providers.NewNodeProvider(execRuntime))
+	providerManager.Register(&providers.LocalProvider{
+		Runtime:   execRuntime,
+		Meta:      providers.ProviderMetadata{Name: "docker", Description: "Docker container runtime", Version: "latest"},
+		CheckCmd:  "docker",
+		CheckArgs: []string{"--version"},
+	})
+	providerManager.Register(&providers.LocalProvider{
+		Runtime:   execRuntime,
+		Meta:      providers.ProviderMetadata{Name: "mysql", Description: "MySQL relational database", Version: "latest"},
+		CheckCmd:  "mysql",
+		CheckArgs: []string{"--version"},
+	})
+	providerManager.Register(&providers.LocalProvider{
+		Runtime:   execRuntime,
+		Meta:      providers.ProviderMetadata{Name: "nginx", Description: "Nginx web server", Version: "latest"},
+		CheckCmd:  "nginx",
+		CheckArgs: []string{"-v"},
+	})
+
+	// Initialize Task Engine
+	taskRegistry := tasks.NewRegistry()
+	taskRegistry.Register("workspace.index", &tasks.WorkspaceIndexRunner{})
+	taskRegistry.Register("workspace.setup", &tasks.WorkspaceSetupRunner{})
+	
+	serviceRunner := &tasks.ServiceRunner{Manager: providerManager}
+	taskRegistry.Register("service.start", serviceRunner)
+	taskRegistry.Register("service.stop", serviceRunner)
+	taskRegistry.Register("service.restart", serviceRunner)
+	taskRegistry.Register("service.install", serviceRunner)
+	taskRegistry.Register("service.update", serviceRunner)
+	taskRegistry.Register("service.configure", serviceRunner)
+	taskRegistry.Register("service.remove", serviceRunner)
+
+
+	runtime := &tasks.Runtime{
+		Logger:   log,
+		Provider: provider,
+		Indexer:  indexer,
+		EventBus: taskStream,
+		Registry: capRegistry,
+		// Store and Commands to be set
+	}
+	taskEngine := tasks.NewEngine(log, bus, taskRegistry, runtime, tasks.EngineConfig{Workers: 4, QueueMax: 128})
 
 	var watcher *core.WorkspaceWatcher
 	watcher, err = core.NewWorkspaceWatcher(log, bus)
@@ -139,17 +189,45 @@ func runServer(ctx context.Context, log zerolog.Logger) error {
 		return err
 	}
 
-	go taskEngine.Run(ctx)
-	go commandEngine.Run(ctx)
+	server := core.NewAPIServer(log, db, indexer, provider, taskEngine, taskStream, commandEngine, capRegistry, ":8080")
+
+	// Phase 2: Runtime Bootstrap
+	rtReg := rt.NewRegistry()
+	_ = rtReg.Register(taskStream)
+	_ = rtReg.Register(providerManager)
+	_ = rtReg.Register(provider)
+	_ = rtReg.Register(indexer)
+	_ = rtReg.Register(taskEngine)
+	_ = rtReg.Register(commandEngine)
+	_ = rtReg.Register(server)
+
+	coordinator := rt.NewCoordinator(rtReg)
+
+	if err := coordinator.Initialize(ctx); err != nil {
+		log.Error().Err(err).Msg("runtime initialization failed")
+		return err
+	}
+
+	if err := coordinator.Start(ctx); err != nil {
+		log.Error().Err(err).Msg("runtime start failed")
+		_ = coordinator.Stop(ctx)
+		return err
+	}
+
 	go syncTaskStore(ctx, bus, db, log)
 
-	// Start the watcher loop in the background.
 	if watcher != nil {
 		go watcher.Run(ctx)
 	}
 
-	server := core.NewAPIServer(log, db, indexer, provider, taskEngine, taskStream, commandEngine, capRegistry, ":8080")
-	return server.Run(ctx)
+	// Block until context is cancelled
+	<-ctx.Done()
+	
+	if err := coordinator.Stop(context.Background()); err != nil {
+		log.Error().Err(err).Msg("runtime stop failed")
+	}
+
+	return nil
 }
 
 func syncTaskStore(ctx context.Context, bus events.Bus, db *state.StoreDB, log zerolog.Logger) {

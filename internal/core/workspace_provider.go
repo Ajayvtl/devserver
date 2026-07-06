@@ -8,28 +8,72 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"context"
+
+	rt "github.com/Ajayvtl/devserver/internal/runtime"
+	"github.com/Ajayvtl/devserver/internal/providers"
 )
 
 type WorkspaceProvider struct {
-	indexer *Indexer
+	indexer  *Indexer
+	managers *providers.Manager
 
 	mu    sync.RWMutex
 	cache map[string]map[string]any
+	status rt.Status
 }
 
-func NewWorkspaceProvider(indexer *Indexer) *WorkspaceProvider {
+func NewWorkspaceProvider(indexer *Indexer, pm *providers.Manager) *WorkspaceProvider {
 	p := &WorkspaceProvider{
-		indexer: indexer,
-		cache:   make(map[string]map[string]any),
+		indexer:  indexer,
+		managers: pm,
+		cache:    make(map[string]map[string]any),
+		status:   rt.StatusStopped,
 	}
 	indexer.SetProvider(p)
 	return p
 }
 
+func (p *WorkspaceProvider) Name() string { return "core.WorkspaceProvider" }
+
+func (p *WorkspaceProvider) Initialize(ctx context.Context) error {
+	p.status = rt.StatusStarting
+	return nil
+}
+
+func (p *WorkspaceProvider) Start(ctx context.Context) error {
+	p.status = rt.StatusRunning
+	return nil
+}
+
+func (p *WorkspaceProvider) Stop(ctx context.Context) error {
+	p.status = rt.StatusStopped
+	return nil
+}
+
+func (p *WorkspaceProvider) Status() rt.Status { return p.status }
+
+func (p *WorkspaceProvider) Health() rt.Health { return rt.HealthHealthy }
+
 func (p *WorkspaceProvider) Invalidate(id string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	delete(p.cache, id)
+}
+
+func (p *WorkspaceProvider) Symbols(id string) (map[string]any, error) {
+
+	knowledge, err := p.Knowledge(id)
+	if err != nil {
+		return nil, err
+	}
+
+	symbols := knowledge.Symbols
+
+	return map[string]any{
+		"symbols": symbols,
+		"total":   len(symbols),
+	}, nil
 }
 
 func (p *WorkspaceProvider) getRoot(id string) (string, error) {
@@ -76,12 +120,41 @@ func (p *WorkspaceProvider) loadJSON(id, key, filename string, factory func() an
 	return val, nil
 }
 
-func (p *WorkspaceProvider) Load(id string) (*WorkspaceContext, error) {
-	v, err := p.loadJSON(id, "workspace", "workspace.json", func() any { return &WorkspaceContext{} })
+func (p *WorkspaceProvider) Workspace(id string) (*WorkspaceSummary, error) {
+	v, err := p.loadJSON(id, "workspace", "workspace.json", func() any { return &WorkspaceSummary{} })
 	if err != nil {
 		return nil, err
 	}
-	return v.(*WorkspaceContext), nil
+	return v.(*WorkspaceSummary), nil
+}
+
+func (p *WorkspaceProvider) Load(id string) (*WorkspaceContext, error) {
+	ws, err := p.Workspace(id)
+	if err != nil {
+		return nil, err
+	}
+	ctx := &WorkspaceContext{Workspace: *ws}
+	if v, _ := p.Project(id); v != nil { ctx.Project = *v }
+	if v, _ := p.Architecture(id); v != nil { ctx.Architecture = *v }
+	if v, _ := p.Dependencies(id); v != nil { ctx.Dependencies = *v }
+	if v, _ := p.Routes(id); v != nil { ctx.Routes = *v }
+	if v, _ := p.Database(id); v != nil { ctx.Database = *v }
+	if v, _ := p.Environment(id); v != nil { ctx.Environment = *v }
+	if v, _ := p.Git(id); v != nil { ctx.Git = *v }
+	if v, _ := p.GetHealth(id); v != nil { ctx.Health = *v }
+	if v, _ := p.Knowledge(id); v != nil { ctx.Knowledge = *v }
+	if v, _ := p.Tasks(id); v != nil { ctx.Tasks = *v }
+	if v, _ := p.Plugins(id); v != nil { ctx.Plugins = *v }
+	if v, _ := p.Infrastructure(id); v != nil { ctx.Infrastructure = *v }
+	if v, _ := p.Services(id); v != nil { ctx.Services = v }
+	if v, _ := p.Deployments(id); v != nil { ctx.Deployments = *v }
+	if v, _ := p.Domains(id); v != nil { ctx.Domains = *v }
+	if v, _ := p.Logs(id); v != nil { ctx.Logs = *v }
+	if v, _ := p.AI(id); v != nil { ctx.AI = *v }
+	if v, _ := p.MCP(id); v != nil { ctx.MCP = *v }
+	if v, _ := p.Index(id); v != nil { ctx.Index = *v }
+	if v, _ := p.CacheInfo(id); v != nil { ctx.Cache = *v }
+	return ctx, nil
 }
 
 func (p *WorkspaceProvider) Architecture(id string) (*ArchitectureInfo, error) {
@@ -132,7 +205,7 @@ func (p *WorkspaceProvider) Git(id string) (*GitInfo, error) {
 	return v.(*GitInfo), nil
 }
 
-func (p *WorkspaceProvider) Health(id string) (*HealthInfo, error) {
+func (p *WorkspaceProvider) GetHealth(id string) (*HealthInfo, error) {
 	v, err := p.loadJSON(id, "health", "health.json", func() any { return &HealthInfo{} })
 	if err != nil {
 		return nil, err
@@ -180,12 +253,28 @@ func (p *WorkspaceProvider) Infrastructure(id string) (*InfrastructureInfo, erro
 	return v.(*InfrastructureInfo), nil
 }
 
-func (p *WorkspaceProvider) Services(id string) (*[]ServiceInfo, error) {
-	v, err := p.loadJSON(id, "services", "services.json", func() any { return &[]ServiceInfo{} })
-	if err != nil {
-		return nil, err
+// Services returns a list of active platform providers in this workspace.
+func (p *WorkspaceProvider) Services(id string) ([]providers.ProviderInfo, error) {
+	if p.managers == nil {
+		return []providers.ProviderInfo{}, nil
 	}
-	return v.(*[]ServiceInfo), nil
+
+	var results []providers.ProviderInfo
+	for _, provider := range p.managers.List() {
+		info, err := provider.Info(context.Background())
+		if err != nil {
+			// Instead of failing the entire list, just add what we know and mark status unknown
+			info = providers.ProviderInfo{
+				Name:   provider.Metadata().Name,
+				State: providers.ProviderState{
+					Status: providers.StatusFailed,
+					Health: providers.HealthUnknown,
+				},
+			}
+		}
+		results = append(results, info)
+	}
+	return results, nil
 }
 
 func (p *WorkspaceProvider) Deployments(id string) (*DeploymentInfo, error) {
@@ -275,13 +364,30 @@ func (p *WorkspaceProvider) CacheInfo(id string) (*CacheManifest, error) {
 
 // Derived aggregations for specific endpoints
 
+func (p *WorkspaceProvider) ReadFile(id, filePath string) (string, error) {
+	root, err := p.getRoot(id)
+	if err != nil {
+		return "", err
+	}
+	// Basic path traversal prevention
+	if strings.Contains(filePath, "..") {
+		return "", fmt.Errorf("invalid path")
+	}
+	fullPath := filepath.Join(root, filePath)
+	content, err := os.ReadFile(fullPath)
+	if err != nil {
+		return "", err
+	}
+	return string(content), nil
+}
+
 func (p *WorkspaceProvider) Overview(id string) (map[string]any, error) {
 	// Need Workspace, Project, Health, Git, Plugins
-	ws, err := p.Load(id)
+	ws, err := p.Workspace(id)
 	if err != nil { return nil, err }
 	proj, err := p.Project(id)
 	if err != nil { return nil, err }
-	health, err := p.Health(id)
+	health, err := p.GetHealth(id)
 	if err != nil { return nil, err }
 	gitInfo, err := p.Git(id)
 	if err != nil { return nil, err }
@@ -298,7 +404,7 @@ func (p *WorkspaceProvider) Overview(id string) (map[string]any, error) {
 }
 
 func (p *WorkspaceProvider) Doctor(id string) (map[string]any, error) {
-	health, err := p.Health(id)
+	health, err := p.GetHealth(id)
 	if err != nil { return nil, err }
 	proj, err := p.Project(id)
 	if err != nil { return nil, err }
@@ -387,7 +493,7 @@ func (p *WorkspaceProvider) FilePreview(id, relPath string) (*WorkspaceFilePrevi
 
 	return &WorkspaceFilePreview{
 		Path:       filepath.ToSlash(cleaned),
-		Kind:       fileKind(cleaned),
+		Kind:       fileDisplayKind(cleaned),
 		Language:   languageForFile(cleaned),
 		Size:       info.Size(),
 		ModifiedAt: info.ModTime().UTC(),
@@ -417,7 +523,7 @@ func (p *WorkspaceProvider) Files(id string, query string) (map[string]any, erro
 	return map[string]any{"files": files, "total": len(files)}, nil
 }
 
-func fileKind(path string) string {
+func fileDisplayKind(path string) string {
 	switch strings.ToLower(filepath.Ext(path)) {
 	case ".go":
 		return "Go source"
@@ -470,7 +576,7 @@ func languageForFile(path string) string {
 }
 
 func (p *WorkspaceProvider) Settings(id string) (map[string]any, error) {
-	ws, err := p.Load(id)
+	ws, err := p.Workspace(id)
 	if err != nil { return nil, err }
 	idx, err := p.Index(id)
 	if err != nil { return nil, err }

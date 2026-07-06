@@ -20,6 +20,37 @@ export interface Metric {
   tone: Tone
 }
 
+export interface Position {
+  line: number
+  column: number
+}
+
+export interface Range {
+  start: Position
+  end: Position
+}
+
+export interface Document {
+  workspaceId: string
+  path: string
+  language: string
+  version: number
+  dirty: boolean
+  cursor: Position
+  selection?: Range
+}
+
+export interface WorkspaceSession {
+  workspaceId: string
+  openTabs: Document[]
+  activeTab: string | null
+  recent: string[]
+  favorites: string[]
+  expandedFolders: string[]
+  selectedFiles: string[]
+  searchHistory: string[]
+}
+
 export interface ChecklistItem {
   label: string
   detail: string
@@ -407,11 +438,42 @@ export interface InfrastructureInfo {
   hostname: string
 }
 
-export interface WorkspaceServiceInfo {
-  name: string
+export interface ProviderState {
   status: string
-  port: string
-  pid: string
+  health: string
+}
+
+export interface ProviderMetrics {
+  pid?: number
+  uptime?: string
+}
+
+export interface ProviderCapabilities {
+  detect: boolean
+  version: boolean
+  health: boolean
+  status: boolean
+  start: boolean
+  stop: boolean
+  restart: boolean
+  install: boolean
+  update: boolean
+  uninstall: boolean
+  configure: boolean
+  logs: boolean
+  metrics: boolean
+  shell: boolean
+  open_ui: boolean
+  documentation: boolean
+}
+
+export interface WorkspaceProviderInfo {
+  name: string
+  version?: string
+  installed: boolean
+  state: ProviderState
+  metrics: ProviderMetrics
+  capabilities: ProviderCapabilities
 }
 
 export interface DeploymentEntry {
@@ -581,6 +643,7 @@ export type WorkspaceSection =
   | 'environment'
   | 'infrastructure'
   | 'services'
+  | 'tasks'
   | 'deployments'
   | 'database'
   | 'domains'

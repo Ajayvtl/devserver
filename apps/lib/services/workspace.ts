@@ -1,11 +1,11 @@
-import { submitCommand } from '../api/client'
+import { request, submitCommand } from '../api/client'
 import type {
   WorkspaceOverview,
   WorkspaceFilesResponse,
   WorkspaceGitInfo,
   WorkspaceEnvironmentInfo,
   InfrastructureInfo,
-  WorkspaceServiceInfo,
+  WorkspaceProviderInfo,
   DeploymentInfo,
   WorkspaceDomainInfo,
   WorkspaceLogEntry,
@@ -15,88 +15,88 @@ import type {
   WorkspaceSettingsData,
 } from '../types'
 
-export async function getWorkspaceOverview(): Promise<WorkspaceOverview> {
-  return {
-    workspace: { id: 'devserver', name: 'Devserver', root: '.', kind: 'Go', framework: 'Go', languages: ['Go', 'TypeScript'], runtime: 'go', packageManager: 'npm', generatedAt: new Date().toISOString() },
-    project: { id: 'devserver', name: 'Devserver', root: '.', framework: 'Go', languages: ['Go', 'TypeScript'], runtime: 'go', packageManager: 'npm', repository: 'git' },
-    health: { score: 60, build: 'unknown', tests: 'unknown', lint: 'unknown' },
-    git: { branch: 'main', commit: '', clean: true, ahead: 0, behind: 0, recentCommits: [], changedFiles: [] },
-    plugins: { detected: [], capabilities: [] },
-  }
+export async function getWorkspaceOverview(
+  id: string,
+): Promise<WorkspaceOverview> {
+  return request(`/api/workspaces/${id}/overview`)
 }
 
-export async function getWorkspaceFiles(query = ''): Promise<WorkspaceFilesResponse> {
-  return { files: [], total: 0 }
+export async function getWorkspaceFiles(
+  id: string,
+  query = '',
+): Promise<WorkspaceFilesResponse> {
+  const suffix = query ? `?q=${encodeURIComponent(query)}` : ''
+  return request(`/api/workspaces/${id}/files${suffix}`)
 }
 
-export async function getWorkspaceGit(): Promise<WorkspaceGitInfo> {
-  return {
-    branch: '', commit: '', clean: true, ahead: 0, behind: 0, recentCommits: [], changedFiles: [],
-  }
+export async function getWorkspaceGit(
+  id: string,
+): Promise<WorkspaceGitInfo> {
+  return request(`/api/workspaces/${id}/git`)
 }
 
-export async function getWorkspaceEnvironment(): Promise<WorkspaceEnvironmentInfo> {
-  return {
-    files: [], keys: [], secrets: [], preview: {},
-  }
+export async function getWorkspaceEnvironment(
+  id: string,
+): Promise<WorkspaceEnvironmentInfo> {
+  return request(`/api/workspaces/${id}/environment`)
 }
 
-export async function getWorkspaceInfrastructure(): Promise<InfrastructureInfo> {
-  return {
-    tools: [], os: '', arch: '', hostname: '',
-  }
+export async function getWorkspaceInfrastructure(
+  id: string,
+): Promise<InfrastructureInfo> {
+  return request(`/api/workspaces/${id}/infrastructure`)
 }
 
-export async function getWorkspaceServices(): Promise<WorkspaceServiceInfo[]> {
-  return []
+export async function getWorkspaceServices(
+  id: string,
+): Promise<WorkspaceProviderInfo[]> {
+  return request(`/api/workspaces/${id}/services`)
 }
 
-export async function getWorkspaceDeployments(): Promise<DeploymentInfo> {
-  return { entries: [], current: '' }
+export async function getWorkspaceDeployments(
+  id: string,
+): Promise<DeploymentInfo> {
+  return request(`/api/workspaces/${id}/deployments`)
 }
 
-export async function getWorkspaceDomains(): Promise<WorkspaceDomainInfo[]> {
-  return []
+export async function getWorkspaceDomains(
+  id: string,
+): Promise<WorkspaceDomainInfo[]> {
+  return request(`/api/workspaces/${id}/domains`)
 }
 
-export async function getWorkspaceLogs(): Promise<WorkspaceLogEntry[]> {
-  return []
+export async function getWorkspaceLogs(
+  id: string,
+): Promise<WorkspaceLogEntry[]> {
+  return request(`/api/workspaces/${id}/logs`)
 }
 
-export async function getWorkspaceAI(): Promise<AIContextInfo> {
-  return {
-    workspace: { id: '', name: '', root: '', kind: '', framework: '', languages: [], runtime: '', packageManager: '', generatedAt: '' },
-    git: { branch: '', commit: '', clean: true, ahead: 0, behind: 0, recentCommits: [], changedFiles: [] },
-    architecture: { kind: '', framework: '', languages: [], runtime: '', packageManager: '', entryPoints: [], notes: [] },
-    tasks: { suggested: [] },
-    dependencies: { frontend: [], backend: [], database: [], tools: [] },
-    routes: { next: [], go: [], api: [] },
-    database: { kind: '', files: [], migrations: [], environment: [] },
-    generatedAt: '',
-  }
+export async function getWorkspaceAI(
+  id: string,
+): Promise<AIContextInfo> {
+  return request(`/api/workspaces/${id}/ai`)
 }
 
-export async function getWorkspaceMCP(): Promise<MCPInfo> {
-  return { providers: [] }
+export async function getWorkspaceKnowledge(id: string): Promise<any> {
+  return request(`/api/workspaces/${id}/knowledge`)
 }
 
-export async function getWorkspaceDoctor(): Promise<WorkspaceDoctorData> {
-  return {
-    health: { score: 0, build: 'unknown', tests: 'unknown', lint: 'unknown' },
-    project: { id: '', name: '', root: '', framework: '', languages: [], runtime: '', packageManager: '', repository: '' },
-    git: { branch: '', commit: '', clean: true, ahead: 0, behind: 0, recentCommits: [], changedFiles: [] },
-    plugins: { detected: [], capabilities: [] },
-    checks: [],
-    recommendations: [],
-  }
+export async function getWorkspaceMCP(
+  id: string,
+): Promise<MCPInfo> {
+  return request(`/api/workspaces/${id}/mcp`)
 }
 
-export async function getWorkspaceSettings(): Promise<WorkspaceSettingsData> {
-  return {
-    workspace: { id: '', name: '', root: '', kind: '', framework: '', languages: [], runtime: '', packageManager: '', generatedAt: '' },
-    index: { version: 0, generatedAt: '', workspace: '', files: {} },
-    cache: { updatedAt: '', fingerprint: '', changed: [] },
-  }
+export async function getWorkspaceDoctor(
+  id: string,
+): Promise<WorkspaceDoctorData> {
+  return request(`/api/workspaces/${id}/doctor`)
+}
+
+export async function getWorkspaceSettings(
+  id: string,
+): Promise<WorkspaceSettingsData> {
+  return request(`/api/workspaces/${id}/settings`)
 }
 
 export async function triggerWorkspaceReindex(): Promise<{ status: string }> {

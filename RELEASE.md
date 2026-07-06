@@ -25,27 +25,27 @@ Objective:
 - The Workspace becomes the primary operating surface.
 
 Required Sections:
-- [ ] Explorer
-- [ ] Files
-- [ ] File Preview
-- [ ] Git
-- [ ] Dependencies
-- [ ] Environment
-- [ ] Health
-- [ ] Architecture
-- [ ] Database
-- [ ] Services
-- [ ] Deployments
-- [ ] Domains
-- [ ] Logs
-- [ ] Knowledge
-- [ ] Doctor
-- [ ] Settings
+- [x] Explorer
+- [x] Files
+- [x] File Preview
+- [x] Git
+- [x] Dependencies
+- [x] Environment
+- [x] Health
+- [x] Architecture
+- [x] Database
+- [x] Services
+- [x] Deployments
+- [x] Domains
+- [x] Logs
+- [x] Knowledge
+- [x] Doctor
+- [x] Settings
 
 Acceptance Criteria:
-- [ ] Every section uses `WorkspaceProvider`
-- [ ] Every section uses real data
-- [ ] No mock content remains
+- [x] Every section uses `WorkspaceProvider`
+- [x] Every section uses real data
+- [x] No mock content remains
 - [ ] No placeholders remain
 - [ ] No fake values remain
 
@@ -86,25 +86,25 @@ Status: [ ] Open
 
 ## Milestone 4 - Command Runtime
 Commands:
-- [ ] Setup
-- [ ] Login
-- [ ] Workspace Import
-- [ ] Clone Repository
-- [ ] Deploy
-- [ ] Install Provider
-- [ ] Update Provider
-- [ ] Backup
-- [ ] Restore
-- [ ] Doctor
+- [x] Setup
+- [x] Login
+- [x] Workspace Import
+- [x] Clone Repository
+- [x] Deploy
+- [x] Install Provider
+- [x] Update Provider
+- [x] Backup
+- [x] Restore
+- [x] Doctor
 - [ ] Restart Service
 
 Acceptance Criteria:
-- [ ] Commands are queued
-- [ ] Commands are executed
-- [ ] Commands are cancelable
-- [ ] Commands are logged
-- [ ] Commands are event streamed
-- [ ] Commands are persisted
+- [x] Commands are queued
+- [x] Commands are executed
+- [x] Commands are cancelable
+- [x] Commands are logged
+- [x] Commands are event streamed
+- [x] Commands are persisted
 
 Status: [ ] Open
 

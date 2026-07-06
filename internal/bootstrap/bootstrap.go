@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Ajayvtl/devserver/internal/executor"
+	"github.com/Ajayvtl/devserver/internal/executor/legacy"
 	"github.com/Ajayvtl/devserver/internal/logger"
 	"github.com/Ajayvtl/devserver/internal/platform"
 	"github.com/Ajayvtl/devserver/internal/registry"
@@ -16,11 +16,11 @@ type Bootstrapper struct {
 	log      zerolog.Logger
 	registry *registry.Registry
 	store    state.Store
-	exec     executor.Runner
+	exec     legacy.Runner
 	platform platform.Detector
 }
 
-func New(log zerolog.Logger, reg *registry.Registry, store state.Store, exec executor.Runner, detector platform.Detector) *Bootstrapper {
+func New(log zerolog.Logger, reg *registry.Registry, store state.Store, exec legacy.Runner, detector platform.Detector) *Bootstrapper {
 	return &Bootstrapper{
 		log:      log,
 		registry: reg,

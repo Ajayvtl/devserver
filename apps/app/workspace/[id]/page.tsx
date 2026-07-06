@@ -12,6 +12,7 @@ import {
   getWorkspaceMCP,
   getWorkspaceDoctor,
   getWorkspaceSettings,
+  getWorkspaceKnowledge,
 } from '@/lib/services/workspace'
 
 import { AppShell } from '@/components/app-shell'
@@ -27,20 +28,21 @@ export default async function WorkspacePage({ params, searchParams }: PageProps)
   const sp = await searchParams
   const section = sp.section || 'overview'
 
-  const [overview, filesRes, git, env, infra, services, deployments, domains, logs, ai, mcp, doctor, settings] = await Promise.all([
-    getWorkspaceOverview(),
-    getWorkspaceFiles(),
-    getWorkspaceGit(),
-    getWorkspaceEnvironment(),
-    getWorkspaceInfrastructure(),
-    getWorkspaceServices(),
-    getWorkspaceDeployments(),
-    getWorkspaceDomains(),
-    getWorkspaceLogs(),
-    getWorkspaceAI(),
-    getWorkspaceMCP(),
-    getWorkspaceDoctor(),
-    getWorkspaceSettings(),
+  const [overview, filesRes, git, env, infra, services, deployments, domains, logs, ai, knowledge, mcp, doctor, settings] = await Promise.all([
+    getWorkspaceOverview(id),
+    getWorkspaceFiles(id),
+    getWorkspaceGit(id),
+    getWorkspaceEnvironment(id),
+    getWorkspaceInfrastructure(id),
+    getWorkspaceServices(id),
+    getWorkspaceDeployments(id),
+    getWorkspaceDomains(id),
+    getWorkspaceLogs(id),
+    getWorkspaceAI(id),
+    getWorkspaceKnowledge(id),
+    getWorkspaceMCP(id),
+    getWorkspaceDoctor(id),
+    getWorkspaceSettings(id),
   ])
 
   return (
@@ -59,7 +61,7 @@ export default async function WorkspacePage({ params, searchParams }: PageProps)
         domains={domains}
         logs={logs}
         ai={ai}
-        knowledge={{ files: [], topics: [] }}
+        knowledge={knowledge}
         mcp={mcp}
         doctor={doctor}
         settings={settings}
