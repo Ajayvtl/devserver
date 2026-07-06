@@ -5,40 +5,59 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/Ajayvtl/devserver/internal/rbac"
 )
 
-func TestRBAC_DenyByDefault(t *testing.T) {
-	// Setup mock services
-	router := NewRouter(nil, nil, nil, nil, nil, nil)
-	mux := http.NewServeMux()
-	router.Register(mux)
+type mockTenantRBACService struct {
+	rbac.Service
+}
 
-	// Attempt to access protected endpoint without auth
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/environments?ownerId=org1", nil)
+func (m *mockTenantRBACService) Authorize(ctx context.Context, userID, orgID, permission string) error {
+	if userID == "user1" && orgID == "org2" {
+		return rbac.ErrAccessDenied
+	}
+	return nil
+}
+
+func TestRBAC_DenyByDefault(t *testing.T) {
+	// Directly test RBACMiddleware
+	mockSvc := &mockTenantRBACService{}
+	middleware := RBACMiddleware(mockSvc, "read")
+	
+	handler := middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/environments", nil)
 	w := httptest.NewRecorder()
-	mux.ServeHTTP(w, req)
+	
+	// Call without auth context
+	handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusUnauthorized {
-		t.Errorf("Expected 401 Unauthorized for missing auth, got %d", w.Code)
+		t.Errorf("Expected 401 Unauthorized for missing auth context, got %d", w.Code)
 	}
 }
 
 func TestRBAC_TenantIsolation(t *testing.T) {
-	// Mock an authenticated user accessing cross-tenant resources
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/environments?ownerId=org2", nil)
+	mockSvc := &mockTenantRBACService{}
+	middleware := RBACMiddleware(mockSvc, "read")
 	
-	// Inject user who belongs to org1
+	handler := middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	// User from org1 trying to access org2
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/environments", nil)
 	ctx := context.WithValue(req.Context(), ContextKeyUserID, "user1")
-	// Since X-Org-ID is missing or mismatched, this would typically fail in the service
-	// For testing the handler structure:
 	req = req.WithContext(ctx)
-	req.Header.Set("X-Org-ID", "org1")
+	req.Header.Set("X-Org-ID", "org2")
 
 	w := httptest.NewRecorder()
-	
-	// In a real test, the rbac service would reject access to org2 if the context shows org1
-	// Here we verify the handler validates and routes correctly.
-	if w.Code == http.StatusOK && w.Code == 500 { // mock fix
-		t.Errorf("Cross-tenant access should not return OK")
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Errorf("Expected 403 Forbidden for cross-tenant access, got %d", w.Code)
 	}
 }

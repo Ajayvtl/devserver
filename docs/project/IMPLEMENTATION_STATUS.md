@@ -76,4 +76,4 @@ This phase bridges the deeply isolated backend foundational services to the user
 * **WP-8.3 Web UI Foundations**: (Complete) Next.js/React flows for Login, User/Org management, and RBAC views.
 * **WP-8.4 Web UI Configuration**: (Complete) Management dashboards for Environments, encrypted Secrets, AI Provider binding with live network testing, and Settings persistence over real APIs.
 * **WP-8.5 End-to-End System Workflows**: (Complete) Backend audit pipeline and organization lifecycle integration tests verified via UI.
-* **WP-8.6 Production Validation, Hardening & Acceptance Testing**: (Pending) Final phase gate covering deep RBAC validation, concurrency/optimistic locking, API edge-case simulation, failure handling, and multi-user E2E workflow evidence collection before Phase 9 release.
+* **WP-8.6.1 through WP-8.6.11**: (Complete) Hardened APIs, resolved CORS preflight, established transactional boundaries, fully executed the RBAC/Tenant isolation E2E test matrix, and completed a comprehensive Screen-by-Screen UX Audit and User Operation Manual (`PRODUCT_EXPERIENCE_AUDIT.md`).

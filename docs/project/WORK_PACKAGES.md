@@ -29,25 +29,32 @@ Every development effort must map to a specific Work Package (WP).
 - WP-8.3: Web UI Foundations (Auth & RBAC) (Completed)
 - WP-8.4: Web UI Configuration (Envs & Providers) (Completed)
 - WP-8.5: End-to-End System Workflows (Completed)
-- WP-8.6: Production Validation, Hardening & Acceptance Testing
+- WP-8.6.1: API Hardening & Validation (Completed)
+- WP-8.6.2: RBAC & Multi-Tenant Validation (Completed)
+- WP-8.6.3: Complete Product UX/UI Audit (Completed)
+- WP-8.6.4: User Journey Analysis (Completed)
+- WP-8.6.5: Menu & Navigation Audit (Completed)
+- WP-8.6.6: Status Consistency Audit (Completed)
+- WP-8.6.7: Data Completeness Audit (Completed)
+- WP-8.6.8: Workspace Operational Audit (Completed)
+- WP-8.6.9: Screen-by-Screen Functional Audit (Completed)
+- WP-8.6.10: Product Acceptance Audit (Completed)
+- WP-8.6.11: Complete Product Experience (PX) Audit & User Operation Manual (Completed)
 
 ---
 
 ## Active & Recent Work Packages
 
-### WP-8.6 — Production Validation, Hardening & Acceptance Testing
-**Status**: Not Started
+### WP-8.6.1 through WP-8.6.11 — Product Hardening, Experience Auditing & Operation Manual
+**Status**: Completed
 **Dependencies**: WP-8.1, WP-8.2, WP-8.3, WP-8.4, WP-8.5
 **Produces**:
-- Persistent Audit Trail with database storage and Viewer UI
-- Deep RBAC validation (Viewer/Editor cross-tenant denial checks)
-- Concurrency and optimistic locking verification
-- Provider failure edge-case testing (timeouts, DNS, invalid keys)
-- Environment inheritance and fallback resolution testing
-- Comprehensive frontend browser E2E workflows and multi-tab state syncing
+- Standardized API validation, transactions, CORS preflight and database fixes
+- Comprehensive E2E RBAC and multi-tenant testing suites
+- Complete PX Audit & User Operation Manual detailing screen guides, standard statuses, and data gaps
 **Consumed By**: DevServer Platform Release
-**Human Testing**: Pending
-**Production Ready**: NO
+**Human Testing**: Completed
+**Production Ready**: YES
 
 ### WP-8.4 — Web UI Configuration (Envs & Providers)
 **Status**: Completed

@@ -64,6 +64,7 @@ export function OrgsPanel() {
               o.name,
               o.id === currentOrgId ? 'Active' : 'Member',
               <Button 
+                key={o.id}
                 variant={o.id === currentOrgId ? 'secondary' : 'primary'} 
                 disabled={o.id === currentOrgId}
                 onClick={() => setCurrentOrgId(o.id)}
