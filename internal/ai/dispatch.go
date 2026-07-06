@@ -17,13 +17,14 @@ var (
 
 // InferenceRequest represents a prompt to the LLM along with associated options.
 type InferenceRequest struct {
-	Prompt      string
-	Model       string
-	Temperature float64
-	MaxTokens   int
-	Stream      bool
-	EditorState map[string]any
-	Context     *AssembledContext
+	Prompt         string
+	Model          string
+	Temperature    float64
+	MaxTokens      int
+	Stream         bool
+	StreamCallback func(string)
+	EditorState    *EditorState
+	Context        *AssembledContext
 }
 
 // InferenceResponse represents a discrete response from the LLM.
@@ -80,6 +81,19 @@ func (d *Dispatcher) Dispatch(ctx context.Context, req InferenceRequest) (*Infer
 	fullPrompt := req.Prompt
 	if req.Context != nil {
 		fullPrompt = fmt.Sprintf("Context:\n%s\n\nPrompt:\n%s", req.Context.Summary, req.Prompt)
+	}
+
+	if req.Stream && req.StreamCallback != nil {
+		err := infProvider.GenerateStream(ctx, req.Model, fullPrompt, req.StreamCallback)
+		if err != nil {
+			return nil, err
+		}
+		return &InferenceResponse{
+			Text:         "", // Streamed, no full text
+			Model:        req.Model,
+			ProviderName: provider.Metadata().Name,
+			Usage:        TokenUsage{},
+		}, nil
 	}
 
 	out, err := infProvider.Generate(ctx, req.Model, fullPrompt)

@@ -10,10 +10,18 @@ import (
 	"github.com/rs/zerolog"
 )
 
+// EditorState represents the context provided by the UI Editor.
+type EditorState struct {
+	ActiveFile   string  `json:"activeFile,omitempty"`
+	Language     string  `json:"language,omitempty"`
+	Cursor       float64 `json:"cursor,omitempty"`
+	SelectedText string  `json:"selectedText,omitempty"`
+}
+
 // AssembledContext represents the compiled state of the workspace and editor for AI inference.
 type AssembledContext struct {
 	WorkspaceContext *core.WorkspaceContext
-	EditorState      map[string]any // This will be expanded when wired to SessionManager
+	EditorState      *EditorState
 	Summary          string
 }
 
@@ -32,14 +40,14 @@ func NewContextAssembler(logger zerolog.Logger, workspace *core.WorkspaceProvide
 }
 
 // Assemble pulls together the full workspace context for the given workspace ID.
-func (c *ContextAssembler) Assemble(ctx context.Context, workspaceID common.WorkspaceID, editorState map[string]any) (*AssembledContext, error) {
+func (c *ContextAssembler) Assemble(ctx context.Context, workspaceID common.WorkspaceID, editorState *EditorState) (*AssembledContext, error) {
 	wsContext, err := c.workspace.Load(string(workspaceID))
 	if err != nil {
 		return nil, fmt.Errorf("failed to load workspace context: %w", err)
 	}
 
 	if editorState == nil {
-		editorState = make(map[string]any)
+		editorState = &EditorState{}
 	}
 
 	summary := c.generateSummary(wsContext, editorState)
@@ -51,20 +59,20 @@ func (c *ContextAssembler) Assemble(ctx context.Context, workspaceID common.Work
 	}, nil
 }
 
-func (c *ContextAssembler) generateSummary(ws *core.WorkspaceContext, editor map[string]any) string {
+func (c *ContextAssembler) generateSummary(ws *core.WorkspaceContext, editor *EditorState) string {
 	var builder strings.Builder
 
 	builder.WriteString(fmt.Sprintf("Workspace: %s\n", ws.Workspace.Name))
 
 	// Inject Editor Context if present
-	if file, ok := editor["file"].(string); ok && file != "" {
-		builder.WriteString(fmt.Sprintf("Active File: %s\n", file))
+	if editor.ActiveFile != "" {
+		builder.WriteString(fmt.Sprintf("Active File: %s\n", editor.ActiveFile))
 	}
-	if language, ok := editor["language"].(string); ok && language != "" {
-		builder.WriteString(fmt.Sprintf("Language: %s\n", language))
+	if editor.Language != "" {
+		builder.WriteString(fmt.Sprintf("Language: %s\n", editor.Language))
 	}
-	if selectedText, ok := editor["selectedText"].(string); ok && selectedText != "" {
-		builder.WriteString(fmt.Sprintf("Selected Text:\n```\n%s\n```\n", selectedText))
+	if editor.SelectedText != "" {
+		builder.WriteString(fmt.Sprintf("Selected Text:\n```\n%s\n```\n", editor.SelectedText))
 	}
 
 	if ws.Git.Branch != "" {

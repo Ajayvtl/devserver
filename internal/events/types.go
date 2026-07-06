@@ -34,6 +34,8 @@ const (
 
 	ContextGenerated EventType = "context:generated"
 	ContextUpdated   EventType = "context:updated"
+
+	AIStreamToken EventType = "ai:stream:token"
 )
 
 // Typed event payloads. Every Publish call should use one of these
@@ -156,4 +158,10 @@ type GitChangedEvent struct {
 
 type ContextGeneratedEvent struct {
 	WorkspaceID string
+}
+
+type AIStreamTokenEvent struct {
+	CommandID string
+	TaskID    string
+	Token     string
 }

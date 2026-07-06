@@ -1,8 +1,12 @@
 package providers
 
 import (
+	"bufio"
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"github.com/Ajayvtl/devserver/internal/executor/legacy"
 )
@@ -176,4 +180,59 @@ func (p *AIProvider) Generate(ctx context.Context, model string, prompt string) 
 		return "", fmt.Errorf("ollama inference failed: %w", err)
 	}
 	return out.Stdout, nil
+}
+
+func (p *AIProvider) GenerateStream(ctx context.Context, model string, prompt string, onToken func(string)) error {
+	if model == "" {
+		model = "llama2"
+	}
+
+	reqBody, err := json.Marshal(map[string]any{
+		"model":  model,
+		"prompt": prompt,
+		"stream": true,
+	})
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", "http://localhost:11434/api/generate", bytes.NewReader(reqBody))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("ollama API request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("ollama API returned status %d", resp.StatusCode)
+	}
+
+	scanner := bufio.NewScanner(resp.Body)
+	for scanner.Scan() {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+		line := scanner.Text()
+		var chunk struct {
+			Response string `json:"response"`
+			Done     bool   `json:"done"`
+		}
+		if err := json.Unmarshal([]byte(line), &chunk); err == nil {
+			if chunk.Response != "" {
+				onToken(chunk.Response)
+			}
+			if chunk.Done {
+				break
+			}
+		}
+	}
+
+	return scanner.Err()
 }

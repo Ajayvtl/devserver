@@ -90,6 +90,7 @@ func (s *EventStream) runInternal(ctx context.Context) {
 		events.WorkspaceDeactivated,
 		events.WorkspaceIndexed,
 		events.ContextGenerated,
+		events.AIStreamToken,
 	}
 
 	channels := make([]events.Subscriber, len(topics))

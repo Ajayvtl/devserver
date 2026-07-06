@@ -146,7 +146,7 @@ func runServer(ctx context.Context, log zerolog.Logger) error {
 	aiRuntime := ai.NewRuntime(log, provider, indexer, providerManager)
 
 	// AI Task Runners
-	aiRunner := &ai.TaskRunner{AIRuntime: aiRuntime}
+	aiRunner := &ai.TaskRunner{AIRuntime: aiRuntime, Bus: bus}
 	taskRegistry.Register("ai.generate", aiRunner)
 	taskRegistry.Register("ai.refactor", aiRunner)
 	taskRegistry.Register("ai.explain", aiRunner)

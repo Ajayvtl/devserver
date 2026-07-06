@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/Ajayvtl/devserver/internal/domain/common"
+	"github.com/Ajayvtl/devserver/internal/events"
 	"github.com/Ajayvtl/devserver/internal/tasks"
 )
 
@@ -12,6 +13,7 @@ import (
 // triggered via the Command Bus.
 type TaskRunner struct {
 	AIRuntime *Runtime
+	Bus       events.Bus
 }
 
 // Execute processes the task payload and dispatches it to the AI Runtime.
@@ -38,22 +40,33 @@ func (r *TaskRunner) Execute(ctx context.Context, task *tasks.Task, runtime *tas
 	model, _ := task.Payload["model"].(string)
 
 	// Extract editor state from payload
-	editorState := make(map[string]any)
+	editorState := &EditorState{}
 	if ctxMap, ok := task.Payload["context"].(map[string]any); ok {
-		editorState = ctxMap
+		if file, ok := ctxMap["file"].(string); ok {
+			editorState.ActiveFile = file
+		}
+		if language, ok := ctxMap["language"].(string); ok {
+			editorState.Language = language
+		}
+		if selectedText, ok := ctxMap["selectedText"].(string); ok {
+			editorState.SelectedText = selectedText
+		}
+		if cursor, ok := ctxMap["cursor"].(float64); ok {
+			editorState.Cursor = cursor
+		}
 	} else {
 		// Fallback for flat structure
 		if file, ok := task.Payload["file"].(string); ok {
-			editorState["file"] = file
+			editorState.ActiveFile = file
 		}
 		if language, ok := task.Payload["language"].(string); ok {
-			editorState["language"] = language
+			editorState.Language = language
 		}
 		if selectedText, ok := task.Payload["selectedText"].(string); ok {
-			editorState["selectedText"] = selectedText
+			editorState.SelectedText = selectedText
 		}
 		if cursor, ok := task.Payload["cursor"].(float64); ok {
-			editorState["cursor"] = cursor
+			editorState.Cursor = cursor
 		}
 	}
 
@@ -61,6 +74,17 @@ func (r *TaskRunner) Execute(ctx context.Context, task *tasks.Task, runtime *tas
 		Prompt:      prompt,
 		Model:       model,
 		EditorState: editorState,
+	}
+
+	stream, _ := task.Payload["stream"].(bool)
+	if stream && r.Bus != nil {
+		req.Stream = true
+		req.StreamCallback = func(token string) {
+			r.Bus.Publish(events.AIStreamToken, events.AIStreamTokenEvent{
+				TaskID: task.ID,
+				Token:  token,
+			})
+		}
 	}
 
 	resp, err := r.AIRuntime.Infer(ctx, common.WorkspaceID(task.WorkspaceID), req)

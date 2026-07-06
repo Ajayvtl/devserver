@@ -101,6 +101,7 @@ type Provider interface {
 type InferenceProvider interface {
 	Provider
 	Generate(ctx context.Context, model string, prompt string) (string, error)
+	GenerateStream(ctx context.Context, model string, prompt string, onToken func(string)) error
 }
 
 // ProviderCapabilities defines which actions a provider supports.
