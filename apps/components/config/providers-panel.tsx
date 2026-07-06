@@ -99,11 +99,21 @@ export function ProvidersPanel() {
   }
 
   const handleTestConnection = async () => {
+    if (!currentOrgId) return
     setTestingConnection(true)
     try {
-      // Simulate test connection delay since backend test endpoint doesn't exist yet
-      await new Promise(r => setTimeout(r, 1000))
       if (!formSecretRef) throw new Error('Secret Reference is required for connection testing.')
+      
+      await request('/api/v1/providers/test', {
+        method: 'POST',
+        headers: { 'X-Org-ID': currentOrgId },
+        body: {
+          ownerId: currentOrgId,
+          name: formName,
+          secretRef: formSecretRef
+        }
+      })
+      
       push({ title: 'Connection Successful', message: `Successfully authenticated with ${formName}.`, tone: 'success' })
     } catch (err: any) {
       push({ title: 'Connection Failed', message: err.message, tone: 'danger' })

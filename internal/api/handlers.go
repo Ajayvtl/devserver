@@ -298,3 +298,31 @@ func (router *Router) handleProviders(w http.ResponseWriter, r *http.Request) {
 	}
 	WriteError(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
 }
+
+func (router *Router) handleProviderTest(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+		var req struct {
+			OwnerID   string `json:"ownerId"`
+			Name      string `json:"name"`
+			SecretRef string `json:"secretRef"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			WriteError(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid JSON payload", nil)
+			return
+		}
+
+		ok, err := router.providerService.TestConnection(r.Context(), req.OwnerID, req.Name, req.SecretRef)
+		if err != nil || !ok {
+			msg := "Connection failed"
+			if err != nil {
+				msg = err.Error()
+			}
+			WriteError(w, http.StatusBadRequest, "TEST_FAILED", msg, nil)
+			return
+		}
+
+		WriteSuccess(w, http.StatusOK, map[string]string{"status": "ok"})
+		return
+	}
+	WriteError(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
+}

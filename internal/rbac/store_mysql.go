@@ -80,6 +80,32 @@ func initSchema(db *sql.DB) error {
 		}
 	}
 
+	// Seed default org and admin membership if none exists
+	var count int
+	_ = db.QueryRow("SELECT COUNT(*) FROM organizations").Scan(&count)
+	if count == 0 {
+		// First try to find the admin user seeded by auth package
+		var adminID string
+		err := db.QueryRow("SELECT id FROM users WHERE username = 'admin' LIMIT 1").Scan(&adminID)
+		if err == nil && adminID != "" {
+			orgID := uuid.NewString()
+			roleID := uuid.NewString()
+			now := time.Now().UTC().Format("2006-01-02 15:04:05")
+
+			// Create Default Organization
+			_, _ = db.Exec("INSERT INTO organizations (id, name, slug, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+				orgID, "DevServer Default", "devserver-default", now, now)
+
+			// Create Admin Role
+			_, _ = db.Exec("INSERT INTO roles (id, org_id, name, permissions, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+				roleID, orgID, "admin", `["*"]`, now, now)
+
+			// Assign Admin to Default Organization
+			_, _ = db.Exec("INSERT INTO memberships (id, org_id, user_id, role_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+				uuid.NewString(), orgID, adminID, roleID, now, now)
+		}
+	}
+
 	return nil
 }
 

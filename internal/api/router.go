@@ -65,4 +65,5 @@ func (router *Router) Register(mux *http.ServeMux) {
 
 	// 8. Provider Configuration
 	mux.Handle("/api/v1/providers", protect(http.HandlerFunc(router.handleProviders)))
+	mux.Handle("/api/v1/providers/test", protect(http.HandlerFunc(router.handleProviderTest)))
 }

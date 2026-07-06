@@ -50,7 +50,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const userProfile = await request<UserProfile>('/api/v1/users/me')
         setUser(userProfile)
 
-        const orgs = await request<Organization[]>('/api/v1/organizations')
+        const orgsResp = await request<Organization[]>('/api/v1/organizations')
+        const orgs = orgsResp || []
         setOrganizations(orgs)
 
         if (orgs.length > 0) {
