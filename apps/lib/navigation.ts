@@ -5,89 +5,54 @@ export const navigation: NavGroup[] = [
     title: 'Overview',
     items: [
       {
-        label: 'Overview',
+        label: 'Dashboard',
         href: '/dashboard',
-        subtitle: 'Summary and live system health',
+        subtitle: 'Summary and control deck overview',
       },
       {
-        label: 'Workspace',
-        href: '/workspace/devserver',
-        subtitle: 'Full workspace runtime explorer',
+        label: 'Projects',
+        href: '/projects',
+        subtitle: 'Workspace listings and management',
       },
       {
         label: 'Workspaces',
-        href: '/projects',
-        subtitle: 'Active workspaces and environments',
-      },
-      {
-        label: 'Settings',
-        href: '/settings',
-        subtitle: 'Global platform preferences',
+        href: '/workspace/devserver',
+        subtitle: 'Integrated IDE developer workspace',
       },
     ],
   },
   {
-    title: 'Operations',
+    title: 'Operations & Observe',
     items: [
+      {
+        label: 'Telemetry Monitor',
+        href: '/monitor',
+        subtitle: 'Live fleet performance telemetry',
+      },
       {
         label: 'Deployments',
-        href: '/dashboard#deployments',
-        subtitle: 'Release history and rollout state',
+        href: '/deploy',
+        subtitle: 'Releases, rollback, and pipelines',
       },
       {
-        label: 'Servers',
-        href: '/dashboard#servers',
-        subtitle: 'Registered hosts and health',
-      },
-      {
-        label: 'Domains',
-        href: '/dashboard#domains',
-        subtitle: 'Public endpoints and SSL',
-      },
-      {
-        label: 'SSL',
-        href: '/dashboard#ssl',
-        subtitle: 'Certificates and renewal status',
-      },
-      {
-        label: 'Services',
-        href: '/dashboard#services',
-        subtitle: 'Nginx, Redis, Postgres, and friends',
+        label: 'Backup & Data',
+        href: '/backup',
+        subtitle: 'Backup, restore, and import logs',
       },
     ],
   },
   {
-    title: 'Platform',
+    title: 'Configuration',
     items: [
       {
-        label: 'Databases',
-        href: '/dashboard#databases',
-        subtitle: 'Platform database and app stores',
+        label: 'Environments',
+        href: '/config/environments',
+        subtitle: 'Variables and encrypted secrets',
       },
       {
-        label: 'Storage',
-        href: '/dashboard#storage',
-        subtitle: 'Volumes, snapshots, and retention',
-      },
-      {
-        label: 'Terminal',
-        href: '/dashboard#terminal',
-        subtitle: 'Shell access and command execution',
-      },
-      {
-        label: 'Monitoring',
-        href: '/dashboard#monitoring',
-        subtitle: 'Live metrics and alerts',
-      },
-      {
-        label: 'Logs',
-        href: '/dashboard#logs',
-        subtitle: 'Execution history and audit trail',
-      },
-      {
-        label: 'Users',
-        href: '/dashboard#users',
-        subtitle: 'Roles, access, and sessions',
+        label: 'AI Providers',
+        href: '/config/providers',
+        subtitle: 'Ollama/OpenAI API configuration',
       },
     ],
   },
@@ -95,49 +60,29 @@ export const navigation: NavGroup[] = [
     title: 'DevCenter',
     items: [
       {
-        label: 'Architecture',
-        href: '/devcenter/architecture',
-        subtitle: 'System structure and boundaries',
-      },
-      {
-        label: 'Tasks',
-        href: '/devcenter/tasks',
-        subtitle: 'Task progress and rollback design',
-      },
-      {
-        label: 'Knowledge',
-        href: '/devcenter/knowledge',
-        subtitle: 'Best practices and learning cards',
-      },
-      {
-        label: 'Dependencies',
-        href: '/devcenter/dependencies',
-        subtitle: 'How services and modules connect',
-      },
-      {
-        label: 'API',
-        href: '/devcenter/api',
-        subtitle: 'Future API contracts and facades',
-      },
-      {
-        label: 'Database',
-        href: '/devcenter/database',
-        subtitle: 'Platform schema and data model',
-      },
-      {
-        label: 'Project Doctor',
+        label: 'Workspace Doctor',
         href: '/devcenter/project-doctor',
-        subtitle: 'Diagnostics and fixes for projects',
+        subtitle: 'Auto-healing workspace diagnostic tools',
+      },
+      {
+        label: 'System Docs',
+        href: '/devcenter/architecture',
+        subtitle: 'Architecture, DB schemas, and APIs',
+      },
+      {
+        label: 'AI Cost & Usage',
+        href: '/devcenter/ai-usage',
+        subtitle: 'LLM token tracker and provider metrics',
       },
     ],
   },
   {
-    title: 'Admin',
+    title: 'Governance',
     items: [
       {
-        label: 'Settings',
+        label: 'Admin Settings',
         href: '/settings',
-        subtitle: 'Platform and account preferences',
+        subtitle: 'Team members, roles, and security',
       },
     ],
   },

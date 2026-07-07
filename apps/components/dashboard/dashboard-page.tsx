@@ -1,8 +1,10 @@
+'use client'
+
+import { useState } from 'react'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import { Card } from '../ui/card'
 import { EmptyState } from '../ui/empty-state'
-import { LearnCard } from '../ui/learn-card'
 import { MetricCard } from '../ui/metric-card'
 import { Progress } from '../ui/progress'
 
@@ -14,238 +16,282 @@ interface Props {
 }
 
 export function DashboardPageContent({ data, knowledge }: Props) {
+  // Personalization settings
+  const [pinnedWorkspaces, setPinnedWorkspaces] = useState<string[]>(['devserver'])
+  const [visibleWidgets, setVisibleWidgets] = useState({
+    telemetry: true,
+    timeline: true,
+    tasks: true,
+    personalization: true
+  })
+
+  // Mock list of attention today items
+  const attentionItems = [
+    { id: 'att-1', type: 'danger', text: 'Executor SSH-Remote is unreachable.', action: 'Reconnect' },
+    { id: 'att-2', type: 'warning', text: 'Staging environment is missing DB_PASSWORD secret.', action: 'Resolve' }
+  ]
+
+  const togglePin = (name: string) => {
+    setPinnedWorkspaces(prev => 
+      prev.includes(name) ? prev.filter(w => w !== name) : [...prev, name]
+    )
+  }
+
   return (
     <div className="dashboard-layout">
-      <section id="overview" className="dashboard-hero">
-        <div className="dashboard-hero__copy">
-          <Badge tone="success">Live.</Badge>
-          <h1>GitHub clarity, Linear motion, Railway speed.</h1>
-          <p>
-            The platform is responsive, runtime-driven, and ready to wire into live systems without changing page layout.
-          </p>
-          <div className="dashboard-hero__actions">
-            <Button variant="primary" href="#deployments">
-              New deployment
-            </Button>
-            <Button variant="secondary" href="#terminal">
-              Open terminal
-            </Button>
-          </div>
-        </div>
+      {/* 1. PRODUCT IDENTITY: PRIMARY PLATFORM STATUS DECK */}
+      <section className="section-block" style={{ marginBottom: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+          
+          {/* Question: Is my platform healthy? */}
+          <Card style={{ padding: '20px', borderLeft: '4px solid var(--success)' }}>
+            <div className="card__eyebrow">Platform Health</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '12px' }}>
+              <div style={{
+                width: '56px',
+                height: '56px',
+                borderRadius: '50%',
+                border: '4px solid var(--success)',
+                display: 'grid',
+                placeItems: 'center',
+                fontWeight: '700',
+                fontSize: '1.1rem',
+                color: 'var(--success)'
+              }}>
+                98%
+              </div>
+              <div>
+                <h3 style={{ margin: 0 }}>All Systems Nominal</h3>
+                <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: 'var(--muted)' }}>
+                  8 executors connected & online.
+                </p>
+              </div>
+            </div>
+          </Card>
 
-        <Card className="dashboard-hero__panel">
-          <div className="card__eyebrow">Current server</div>
-          <h3>{data.server}</h3>
-          <p>All metrics below are backed by service interfaces and runtime data today.</p>
-          <div className="dashboard-hero__pulse">
-            <span />
-            <span />
-            <span />
-          </div>
-        </Card>
+          {/* Question: Is AI configured? */}
+          <Card style={{ padding: '20px', borderLeft: '4px solid var(--accent)' }}>
+            <div className="card__eyebrow">AI Copilot Config</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '12px' }}>
+              <div style={{ fontSize: '1.8rem' }}>🤖</div>
+              <div>
+                <h3 style={{ margin: 0 }}>Ollama (Localhost)</h3>
+                <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: 'var(--muted)' }}>
+                  Model: `codellama` (Latency 45ms)
+                </p>
+              </div>
+            </div>
+            <div style={{ marginTop: '10px' }}>
+              <Badge tone="success">Active Connection</Badge>
+            </div>
+          </Card>
+
+          {/* Question: Are deployments blocked? */}
+          <Card style={{ padding: '20px', borderLeft: '4px solid var(--info)' }}>
+            <div className="card__eyebrow">Release Pipelines</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '12px' }}>
+              <div style={{ fontSize: '1.8rem' }}>🚀</div>
+              <div>
+                <h3 style={{ margin: 0 }}>No Blocked Deployments</h3>
+                <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: 'var(--muted)' }}>
+                  Production deployment completed v1.2.3.
+                </p>
+              </div>
+            </div>
+            <div style={{ marginTop: '10px' }}>
+              <Badge tone="neutral">0 blockers in queue</Badge>
+            </div>
+          </Card>
+        </div>
       </section>
 
-      <section className="section-block">
-        <div className="section-block__header">
-          <div>
-            <div className="card__eyebrow">Section 1</div>
-            <h2>CPU, RAM, Disk, Network</h2>
-          </div>
-          <Badge tone="accent">Live.</Badge>
-        </div>
-        <div className="metric-grid">
-          {data.metrics.map((metric) => (
-            <MetricCard
-              key={metric.label}
-              label={metric.label}
-              value={metric.value}
-              detail={metric.detail}
-              trend={metric.trend}
-              tone={metric.tone}
-            />
-          ))}
+      {/* 2. PRODUCT IDENTITY: CONTEXTUAL NEXT ACTIONS & ATTENTION TODAY */}
+      <section className="section-block" style={{ marginBottom: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px', alignItems: 'stretch' }}>
+          
+          {/* Action: What should I do next? */}
+          <Card style={{ padding: '22px', background: 'linear-gradient(135deg, rgba(87, 212, 255, 0.1), rgba(73, 208, 142, 0.05))', border: '1px solid rgba(87, 212, 255, 0.25)' }}>
+            <div className="card__eyebrow" style={{ color: 'var(--accent)' }}>Recommended Next Action</div>
+            <h2 style={{ margin: '8px 0 4px', fontSize: '1.4rem', fontFamily: 'var(--font-heading)' }}>
+              Open active workspace & sync files
+            </h2>
+            <p style={{ margin: '0 0 16px', color: 'var(--muted-strong)', fontSize: '0.9rem' }}>
+              Workspace `devserver` has 4 uncommitted files on branch `feature/indexer-stabilization`.
+            </p>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <Button variant="primary" href="/workspace/devserver">
+                Launch Workspace IDE
+              </Button>
+              <Button variant="secondary" href="/projects">
+                View All Workspaces
+              </Button>
+            </div>
+          </Card>
+
+          {/* Action: What needs attention today? */}
+          <Card style={{ padding: '20px' }}>
+            <div className="card__eyebrow" style={{ color: 'var(--danger)' }}>Needs Attention Today</div>
+            <div style={{ display: 'grid', gap: '12px', marginTop: '12px' }}>
+              {attentionItems.map(item => (
+                <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '10px', fontSize: '0.85rem' }}>
+                  <p style={{ margin: 0, color: 'var(--text)' }}>
+                    <span style={{ color: item.type === 'danger' ? 'var(--danger)' : 'var(--warning)', marginRight: '6px' }}>●</span>
+                    {item.text}
+                  </p>
+                  <button style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--accent)',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    padding: 0
+                  }}>
+                    {item.action}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </Card>
         </div>
       </section>
 
-      <div className="dashboard-grid">
-        <section id="projects" className="dashboard-panel">
-          <PanelCard title="Projects" detail="Active workloads and release targets." items={data.sections[0].items} />
-        </section>
+      {/* 3. CONTROL DECK GRID */}
+      <div className="dashboard-grid" style={{ marginBottom: '24px' }}>
+        
+        {/* Workspace Quick List Card */}
+        <Card style={{ padding: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+            <h3 style={{ margin: 0 }}>Workspaces Context</h3>
+            <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>Click star to pin</span>
+          </div>
 
-        <section id="domains" className="dashboard-panel">
-          <PanelCard title="Domains" detail="DNS, certificates, and edge exposure." items={data.sections[1].items} />
-        </section>
-
-        <section id="services" className="dashboard-panel">
-          <PanelCard title="Services" detail="System and app service state." items={data.sections[2].items} />
-        </section>
-
-        <section id="deployments" className="dashboard-panel">
-          <PanelCard title="Deployments" detail="Most recent rollout activity." items={data.sections[3].items} />
-        </section>
-      </div>
-
-      <div className="dashboard-grid dashboard-grid--wide">
-        <Card id="activity" className="dashboard-section">
-          <SectionHeader title="Recent Activity" eyebrow="Section 3" />
-          <Timeline items={data.activity} />
+          <div style={{ display: 'grid', gap: '10px' }}>
+            {data.sections[0].items.map(ws => {
+              const isPinned = pinnedWorkspaces.includes(ws.label)
+              return (
+                <div key={ws.label} style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '12px 16px',
+                  borderRadius: '12px',
+                  background: isPinned ? 'rgba(87, 212, 255, 0.06)' : 'rgba(255,255,255,0.02)',
+                  border: isPinned ? '1px solid rgba(87, 212, 255, 0.2)' : '1px solid var(--border)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <button 
+                      onClick={() => togglePin(ws.label)} 
+                      style={{ background: 'none', border: 'none', color: isPinned ? 'var(--warning)' : 'var(--muted)', cursor: 'pointer', fontSize: '1.1rem' }}
+                    >
+                      {isPinned ? '★' : '☆'}
+                    </button>
+                    <div>
+                      <strong style={{ fontSize: '0.9rem' }}>{ws.label}</strong>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>Branch: main</div>
+                    </div>
+                  </div>
+                  <Badge tone={ws.tone ?? 'neutral'}>{ws.value}</Badge>
+                </div>
+              )
+            })}
+          </div>
         </Card>
 
-        <Card id="tasks" className="dashboard-section">
-          <SectionHeader title="Task Queue" eyebrow="Section 4" />
+        {/* Running Jobs & Task Engine Queue */}
+        <Card style={{ padding: '20px' }}>
+          <h3 style={{ margin: '0 0 14px' }}>Task Execution Queue</h3>
           {data.tasks.length ? (
-            <div className="task-list">
+            <div style={{ display: 'grid', gap: '14px' }}>
               {data.tasks.map((task) => (
-                <div key={task.title} className="task-row">
-                  <div className="task-row__top">
-                    <strong>{task.title}</strong>
+                <div key={task.title} style={{ padding: '10px', borderRadius: '10px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <strong style={{ fontSize: '0.85rem' }}>{task.title}</strong>
                     <Badge tone={task.state === 'Done' ? 'success' : task.state === 'Running' ? 'accent' : 'warning'}>
                       {task.state}
                     </Badge>
                   </div>
-                  <p>{task.detail}</p>
                   <Progress value={task.progress} tone={task.state === 'Done' ? 'success' : 'accent'} />
                 </div>
               ))}
             </div>
           ) : (
-            <EmptyState title="No queued tasks" description="New operations will appear here once you start deploying or installing modules." />
+            <EmptyState title="No active jobs" description="Task execution queue is currently empty." />
           )}
         </Card>
-      </div>
 
-      <section className="section-block">
-        <div className="section-block__header">
-          <div>
-            <div className="card__eyebrow">Workspace</div>
-            <h2>Servers, SSL, Databases, Storage, Terminal, Monitoring, Logs, Users, Settings</h2>
-          </div>
-          <Badge tone="info">Navigation mapped</Badge>
-        </div>
-
-        <div className="system-grid">
-          {systemTiles.map((tile) => (
-            <Card key={tile.id} id={tile.id} className="system-tile">
-              <div className="section-header-lite">
-                <div className="card__eyebrow">{tile.eyebrow}</div>
-                <h3>{tile.title}</h3>
-                <p>{tile.detail}</p>
-              </div>
-              <Badge tone={tile.tone}>{tile.value}</Badge>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <div className="dashboard-grid dashboard-grid--wide">
-        <Card id="ai" className="dashboard-section">
-          <SectionHeader title="AI Recommendations" eyebrow="Section 5" />
-          {data.recommendations.length ? (
-            <div className="recommendation-list">
-              {data.recommendations.map((item) => (
-                <div key={item.title} className="recommendation-card">
-                  <div className="recommendation-card__title">{item.title}</div>
-                  <p>{item.detail}</p>
-                  <span>{item.reason}</span>
-                </div>
+        {/* Telemetry Metrics Widget */}
+        {visibleWidgets.telemetry && (
+          <Card style={{ padding: '20px', gridColumn: 'span 2' }}>
+            <h3 style={{ margin: '0 0 14px' }}>System Resource Telemetry</h3>
+            <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px' }}>
+              {data.metrics.map((metric) => (
+                <MetricCard
+                  key={metric.label}
+                  label={metric.label}
+                  value={metric.value}
+                  detail={metric.detail}
+                  trend={metric.trend}
+                  tone={metric.tone}
+                />
               ))}
             </div>
-          ) : (
-            <EmptyState title="No recommendations yet" description="AI suggestions will appear here once the platform has context." />
-          )}
-        </Card>
-
-        <aside className="dashboard-rail">
-          <LearnCard title="Learn the platform" articles={knowledge} />
-          <Card>
-            <SectionHeader title="Monitoring" eyebrow="Sections" />
-            <div className="rail-links">
-              <a href="#servers">Servers</a>
-              <a href="#ssl">SSL</a>
-              <a href="#databases">Databases</a>
-              <a href="#storage">Storage</a>
-              <a href="#terminal">Terminal</a>
-              <a href="#monitoring">Monitoring</a>
-              <a href="#logs">Logs</a>
-              <a href="#users">Users</a>
-              <a href="#settings">Settings</a>
-            </div>
           </Card>
-        </aside>
-      </div>
-    </div>
-  )
-}
-
-function PanelCard({
-  title,
-  detail,
-  items,
-}: {
-  title: string
-  detail: string
-  items: Array<{ label: string; value: string; tone?: 'neutral' | 'accent' | 'success' | 'warning' | 'danger' | 'info' }>
-}) {
-  return (
-    <Card>
-      <SectionHeader title={title} description={detail} />
-      <div className="panel-list">
-        {items.length ? (
-          items.map((item) => (
-            <div key={item.label} className="panel-list__item">
-              <span>{item.label}</span>
-              <Badge tone={item.tone ?? 'neutral'}>{item.value}</Badge>
-            </div>
-          ))
-        ) : (
-          <EmptyState title="Nothing here yet" description="This area will populate when runtime data is connected." />
         )}
       </div>
-    </Card>
-  )
-}
 
-function Timeline({
-  items,
-}: {
-  items: Array<{ title: string; detail: string; when: string; tone: 'neutral' | 'accent' | 'success' | 'warning' | 'danger' | 'info' }>
-}) {
-  return (
-    <div className="timeline">
-      {items.map((item) => (
-        <div key={item.title} className="timeline__item">
-          <div className={`timeline__dot timeline__dot--${item.tone}`} />
-          <div className="timeline__body">
-            <div className="timeline__top">
-              <h4>{item.title}</h4>
-              <span>{item.when}</span>
-            </div>
-            <p>{item.detail}</p>
+      {/* 4. PERSONALIZATION CONTROLS PANEL */}
+      {visibleWidgets.personalization && (
+        <Card style={{ padding: '20px', marginBottom: '24px' }}>
+          <h3 style={{ margin: '0 0 14px' }}>Control Deck Personalization</h3>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '18px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', cursor: 'pointer' }}>
+              <input 
+                type="checkbox" 
+                checked={visibleWidgets.telemetry} 
+                onChange={(e) => setVisibleWidgets(prev => ({ ...prev, telemetry: e.target.checked }))}
+              />
+              Show Telemetry Metrics
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', cursor: 'pointer' }}>
+              <input 
+                type="checkbox" 
+                checked={visibleWidgets.timeline} 
+                onChange={(e) => setVisibleWidgets(prev => ({ ...prev, timeline: e.target.checked }))}
+              />
+              Show Recent Activity
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', cursor: 'pointer' }}>
+              <input 
+                type="checkbox" 
+                checked={visibleWidgets.tasks} 
+                onChange={(e) => setVisibleWidgets(prev => ({ ...prev, tasks: e.target.checked }))}
+              />
+              Show Task Queue
+            </label>
           </div>
-        </div>
-      ))}
+        </Card>
+      )}
+
+      {/* 5. RECENT ACTIVITY TIMELINE */}
+      {visibleWidgets.timeline && (
+        <Card style={{ padding: '20px' }}>
+          <h3 style={{ margin: '0 0 14px' }}>Audited Activity Timeline</h3>
+          <div className="timeline">
+            {data.activity.map((item) => (
+              <div key={item.title} className="timeline__item">
+                <div className={`timeline__dot timeline__dot--${item.tone}`} />
+                <div className="timeline__body">
+                  <div className="timeline__top" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <h4 style={{ margin: 0, fontSize: '0.9rem' }}>{item.title}</h4>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{item.when}</span>
+                  </div>
+                  <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: 'var(--muted-strong)' }}>{item.detail}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
     </div>
   )
 }
-
-function SectionHeader({ title, eyebrow, description }: { title: string; eyebrow?: string; description?: string }) {
-  return (
-    <div className="section-header-lite">
-      {eyebrow ? <div className="card__eyebrow">{eyebrow}</div> : null}
-      <h3>{title}</h3>
-      {description ? <p>{description}</p> : null}
-    </div>
-  )
-}
-
-const systemTiles = [
-  { id: 'servers', eyebrow: 'Servers', title: 'Fleet overview', detail: 'Current hosts, roles, and health.', value: '8 online', tone: 'success' as const },
-  { id: 'ssl', eyebrow: 'SSL', title: 'Certificates', detail: 'Renewal windows and trust coverage.', value: '4 expiring soon', tone: 'warning' as const },
-  { id: 'databases', eyebrow: 'Databases', title: 'Platform data', detail: 'Users, projects, plugins, and tasks.', value: 'Ready', tone: 'accent' as const },
-  { id: 'storage', eyebrow: 'Storage', title: 'Snapshots', detail: 'Volumes and retention policies.', value: 'Healthy', tone: 'info' as const },
-  { id: 'terminal', eyebrow: 'Terminal', title: 'Command access', detail: 'Local and remote execution surface.', value: 'Available', tone: 'neutral' as const },
-  { id: 'monitoring', eyebrow: 'Monitoring', title: 'Live telemetry', detail: 'Metrics, alerts, and thresholds.', value: 'Watching', tone: 'success' as const },
-  { id: 'logs', eyebrow: 'Logs', title: 'Audit trail', detail: 'User and system activity snapshots.', value: 'Indexed', tone: 'info' as const },
-  { id: 'users', eyebrow: 'Users', title: 'Access control', detail: 'Roles, sessions, and invitations.', value: 'RBAC', tone: 'accent' as const },
-  { id: 'settings', eyebrow: 'Settings', title: 'Platform config', detail: 'Defaults, preferences, and policies.', value: 'Ready', tone: 'neutral' as const },
-]
