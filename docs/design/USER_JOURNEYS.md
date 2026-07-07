@@ -16,9 +16,44 @@
 
 ---
 
-## 2. Core Operational Journeys
+## 2. Master End-to-End Workflow Journey (Gap #2 / Refinement)
 
-### Journey 2.1: First Run & Platform Boot (Owner)
+### Journey 2.0: Project Creation ➔ Deployment ➔ Monitor & Rollback (Developer & Operator)
+This master workflow maps the full lifecycle of a development cycle.
+
+```
+[Create Project] ➔ [Provision Workspace] ➔ [Clone Repo] ➔ [AI Indexing] ➔ [Run Tasks] ➔ [Deploy Release] ➔ [Telemetry Check] ➔ [Trigger Rollback]
+```
+
+* **Step 1: Project Initialization**:
+  - Developer navigates to Projects S-007 and clicks "New Project".
+  - Fills out project name and repository origin SSH URL, selecting default environment configurations.
+* **Step 2: Workspace Provisioning**:
+  - The system creates a new workspace database record, maps target environment variables, and allocates a default infrastructure Executor (e.g., Docker container).
+* **Step 3: Background Git Clone**:
+  - Progress indicator runs. The system triggers `git clone` on the target Executor.
+  - Console logs stream file extraction progress.
+* **Step 4: AI Indexing Loop**:
+  - Once cloned, the Workspace file indexer runs in the background.
+  - Code block index markers are mapped, parsing symbols, files, and directory dependencies. The AI chat panel (S-024e) displays "Indexing complete; model is ready to support coding".
+* **Step 5: Code Editing & Task Execution**:
+  - Developer opens `app.go` in the workspace editor (S-026), writes code edits, and saves files.
+  - Launches the Task console (S-024d) and runs `npm run test` or `go test`. The system executes the task on the target executor and streams output.
+* **Step 6: Promotion & Deployment**:
+  - Tests pass. Developer clicks "Release Version" from the Deploy tab.
+  - Inputs release tag version `v1.1.0`. The build engine creates a package and pushes it to the Staging target environment.
+* **Step 7: Observability & Telemetry Checks**:
+  - The Operator logs in and opens Telemetry Monitor S-009.
+  - Observes CPU/RAM graphs. Suddenly, memory usage spikes up to 96% and the CPU chart starts flashing red "Degraded Performance Alert".
+* **Step 8: Rollback Mitigation**:
+  - Operator goes to Deployments board S-010, selects the previous release `v1.0.9`, and clicks "Execute Rollback".
+  - Confirms the warning modal. The deploy engine reverts configuration states, rebuilds, and swaps the staging container back to the previous stable release. Health score returns to 98% (green).
+
+---
+
+## 3. Core Operational Journeys
+
+### Journey 3.1: First Run & Platform Boot (Owner)
 * **Goal**: Install and initialize the platform from a bare system setup.
 * **Entry Point**: Root page `/` redirects automatically to `/setup` if database is uninitialized.
 * **Flow**:
@@ -30,7 +65,7 @@
   - Check failure: Present diagnostic page detailing which adapter failed, with diagnostic codes.
   - Setup timeout: Clear cache and auto-trigger setup test again.
 
-### Journey 2.2: Empty Organization Setup (Admin)
+### Journey 3.2: Empty Organization Setup (Admin)
 * **Goal**: Establish working workspaces, environments, and team access in a newly created empty org.
 * **Entry Point**: Redirected to S-012 (Projects List) showing E-007 empty project state.
 * **Flow**:
@@ -41,7 +76,7 @@
 * **Recovery Actions**:
   - Missing key variables: Highlight env list with yellow badge warning that no active workspaces can run without configurations.
 
-### Journey 2.3: Workspace Allocation & Provisioning (Developer)
+### Journey 3.3: Workspace Allocation & Provisioning (Developer)
 * **Goal**: Launch a development workspace from zero projects.
 * **Entry Point**: Projects list page S-007 showing empty projects state E-007.
 * **Flow**:
@@ -54,7 +89,7 @@
   - Git clone failed: Show clone logs modal with red indicator, offering "Retry clone" or "Change credentials" action.
   - Allocation timeout: Cancel task and return user to Projects list with an error notification.
 
-### Journey 2.4: AI Provider Setup & Fallbacks (Developer / Admin)
+### Journey 3.4: AI Provider Setup & Fallbacks (Developer / Admin)
 * **Goal**: Recover when AI operations fail due to misconfiguration or service outage.
 * **Entry Point**: Workspace S-024 ➔ AI Section S-024e.
 * **Flow**:
@@ -67,7 +102,7 @@
 * **Recovery Actions**:
   - Connection failed: Provider page parses response logs and suggests checking API keys or network configurations.
 
-### Journey 2.5: Runtime Executor Interruption (Developer / Operator)
+### Journey 3.5: Runtime Executor Interruption (Developer / Operator)
 * **Goal**: Gracefully handle the loss of connection to a remote SSH or Kubernetes executor.
 * **Entry Point**: Active workspace S-024 ➔ Task Runner Console S-024d.
 * **Flow**:
@@ -79,7 +114,7 @@
 * **Recovery Actions**:
   - Re-establish fail: If link remains down for 60s, show dialog modal advising to switch workspace target to "Local" execution environment.
 
-### Journey 2.6: Offline Mode & Interruption Recovery (All Users)
+### Journey 3.6: Offline Mode & Interruption Recovery (All Users)
 * **Goal**: Keep working during local browser network dropouts.
 * **Entry Point**: Global Shell.
 * **Flow**:

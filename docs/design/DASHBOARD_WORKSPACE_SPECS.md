@@ -1,4 +1,4 @@
-# Dashboard, Workspace, Performance & Acceptance Specifications
+# Developer Operations Control Deck & Workspace Specifications
 
 > **WP**: WP-8.6.17 Phase A — Design Only  
 > **Status**: Draft — Pending Review  
@@ -6,35 +6,60 @@
 
 ---
 
-## 1. Dashboard Widget Inventory (Gap #8)
+## 1. Product Identity & Control Deck Layout (Gap #1 / Refinement)
 
-The main dashboard (`/dashboard` S-005) uses a 12-column responsive layout grid. It contains the following widgets:
+The dashboard (`/dashboard` S-005) is structured as a **Developer Operations Platform Control Deck** rather than a passive charts list. It explicitly answers five core operational questions upon landing:
 
 ```
-┌──────────────────────────────────────────────────────────────────────────┐
-│  [W-1: Health Checklist] (8 Cols)          │ [W-2: Active Executors] (4) │
-├────────────────────────────────────────────┼─────────────────────────────┤
-│  [W-3: Resource Telemetry CPU/RAM] (8 Cols)│ [W-4: Running Jobs] (4)     │
-├────────────────────────────────────────────┼─────────────────────────────┤
-│  [W-5: Workspaces list] (6 Cols)           │ [W-6: Activity Timeline](6) │
-├────────────────────────────────────────────┼─────────────────────────────┤
-│  [W-7: Recommendations] (12 Cols)                                       │
-└──────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────┐
+│  [PLATFORM STATUS DECK]                                                │
+│  ● HEALTH: Healthy (98%)  │  ● AI: Configured (Ollama)  │ ● BLOCKS: None│
+├────────────────────────────────────────────────────────────────────────┤
+│  [PRIORITY ACTION DECK]                                                │
+│  ➔ WHAT TO DO NEXT: Deploy version v1.2.4-rc to Staging                 │
+│  ⚠️ ATTENTION TODAY: Executor SSH-Remote has high memory usage (92%)     │
+├────────────────────────────────────────────────────────────────────────┤
+│  [W-1: Workspace Quick Cards] (8 Cols)    │ [W-2: Active Executors] (4)│
+├───────────────────────────────────────────┼────────────────────────────┤
+│  [W-3: Resource Telemetry] (8 Cols)       │ [W-4: Running Jobs] (4)    │
+├───────────────────────────────────────────┼────────────────────────────┤
+│  [W-5: Saved Layouts / Personalization] (12 Cols)                      │
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Widget Details
-
-1. **W-1: Health Checklist (8 columns)**: List of onboarding tasks (e.g., configure AI provider, define dev environment, invite team). Includes status tags.
-2. **W-2: Active Executors (4 columns)**: Dynamic list of connected execution environments (Local, WSL, SSH, Kubernetes) with active task counts and latency ratings.
-3. **W-3: Resource Telemetry (8 columns)**: Micro charts plotting overall CPU, memory, and disk consumption across active workspaces.
-4. **W-4: Running Jobs Queue (4 columns)**: Real-time list of executing tasks with progress bars and quick-cancel buttons.
-5. **W-5: Workspace Quick Link (6 columns)**: List of pinned and recently opened development workspaces, showing branch and last active timestamp.
-6. **W-6: Activity Timeline (6 columns)**: Unified audit and task log events feed, detailing changes made across the organization.
-7. **W-7: Recommendations (12 columns)**: Dynamic list of tasks (e.g., "Archive idle workspace to save disk", "Update Ollama endpoint to Ollama v2").
+### 1.1 Core Questions Answered in Landing Deck
+1. **Is my platform healthy?**
+   - *UI Visual*: Circular ring graph representing system health score (aggregate of executor latency, active services status, database connection, and storage availability).
+2. **Is AI configured?**
+   - *UI Visual*: Connection status badge next to active provider model config. Green for verified Ollama/OpenAI link, Orange for degraded, Red for unconfigured/offline with direct "Configure" path.
+3. **Are deployments blocked?**
+   - *UI Visual*: Release status strip showing pipeline blocks (e.g., failing integration runs, environment secret mismatch warning, or locked release gates).
+4. **What needs attention today?**
+   - *UI Visual*: "Needs Attention" alert list filtering warnings from all workspaces (e.g., "Disk space >90% on executor WSL", "Token budget exceeded 80% on OpenAI").
+5. **What should I do next?**
+   - *UI Visual*: Actionable recommended Next Step banner (e.g., "Workspace 'auth-service' has 4 uncommitted files. Open workspace to sync or commit.").
 
 ---
 
-## 2. Workspace Layout & UX Specification (Gap #9)
+## 2. Dashboard Personalization Specs (Gap #4 / Refinement)
+
+Enterprise developers can customize their Operations Control Deck layout using these options:
+
+* **Pinned Workspaces & Favorites**:
+  - Workspace cards in S-007 and S-005 contain a star icon button.
+  - Starred items are pinned to the top of the Workspace Quick Cards widget (`W-1`).
+* **Widget Visibility Settings**:
+  - A settings button in the topbar of the Dashboard opens a dropdown checklist.
+  - Users can toggle the visibility of individual widgets (e.g., hide the Resource Telemetry chart if running local-only).
+* **Saved Layout Configurations**:
+  - Layout is stored locally in browser `localStorage` as a JSON block mapping grid sizes and column locations (e.g., `{ widgetId: "W-3", size: "col-8", order: 2 }`).
+  - Allows drag-and-drop rearrangement of dashboard panels using lightweight grid libraries.
+* **Recent Items Registry**:
+  - A client-side log tracks the last 5 workspace explorer routes visited, active command palette searches triggered, and logs files viewed. Stored inside the user's local session cache.
+
+---
+
+## 3. Workspace Layout & UX Specification
 
 The workspace explorer (`/workspace/[id]` S-024) is designed as a split-pane IDE wrapper.
 
@@ -72,22 +97,28 @@ The workspace explorer (`/workspace/[id]` S-024) is designed as a split-pane IDE
 
 ---
 
-## 3. Performance Targets (Gap #15)
+## 4. Performance Budgets (Gap #6 / Refinement)
 
-To ensure high-grade enterprise responsiveness, all UI mutations and navigation renders must hit these measurable performance metrics:
+To maintain a fast interface under heavy developer use, the frontend client and Go server must operate within these budgets:
 
-| Page / Flow | Target Load Metric | API Latency Target (95th Percentile) | Max Permissible Load Time (Hard Limit) |
+| Page / Metric | Performance Target | API Latency Target (95th Pct) | Max Permitted Limit (Hard Stop) |
 |---|---|---|---|
-| **Dashboard** | Full render with metrics | `< 150ms` | `< 1.0 second` |
-| **Workspace Shell** | Initial interface load | `< 200ms` | `< 2.0 seconds` |
-| **Workspace File Open**| Load content to editor | `< 50ms` | `< 300ms` |
-| **Global Search** | Retrieve dropdown matches | `< 100ms` | `< 300ms` |
-| **AI Provider Test** | Connection handshake ping | `< 2.0 seconds` | `< 5.0 seconds` |
-| **Deployments Board** | Render release grid | `< 120ms` | `< 2.0 seconds` |
+| **Dashboard Load** | Full control deck render | `< 150ms` | `< 1.0 second` |
+| **Workspace IDE Boot** | Mount shell & file tree explorer | `< 200ms` | `< 2.0 seconds` |
+| **Command Palette Search**| Query matching returns | `< 50ms` | `< 150ms` |
+| **WebSocket Logs Feed** | Event push frequency | Dynamic batching (see below) | Max 100 log lines per 100ms |
+| **Active Workspaces** | Max concurrent running per user| N/A | **5 active** (others put to sleep) |
+| **Client memory** | Browser tab memory allocation | N/A | `< 250MB` heap usage |
+
+### WebSocket Log Stream Batching Rule
+To prevent browser UI threads from freezing during intense execution logs output (e.g., a rapid build run):
+1. The Go server batches logs in a `100ms` buffer.
+2. If log lines exceed 50 inside the window, they are sent as a single batched array payload.
+3. The Next.js frontend uses a virtualized list wrapper to render console outputs, keeping DOM node count static at a maximum of `1000` visible rows.
 
 ---
 
-## 4. Production Acceptance Checklist (Gap #16)
+## 5. Production Acceptance Checklist
 
 Every page must satisfy this comprehensive checklist before receiving QA sign-off:
 

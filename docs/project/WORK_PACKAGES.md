@@ -256,6 +256,7 @@ Every active and future Work Package tracks status across the following stages:
 | 13| Dashboards & Workspaces| `docs/design/DASHBOARD_WORKSPACE_SPECS.md` | ✅ Produced |
 | 14| Onboarding & Mobile | `docs/design/MOBILE_INSTALL_ONBOARDING.md` | ✅ Produced |
 | 15| API Contracts & Errors | `docs/design/API_CONTRACT_ERRORS.md` | ✅ Produced |
+| 16| Accessibility Guidelines| `docs/design/ACCESSIBILITY_GUIDELINES.md` | ✅ Produced |
 
 **Screen Inventory**: catalogs every screen, modal, drawer, wizard, empty, error, and loading state.
 
@@ -286,6 +287,8 @@ Every active and future Work Package tracks status across the following stages:
 **Onboarding & Mobile**: bottom tab sitemaps, production setup wizards, and empty organization onboarding flows.
 
 **API Contracts & Errors**: HTTP error code UI banners, toasts, and API stability tier rules.
+
+**Accessibility Guidelines**: WCAG AA contrast rules, keyboard-only tab order, screen reader descriptions, reduced motion preference settings, and zoom/reflow testing guidelines.
 
 #### Phase A Gate (Design Review)
 

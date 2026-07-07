@@ -6,7 +6,7 @@
 
 ---
 
-## 1. Mobile Navigation & Sitemap Hierarchy (Gap #10)
+## 1. Mobile Navigation & Sitemap Hierarchy
 
 On viewports below `720px` width, the standard L1 sidebar is replaced by a bottom tab navigation menu and a topbar hamburger drawer.
 
@@ -33,26 +33,54 @@ Tapping the topbar menu button slides in a left-aligned drawer containing:
 
 ---
 
-## 2. Production Installation & Onboarding Journey (Gap #11)
+## 2. Platform Installation & Onboarding Experience (Gap #3 / Refinement)
 
-This flow maps out the lifecycle from bare server setup to workspace ready-state.
+The installation setup flow runs in an isolated step-by-step progress UI.
+
+### 2.1 Installation Progress UI
+The bootstrap interface S-003 features a central panel with an active step indicator, a detailed task logs console, and an overall percentage progress bar.
 
 ```
-[System Check] ➔ [DB Initialization] ➔ [Create Root Admin] ➔ [Create Org] ➔ [AI Config] ➔ [Var Setup] ➔ [Clone Repo] ➔ [IDE Ready]
+┌────────────────────────────────────────────────────────┐
+│  DevServer Platform Setup                              │
+├────────────────────────────────────────────────────────┤
+│  [ Step 2 of 4: Provisioning Database ]                 │
+│  Progress: [████████████████░░░░░░░░░] 60%             │
+├────────────────────────────────────────────────────────┤
+│  Task Log Output:                                      │
+│  > Checking port 5432... Open.                         │
+│  > Initializing system tables... Success.              │
+│  > Running migrations [14 of 22]... Fail.              │
+├────────────────────────────────────────────────────────┤
+│  [ Retry Step ]   [ View Diagnostic Logs ]             │
+└────────────────────────────────────────────────────────┘
 ```
 
-1. **Bare Install & System Check**: Verify server environment compatibility (WSL, Docker, SSH ports).
-2. **Database Provisioning**: Install admin system schemas, schemas check pass.
-3. **Register Root Account**: Create first administrative user profile (S-003 wizard).
-4. **Organization Allocation**: Spawn default organizational tenant.
-5. **AI Provider Connection**: Input endpoint address for Ollama, OpenAI, or other model engines.
-6. **Environment Variable Configuration**: Define dev-stage variables and inject encrypted secrets.
-7. **Allocate Workspace & Clone Repository**: Input Git URL, clone repositories to runner storage, and run index scan.
-8. **IDE Ready**: Open Workspace IDE panel (S-024).
+### 2.2 Partial Failure Recovery & Retry/Resume Pathways
+To prevent restarting the installation from step 1 when a network drop or database timeout occurs:
+- **Save checkpoints**: Each successful setup phase writes its success state to local disk configurations.
+- **Fail states**: If an execution step fails, the progress bar turns red, the task logs display the error output, and a "Retry Step" button is enabled.
+- **Diagnostics modal**: Provides access to copy system error trace logs for troubleshooting.
+- **Resume logic**: Reloading the browser resumes setup from the last uncompleted checkpoint.
+
+### 2.3 Post-Install Checklist & Health Verification
+Before redirecting the user to the login screen, the installer runs a suite of health verification tests:
+1. **Database link check**: Runs database latency pings.
+2. **Indexer engine test**: Launches a mock files indexer test.
+3. **Local Docker socket ping**: Validates executor socket permissions.
+4. **Network connectivity test**: Pings standard package index URLs.
+
+#### Health Output Checklist Screen:
+```
+[✔] Database Connection: Online (Latency 4ms)
+[✔] File System Indexer: Verified
+[✔] Docker Runtime adapter: Connected (Docker Engine v24.0)
+[✔] LLM Provider Connectivity: Connected
+```
 
 ---
 
-## 3. Empty Organization Onboarding Wizard (Gap #12)
+## 3. Empty Organization Onboarding Wizard
 
 If a user authenticates and enters an organization with:
 * `0 projects`
