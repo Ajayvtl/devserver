@@ -226,11 +226,11 @@ Every active and future Work Package tracks status across the following stages:
 **Production Ready**: NO
 
 ### WP-8.6.17 — Production UX Rewrite
-**Status**: Phase A In Progress (Design Only)
+**Status**: Phase B In Progress
 **Stages**:
 - [x] Design (Phase A — Design Artifacts)
-- [ ] Design Review & Approval (Phase A Gate)
-- [ ] Implementation (Phase B — Code)
+- [x] Design Review & Approval (Phase A Gate)
+- [/] Implementation (Phase B — Code)
 - [ ] Unit Tested
 - [ ] Integration Tested
 - [ ] Human QA
