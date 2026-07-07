@@ -25,6 +25,21 @@ Never submit a local or unreachable commit SHA. A WP cannot enter review until t
 
 All visual styling must come from shared design tokens, CSS variables, or reusable components. Fallback data is prohibited. If data cannot be loaded, present an appropriate loading, empty, or error state instead of generating placeholder content.
 
+**Permanent Developer Rule 15 — Design Review Freeze**: For any Work Package that includes a design phase (Phase A), **no UI implementation may begin until all mandatory design documents receive explicit human approval**. This rule is absolute and applies to all current and future WPs. Specifically, before Phase A approval:
+* ❌ No React components may be created or modified
+* ❌ No CSS or styling code may be written
+* ❌ No API wiring or data-fetching code may be added
+* ❌ No layout implementation may begin
+
+The transition from Phase A to Phase B must follow this exact sequence:
+1. **Phase A** — Design artifacts produced (documentation, mockups, wireframes, architecture)
+2. **Approved** — Human reviewer explicitly approves all design documents
+3. **Tag** — A git tag is created marking the approved design baseline (e.g., `design-approved/WP-8.6.17`)
+4. **Phase B** — Implementation begins, strictly following approved designs
+5. **Implementation** — Every implemented screen must match the approved mockup within ±2px tolerance unless a justified deviation is documented and approved
+
+This prevents design drift and ensures objective traceability between approved designs and shipped code.
+
 
 
 ## Phase Summaries
@@ -263,11 +278,25 @@ Every active and future Work Package tracks status across the following stages:
 - ❌ Layout implementation
 - ❌ Any production UI code
 
-**No production UI code may be written before Phase A design documents are reviewed and approved.**
+**No production UI code may be written before Phase A design documents are reviewed and approved.** (Enforced by Permanent Developer Rule 15)
+
+#### Phase Transition Lifecycle
+
+```
+Phase A (Design Only)
+    ↓
+  Approved (Human reviewer signs off on all 7 documents)
+    ↓
+  Tag (git tag: design-approved/WP-8.6.17)
+    ↓
+Phase B (Implementation)
+    ↓
+  Implementation (code written against approved designs)
+```
 
 #### Phase B Gate (Implementation)
 
-Only after Phase A design approval may implementation begin. During Phase B:
+Only after Phase A design approval AND the `design-approved/WP-8.6.17` tag is created may implementation begin. During Phase B:
 
 **Pixel Tolerance Rule**: Every implemented screen must match the approved mockup within **±2px** tolerance unless a justified deviation is documented and approved.
 
