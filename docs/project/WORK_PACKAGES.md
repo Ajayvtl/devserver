@@ -245,23 +245,47 @@ Every active and future Work Package tracks status across the following stages:
 | 2 | User Journeys | `docs/design/USER_JOURNEYS.md` | ✅ Produced |
 | 3 | Information Architecture | `docs/design/INFORMATION_ARCHITECTURE.md` | ✅ Produced |
 | 4 | Design System 2.0 | `docs/design/DESIGN_SYSTEM.md` | ✅ Produced |
-| 5 | Wireframes | `docs/design/WIREFRAMES/` | ✅ Produced |
+| 5 | Wireframes & Mockups | `docs/design/WIREFRAMES/` | ✅ Produced |
 | 6 | Component Library | `docs/design/COMPONENT_LIBRARY.md` | ✅ Produced |
-| 7 | API → UI Mapping | `docs/design/API_UI_MAPPING.md` | ✅ Produced |
+| 7 | API ➔ UI Mapping | `docs/design/API_UI_MAPPING.md` | ✅ Produced |
+| 8 | RBAC Matrix & Menus | `docs/design/RBAC_MATRIX.md` | ✅ Produced |
+| 9 | Field Dictionary | `docs/design/FIELD_DICTIONARY.md` | ✅ Produced |
+| 10| Entity Relationships | `docs/design/ENTITY_RELATIONSHIPS.md` | ✅ Produced |
+| 11| State Machines | `docs/design/STATE_MACHINES.md` | ✅ Produced |
+| 12| Notifications & Auditing | `docs/design/NOTIFICATION_AUDIT_CATALOGS.md` | ✅ Produced |
+| 13| Dashboards & Workspaces| `docs/design/DASHBOARD_WORKSPACE_SPECS.md` | ✅ Produced |
+| 14| Onboarding & Mobile | `docs/design/MOBILE_INSTALL_ONBOARDING.md` | ✅ Produced |
+| 15| API Contracts & Errors | `docs/design/API_CONTRACT_ERRORS.md` | ✅ Produced |
 
-**Screen Inventory** contains: every screen, every modal, every drawer, every wizard, every empty state, every error state.
+**Screen Inventory**: catalogs every screen, modal, drawer, wizard, empty, error, and loading state.
 
-**User Journeys** covers: Owner, Admin, Developer, Operator, Viewer — each journey includes Goal, Entry point, Navigation, Success path, Failure path.
+**User Journeys**: covers roles with goal, entry point, navigation, success, and failure paths, including offline/error modes.
 
-**Information Architecture** defines: Navigation hierarchy, Grouping rationale, Page responsibilities, Entity relationships, Search model.
+**Information Architecture**: defines navigation hierarchy, grouping rationale, page responsibilities, entity relationships, and search model.
 
-**Design System** specifies: Typography, Spacing, Elevation, Motion, Color Tokens, Radius, Shadows, Icons, Accessibility, Responsive Grid.
+**Design System**: typography, spacing, elevation, motion, color tokens, radius, shadows, icons, accessibility, and responsive grids.
 
-**Wireframes** covers: Desktop, Tablet, Mobile — every page with ASCII layout diagrams.
+**Wireframes & Mockups**: ASCII wireframes + High-Fidelity Desktop, Tablet, and Mobile mockup designs.
 
-**Component Library** documents: every component — Purpose, States, Props, Accessibility, Variants.
+**Component Library**: documents purpose, states, props, accessibility, classification tier, and mobile adaptation behavior per component.
 
-**API → UI Mapping** maps: every widget → API → State → Loading → Error → Permission → Fallback.
+**API ➔ UI Mapping**: maps widget ➔ API ➔ State ➔ Loading ➔ Error ➔ Permission ➔ Fallback UI ➔ Retry & Offline ➔ Cache.
+
+**RBAC Matrix & Menus**: detailed action-to-role permission table and role-specific navigation sitemaps.
+
+**Field Dictionary**: form input database mappings, validation regexes, nullable states, default values, tooltips, and placeholders.
+
+**Entity Relationships**: unified data model database schema and mapping of core resources.
+
+**State Machines**: workspace, task execution, deployment, membership invitation, and executor lifecycle transitions.
+
+**Notifications & Auditing**: system alerts catalogue and audit log schema tracing with correlation IDs.
+
+**Dashboards & Workspaces**: responsive dashboard layout widget configurations, workspace split-pane rules, keyboard shortcuts, performance targets, and QA checklists.
+
+**Onboarding & Mobile**: bottom tab sitemaps, production setup wizards, and empty organization onboarding flows.
+
+**API Contracts & Errors**: HTTP error code UI banners, toasts, and API stability tier rules.
 
 #### Phase A Gate (Design Review)
 
