@@ -6,253 +6,187 @@
 
 ---
 
-## Existing Components (18 UI primitives)
+## Component Categorization Schema
+
+To prevent code duplication, every component is classified into one of these strict architectural tiers:
+1. **Atomic**: Reusable, pure visual primitives with no direct dependencies or API calls.
+2. **Composite**: Combines multiple atomic components. May contain internal state but no direct API hooks.
+3. **Layout**: Structures pages, panels, grids, and shell containers.
+4. **Shared**: Utility components used across multiple pages (e.g., toast alerts, modals).
+5. **Page-only**: Specialized components tied directly to a single route, often executing API calls.
+
+---
+
+## 1. Core Component Specifications
 
 ### C-001: Button (`components/ui/button.tsx`)
 
 | Property | Detail |
 |---|---|
+| **Tier** | **Atomic** (Shared Primitive) |
 | **Purpose** | Primary interactive trigger for actions |
-| **Variants** | `primary`, `secondary`, `ghost` |
-| **States** | Default, Hover (translateY -1px), Disabled (opacity 0.55), Loading |
-| **Props** | `variant`, `onClick`, `disabled`, `children`, `type`, `className` |
-| **Accessibility** | Must have visible label or `aria-label`; supports `:focus-visible` |
+| **Variants** | `primary` (gradient accent), `secondary` (border), `ghost` (text-only), `destructive` (danger red) |
+| **Props** | `variant: ButtonVariant`, `onClick: () => void`, `disabled?: boolean`, `loading?: boolean`, `children` |
+| **States** | Default, Hover (translateY -1px), Focus (outline ring), Active (translateY 0px), Loading (shows spinner, disables clicks), Disabled (opacity 0.55, pointer-events none) |
+| **Responsive Rules** | **Desktop**: Fixed width or inline padding. **Tablet**: Same. **Mobile**: Expand to `width: 100%` inside modal footers or forms to allow easy thumb-tap targets. |
+| **Accessibility** | Focus ring on tab navigation; screen reader announces loading state as `aria-busy="true"`. |
 
 ### C-002: Badge (`components/ui/badge.tsx`)
 
 | Property | Detail |
 |---|---|
-| **Purpose** | Visual label for status, count, or category |
-| **Variants** | `neutral`, `accent`, `success`, `warning`, `danger`, `info` |
-| **States** | Static only |
-| **Props** | `tone: Tone`, `children` |
-| **Accessibility** | Decorative only; parent must convey meaning |
+| **Tier** | **Atomic** (Shared Primitive) |
+| **Purpose** | Visual tag for status, counts, or entity categories |
+| **Variants** | `neutral`, `accent`, `success` (green), `warning` (yellow), `danger` (red), `info` (blue) |
+| **Props** | `tone: BadgeTone`, `size?: 'sm' \| 'md'`, `children` |
+| **States** | Static |
+| **Responsive Rules** | Font-size shrinks by 1px on mobile. Remains inline and does not wrap. |
+| **Accessibility** | Purely presentation; parent container must provide textual explanation if status is semantic. |
 
 ### C-003: Card (`components/ui/card.tsx`)
 
 | Property | Detail |
 |---|---|
-| **Purpose** | Content container with header and body |
-| **Variants** | Default (single variant) |
-| **States** | Default, Loading (skeleton), Empty, Error |
-| **Props** | `eyebrow`, `title`, `badge`, `children` |
-| **Accessibility** | Use `<section>` with `aria-labelledby` on title |
+| **Tier** | **Layout** (Container) |
+| **Purpose** | Content grouping box with header, body, and actions |
+| **Variants** | `default` (bordered), `elevated` (subtle shadow), `interactive` (hover border highlight) |
+| **Props** | `eyebrow?: string`, `title?: string`, `badge?: ReactNode`, `actions?: ReactNode`, `children` |
+| **States** | Default, Loading (renders C-011 skeleton inside), Empty (renders C-009 empty-state), Error (renders C-010 error-state) |
+| **Responsive Rules** | **Desktop/Tablet**: Padding is 24px (`--space-10`). **Mobile**: Padding drops to 16px (`--space-7`) to maximize viewable screen estate. Interactivity border-glow is disabled on touch screens. |
+| **Accessibility** | Semantically rendered as `<section>` or `<article>`. Header uses `<h2>` or `<h3>` dynamically. |
 
-### C-004: Input (`components/ui/input.tsx`)
-
-| Property | Detail |
-|---|---|
-| **Purpose** | Text input field for forms and search |
-| **Variants** | Default (single variant) |
-| **States** | Default, Focus, Error, Disabled |
-| **Props** | Standard `<input>` props + `className` |
-| **Accessibility** | Must have associated `<label>` or `aria-label` |
-
-### C-005: Textarea (`components/ui/textarea.tsx`)
+### C-004: Table (`components/ui/table.tsx`)
 
 | Property | Detail |
 |---|---|
-| **Purpose** | Multi-line text input |
-| **Variants** | Default |
-| **States** | Default, Focus, Error, Disabled |
-| **Props** | Standard `<textarea>` props + `className` |
-| **Accessibility** | Must have associated `<label>` or `aria-label` |
+| **Tier** | **Composite** (Shared) |
+| **Purpose** | Tabular representation of structures (members, variables, logs) |
+| **Props** | `headers: string[]`, `children: ReactNode` (rows) |
+| **States** | Default, Loading (renders skeleton rows), Empty |
+| **Responsive Rules** | **Desktop/Tablet**: Standard grid layout with horizontal rows. **Mobile**: Column-headers are hidden; each row transforms into an individual card-like panel with labels stack-aligned to the left. |
+| **Accessibility** | Must include `role="table"`, `<thead scope="col">` on headers, and dynamic cell labeling for screen readers. |
 
-### C-006: Dialog (`components/ui/dialog.tsx`)
-
-| Property | Detail |
-|---|---|
-| **Purpose** | Modal dialog for confirmations and forms |
-| **Variants** | Default, Destructive (red accent) |
-| **States** | Open, Closed |
-| **Props** | `isOpen`, `onClose`, `title`, `children` |
-| **Accessibility** | `role="dialog"`, `aria-modal="true"`, focus trap, Escape to close |
-
-### C-007: Table (`components/ui/table.tsx`)
+### C-005: Dialog (`components/ui/dialog.tsx`)
 
 | Property | Detail |
 |---|---|
-| **Purpose** | Data table for list displays |
-| **Variants** | Default |
-| **States** | Default, Loading (skeleton rows), Empty |
-| **Props** | `headers: string[]`, `children` (rows) |
-| **Accessibility** | Proper `<thead>/<tbody>`, `scope="col"` on headers |
+| **Tier** | **Shared** (Overlay) |
+| **Purpose** | Modal dialog blocking screen actions for confirmation or wizards |
+| **Props** | `isOpen: boolean`, `onClose: () => void`, `title: string`, `children` |
+| **States** | Open (fadeIn & scale-up), Closed (hidden) |
+| **Responsive Rules** | **Desktop**: Width is centered at `max-width: 600px`. **Tablet**: Centers at `max-width: 500px`. **Mobile**: Slide up from screen bottom to cover 100% width and 90% height, maximizing mobile keyboard screen room. |
+| **Accessibility** | Implements `focus-trap` inside modal; `aria-modal="true"`; closes instantly on pressing `Escape`. |
 
-### C-008: Tabs (`components/ui/tabs.tsx`)
-
-| Property | Detail |
-|---|---|
-| **Purpose** | Tab navigation for section switching |
-| **Variants** | Default |
-| **States** | Active, Inactive, Disabled |
-| **Props** | `tabs: {key, label}[]`, `active`, `onChange` |
-| **Accessibility** | `role="tablist"`, `role="tab"`, `aria-selected`, keyboard arrow keys |
-
-### C-009: Empty State (`components/ui/empty-state.tsx`)
+### C-006: Tabs (`components/ui/tabs.tsx`)
 
 | Property | Detail |
 |---|---|
-| **Purpose** | Placeholder for zero-data screens |
-| **Variants** | Default |
+| **Tier** | **Composite** (Navigation) |
+| **Purpose** | Local page route or category switcher |
+| **Props** | `tabs: {key: string, label: string}[]`, `activeKey: string`, `onChange: (key: string) => void` |
+| **States** | Active (accent border), Inactive, Disabled |
+| **Responsive Rules** | **Desktop/Tablet**: Horizontal tab row. **Mobile**: Transforms into a touch-friendly horizontal swipe-carousal with overflow indicators, or switches to a dropdown menu. |
+| **Accessibility** | Implements `role="tablist"`, `role="tab"`, and `aria-selected` status. Supports arrow key keyboard navigation. |
+
+### C-007: Empty State (`components/ui/empty-state.tsx`)
+
+| Property | Detail |
+|---|---|
+| **Tier** | **Composite** (Shared Visual) |
+| **Purpose** | Onboarding card for sections with zero data |
+| **Props** | `title: string`, `description: string`, `illustration?: string`, `actionButton?: ReactNode` |
 | **States** | Static |
-| **Props** | `title`, `description`, `action?` (CTA button) |
-| **Accessibility** | Informational; use `role="status"` |
-
-### C-010: Error State (`components/ui/error-state.tsx`)
-
-| Property | Detail |
-|---|---|
-| **Purpose** | Error feedback for failed data loads |
-| **Variants** | Default |
-| **States** | Static |
-| **Props** | `title`, `description`, `onRetry?` |
-| **Accessibility** | `role="alert"`, `aria-live="assertive"` |
-
-### C-011: Skeleton (`components/ui/skeleton.tsx`)
-
-| Property | Detail |
-|---|---|
-| **Purpose** | Loading placeholder with shimmer animation |
-| **Variants** | Default |
-| **States** | Animating |
-| **Props** | `className` (height/width via CSS) |
-| **Accessibility** | `aria-busy="true"`, `aria-label="Loading"` |
-
-### C-012: Progress (`components/ui/progress.tsx`)
-
-| Property | Detail |
-|---|---|
-| **Purpose** | Progress bar for task/operation tracking |
-| **Variants** | Default |
-| **States** | Indeterminate, Determinate |
-| **Props** | `value: number` (0-100) |
-| **Accessibility** | `role="progressbar"`, `aria-valuenow`, `aria-valuemin`, `aria-valuemax` |
-
-### C-013: Section Header (`components/ui/section-header.tsx`)
-
-| Property | Detail |
-|---|---|
-| **Purpose** | Page/section title with optional action buttons |
-| **Variants** | Default |
-| **States** | Static |
-| **Props** | `eyebrow`, `title`, `description`, `actions` |
-| **Accessibility** | Title rendered as `<h1>` or `<h2>` based on hierarchy |
-
-### C-014: Metric Card (`components/ui/metric-card.tsx`)
-
-| Property | Detail |
-|---|---|
-| **Purpose** | KPI display with label, value, and trend |
-| **Variants** | Default |
-| **States** | Default, Loading (skeleton) |
-| **Props** | `label`, `value`, `delta`, `helper`, `tone` |
-| **Accessibility** | `aria-label` with full context string |
-
-### C-015: Code Block (`components/ui/code-block.tsx`)
-
-| Property | Detail |
-|---|---|
-| **Purpose** | Formatted code display |
-| **Variants** | Default |
-| **States** | Static |
-| **Props** | `title`, `children` (code string) |
-| **Accessibility** | `<pre>` with `<code>`, avoid `aria-hidden` |
-
-### C-016: Stepper (`components/ui/stepper.tsx`)
-
-| Property | Detail |
-|---|---|
-| **Purpose** | Multi-step wizard progress indicator |
-| **Variants** | Default |
-| **States** | Complete, Active, Pending |
-| **Props** | `steps: WizardStep[]`, `current: number` |
-| **Accessibility** | `aria-current="step"`, step count announcement |
-
-### C-017: Learn Card (`components/ui/learn-card.tsx`)
-
-| Property | Detail |
-|---|---|
-| **Purpose** | Knowledge article preview card |
-| **Variants** | Default |
-| **States** | Static |
-| **Props** | `title`, `question`, `summary`, `link` |
-| **Accessibility** | Card as `<article>`, link as primary action |
-
-### C-018: Provider Card (`components/ui/provider-card.tsx`)
-
-| Property | Detail |
-|---|---|
-| **Purpose** | AI provider configuration and management card |
-| **Variants** | Default |
-| **States** | Default, Testing, Connected, Error |
-| **Props** | Full provider config object |
-| **Accessibility** | Expandable region with `aria-expanded` |
+| **Responsive Rules** | Vertical stack alignment. Text-align is centered. Shrinks padding on mobile. |
+| **Accessibility** | Utilizes `role="status"` to announce the empty screen status. |
 
 ---
 
-## Composite Components (from feature modules)
+## 2. Enterprise & System Components (New)
 
-### C-019: App Shell (`components/app-shell.tsx`)
-
-| Property | Detail |
-|---|---|
-| **Purpose** | Top-level layout with sidebar nav, topbar, and content area |
-| **Props** | `children`, `server`, `notifications` |
-
-### C-020: Members Panel (`components/settings/members-panel.tsx`)
+### C-008: Notification Inbox (`components/enterprise/notification-inbox.tsx`)
 
 | Property | Detail |
 |---|---|
-| **Purpose** | Full member management interface with CRUD operations |
-| **Props** | Internal — uses `useMembersManagement` hook |
+| **Tier** | **Page-only** / **Shared Popover** |
+| **Purpose** | Shows alerts, mentions, failed background tasks, and health warnings |
+| **Props** | `unreadCount: number`, `notifications: Notification[]`, `onMarkAllAsRead: () => void` |
+| **States** | Idle, Opening, MarkAsRead (fades out active indicator), Empty, Error |
+| **Responsive Rules** | **Desktop**: Drops down from topbar. **Mobile**: Opens as full-screen modal with bottom navigation back to settings. |
+| **Accessibility** | Screen reader announces new notification count dynamically with `aria-live="polite"`. |
 
-### C-021: Organizations Panel (`components/settings/orgs-panel.tsx`)
-
-| Property | Detail |
-|---|---|
-| **Purpose** | Organization listing and creation |
-| **Props** | Internal — uses auth context |
-
-### C-022: Environments Panel (`components/config/environments-panel.tsx`)
+### C-009: Command Palette (`components/enterprise/command-palette.tsx`)
 
 | Property | Detail |
 |---|---|
-| **Purpose** | Environment/variable/secret management |
-| **Props** | Internal — uses API client |
+| **Tier** | **Shared** (Search System) |
+| **Purpose** | Quick navigation (Ctrl+K) for workspaces, services, files, search commands, and settings |
+| **Props** | `isOpen: boolean`, `onClose: () => void` |
+| **States** | Open (scale-in overlay), Searching, ResultsFound, EmptyState |
+| **Responsive Rules** | **Desktop/Tablet**: Centered modal overlay (`max-width: 650px`). **Mobile**: Overlaid full-screen menu with large search text input and instant touch-targets. |
+| **Accessibility** | Full arrow keys controls; input autofocuses instantly; `role="combobox"`. |
 
-### C-023: Providers Panel (`components/config/providers-panel.tsx`)
-
-| Property | Detail |
-|---|---|
-| **Purpose** | AI provider listing, creation, and connection testing |
-| **Props** | Internal — uses API client |
-
-### C-024: Toast (`components/toast.tsx`)
+### C-010: CPU/RAM/Network Timeline (`components/monitoring/metrics-timeline.tsx`)
 
 | Property | Detail |
 |---|---|
-| **Purpose** | Notification popup for async feedback |
-| **Variants** | Success, Error, Info, Warning |
-| **Props** | `message`, `type`, `duration` |
-| **Accessibility** | `role="alert"`, `aria-live="polite"` |
+| **Tier** | **Composite** (Charts) |
+| **Purpose** | Real-time system resource observer graphs |
+| **Props** | `metricType: 'cpu' \| 'ram' \| 'disk' \| 'network'`, `dataPoints: MetricDataPoint[]` |
+| **States** | Loading (shimmer charts), Connected (live updating), Degraded (orange glow), Alerting (red pulse) |
+| **Responsive Rules** | **Desktop/Tablet**: Side-by-side grid panels. **Mobile**: Vertical stack layout; graph detail density is automatically downsampled for readability on narrow viewports. |
+| **Accessibility** | Includes fallback tabular summary view for visual accessibility. |
+
+### C-011: Timeline Feed (`components/settings/timeline-feed.tsx`)
+
+| Property | Detail |
+|---|---|
+| **Tier** | **Composite** (Observable) |
+| **Purpose** | Activity timeline tracking personal mutations, workspace tasks, and org logs |
+| **Props** | `activities: ActivityItem[]`, `scope: 'personal' \| 'workspace' \| 'organization'` |
+| **States** | Loading, Active, Filtered, Empty |
+| **Responsive Rules** | **Desktop/Tablet**: Vertical left-aligned line with offset descriptions and dates. **Mobile**: Dates stack above content; inline icons collapse to save width. |
+| **Accessibility** | Semantically structured as an ordered list `<ol>` with step status. |
+
+### C-012: Backup & Restore Wizard (`components/operations/backup-wizard.tsx`)
+
+| Property | Detail |
+|---|---|
+| **Tier** | **Composite** (Wizard) |
+| **Purpose** | Direct UI flow for backing up, restoring database, exporting configuration, or importing states |
+| **Props** | `type: 'backup' \| 'restore' \| 'export' \| 'import'`, `onTrigger: (config: any) => Promise<void>` |
+| **States** | SelectTargets, RunningProgress (shows C-012 progress), CompleteSuccess, AlertFailed |
+| **Responsive Rules** | Fits into standard dialog grid. Shrinks grid padding on mobile. |
+| **Accessibility** | Stepper progress indicator has dynamic announcements for active step and tasks success. |
 
 ---
 
-## Components Needed (not yet built)
+## Component Tier and Ownership Matrix
 
-| ID | Component | Purpose | Priority |
-|---|---|---|---|
-| C-025 | Dropdown Menu | Context menus, action menus | High |
-| C-026 | Select | Styled select replacement | High |
-| C-027 | Switch/Toggle | Boolean settings | Medium |
-| C-028 | Tooltip | Contextual help text | Medium |
-| C-029 | Avatar | User identity display | Medium |
-| C-030 | Breadcrumb | Navigation hierarchy | Low |
-| C-031 | Pagination | Table/list page navigation | High |
-| C-032 | Date Picker | Date range selection | Low |
-| C-033 | Command Palette | Quick navigation (Ctrl+K) | Medium |
+To keep dependencies clean, files must follow these import rules:
+* **Atomic** components may NOT import other local components.
+* **Composite** components may only import **Atomic** and utility functions.
+* **Layout** and **Shared** overlays can import both **Atomic** and **Composite** components.
+* **Page-only** components can import any category, but cannot be imported by other modules (except routing pages).
+
+```
+┌───────────────────────────────────────────────┐
+│                   PAGE-ONLY                   │
+└───────────────────────┬───────────────────────┘
+                        │ imports
+┌───────────────────────▼───────────────────────┐
+│              LAYOUT / SHARED                  │
+└───────────────────────┬───────────────────────┘
+                        │ imports
+┌───────────────────────▼───────────────────────┐
+│                  COMPOSITE                    │
+└───────────────────────┬───────────────────────┘
+                        │ imports
+┌───────────────────────▼───────────────────────┐
+│                    ATOMIC                     │
+└───────────────────────────────────────────────┘
+```
 
 ---
 
 > [!IMPORTANT]
-> This document must be approved before any WP-8.6.17 UI implementation begins.
+> This document must be approved before any WP-8.6.17 UI implementation begins, as mandated by Permanent Developer Rule 15.

@@ -9,180 +9,134 @@
 ## 1. Full-Page Screens
 
 ### 1.1 Authentication & Bootstrap
-
-| ID | Screen | Route | Component | Actors |
+| ID | Screen Name | Route | Component File | Actors |
 |---|---|---|---|---|
-| S-001 | Bootstrap Decision | `/` | `bootstrap-router.tsx` | System |
-| S-002 | Bootstrap Loading | `/` | `bootstrap-screen.tsx` | System |
+| S-001 | Bootstrap Decision | `/` | `components/bootstrap-router.tsx` | System |
+| S-002 | Bootstrap Loading | `/` | `components/bootstrap-screen.tsx` | System |
 | S-003 | Setup Wizard | `/setup` | `app/setup/page.tsx` | Root Admin |
 | S-004 | Login | `/login` | `app/login/page.tsx` | All Users |
 
-### 1.2 Dashboard
-
-| ID | Screen | Route | Component | Actors |
+### 1.2 Dashboard & Overview
+| ID | Screen Name | Route | Component File | Actors |
 |---|---|---|---|---|
 | S-005 | Enterprise Dashboard | `/dashboard` | `dashboard/dashboard-page.tsx` | Admin, Owner |
 | S-006 | Dashboard Shell | `/dashboard` | `dashboard/dashboard-shell.tsx` | All Auth |
+| S-007 | Projects List | `/projects` | `app/projects/page.tsx` | All Auth |
+| S-008 | Project Detail | `/projects/[slug]` | `app/projects/page.tsx` | Developer, Admin |
 
-### 1.3 Configuration
-
-| ID | Screen | Route | Component | Actors |
+### 1.3 Enterprise & System Admin
+| ID | Screen Name | Route | Component File | Actors |
 |---|---|---|---|---|
-| S-007 | AI Providers | `/config/providers` | `config/providers-panel.tsx` | Admin |
-| S-008 | Environments & Secrets | `/config/environments` | `config/environments-panel.tsx` | Admin, Editor |
+| S-009 | Telemetry Monitor | `/monitor` | `app/monitor/page.tsx` | Operator, Admin |
+| S-010 | Deployments Board | `/deploy` | `app/deploy/page.tsx` | Operator, Admin |
+| S-011 | Backup & Restore Hub | `/backup` | `app/backup/page.tsx` | Admin, Owner |
+| S-012 | Settings Hub | `/settings` | `settings/settings-page.tsx` | Admin, Owner |
+| S-013 | User Profile Settings | `/profile` | `app/profile/page.tsx` | All Auth |
 
-### 1.4 Settings & Governance
-
-| ID | Screen | Route | Component | Actors |
+### 1.4 Configuration
+| ID | Screen Name | Route | Component File | Actors |
 |---|---|---|---|---|
-| S-009 | Settings Hub | `/settings` | `settings/settings-page.tsx` | Admin, Owner |
-| S-010 | Organizations Panel | `/settings` (tab) | `settings/orgs-panel.tsx` | Admin, Owner |
-| S-011 | Members Management | `/settings` (tab) | `settings/members-panel.tsx` | Admin, Owner |
+| S-014 | AI Providers | `/config/providers` | `config/providers-panel.tsx` | Admin |
+| S-015 | Environments & Secrets | `/config/environments` | `config/environments-panel.tsx` | Admin, Editor |
 
-### 1.5 Projects
-
-| ID | Screen | Route | Component | Actors |
+### 1.5 DevCenter
+| ID | Screen Name | Route | Component File | Actors |
 |---|---|---|---|---|
-| S-012 | Projects List | `/projects` | `app/projects/page.tsx` | All Auth |
-| S-013 | Project Detail | `/projects/[slug]` | `app/projects/page.tsx` | Developer, Admin |
+| S-016 | Architecture Docs | `/devcenter/architecture` | `app/devcenter/page.tsx` | Developer, Admin |
+| S-017 | Database Schema | `/devcenter/database` | `app/devcenter/page.tsx` | Developer, Admin |
+| S-018 | Tasks & Engine | `/devcenter/tasks` | `app/devcenter/page.tsx` | Developer |
+| S-019 | Dependency Graph | `/devcenter/dependencies` | `app/devcenter/page.tsx` | Developer |
+| S-020 | API Reference | `/devcenter/api` | `app/devcenter/page.tsx` | Developer |
+| S-021 | Knowledge Base | `/devcenter/knowledge` | `app/devcenter/page.tsx` | All Auth |
+| S-022 | Workspace Doctor | `/devcenter/project-doctor` | `app/devcenter/page.tsx` | Developer, Admin |
+| S-023 | AI Cost & Token Usage | `/devcenter/ai-usage` | `app/devcenter/page.tsx` | Admin, Owner |
 
-### 1.6 Workspace Runtime
-
-| ID | Screen | Route | Component | Actors |
+### 1.6 Workspace Runtime (S-024)
+| ID | Screen Name | Route | Component File | Actors |
 |---|---|---|---|---|
-| S-014 | Workspace Explorer | `/workspace/[id]` | `workspace/workspace-page-client.tsx` | Developer |
-| S-015 | Workspace Layout | `/workspace/[id]` | `workspace/workspace-layout.tsx` | Developer |
-| S-016 | Code Editor | `/workspace/[id]` | `workspace/workspace-editor.tsx` | Developer |
+| S-024 | Workspace Explorer | `/workspace/[id]` | `workspace/workspace-page-client.tsx` | Developer |
+| S-025 | Workspace Layout | `/workspace/[id]` | `workspace/workspace-layout.tsx` | Developer |
+| S-026 | Code Editor | `/workspace/[id]` | `workspace/workspace-editor.tsx` | Developer |
 
-#### Workspace Sections (embedded in S-014)
-
-| ID | Section | Component |
-|---|---|---|
-| S-014a | Overview | `workspace/overview-section.tsx` |
-| S-014b | Files | `workspace/files-section.tsx` |
-| S-014c | Repository | `workspace/repository-section.tsx` |
-| S-014d | Environment | `workspace/environment-section.tsx` |
-| S-014e | Infrastructure | `workspace/infrastructure-section.tsx` |
-| S-014f | Services | `workspace/services-section.tsx` |
-| S-014g | Tasks | `workspace/tasks-section.tsx` |
-| S-014h | Deployments | `workspace/deployments-section.tsx` |
-| S-014i | Knowledge | `workspace/knowledge-section.tsx` |
-| S-014j | Remaining (DB, Domains, Logs, AI, Doctor, Settings, MCP) | `workspace/remaining-sections.tsx` |
-
-### 1.7 DevCenter
-
-| ID | Screen | Route |
-|---|---|---|
-| S-017 | Architecture | `/devcenter/architecture` |
-| S-018 | Tasks | `/devcenter/tasks` |
-| S-019 | Knowledge Base | `/devcenter/knowledge` |
-| S-020 | Dependencies | `/devcenter/dependencies` |
-| S-021 | API Reference | `/devcenter/api` |
-| S-022 | Database Schema | `/devcenter/database` |
-| S-023 | Project Doctor | `/devcenter/project-doctor` |
-
-### 1.8 Placeholder Screens (require action)
-
-| ID | Screen | Route | Action Required |
+#### Workspace Embedded Sections (within S-024)
+| ID | Section Name | Component File | Purpose |
 |---|---|---|---|
-| S-024 | Deploy | `/deploy` | Build pipeline UI or hide from nav |
-| S-025 | Monitor | `/monitor` | Build monitoring or hide from nav |
-| S-026 | Doctor | `/doctor` | Redirect to `/devcenter/project-doctor` |
-| S-027 | Service | `/service` | Integrate or remove |
-| S-028 | Backup | `/backup` | Build or hide from nav |
-| S-029 | Install | `/install` | Build or hide from nav |
+| S-024a | Overview | `workspace/overview-section.tsx` | Health summary & git meta |
+| S-024b | Files | `workspace/files-section.tsx` | File Tree Explorer |
+| S-024c | Services | `workspace/services-section.tsx` | Local systems status |
+| S-024d | Tasks | `workspace/tasks-section.tsx` | Task Runner CLI & Logs |
+| S-024e | AI Assistant | `workspace/ai-section.tsx` | Workspace prompt chat |
 
 ---
 
-## 2. Modals & Dialogs
+## 2. Modals, Drawers & Overlay Dialogs
 
-| ID | Modal | Trigger | States |
+| ID | Overlay Name | Location | Type | Purpose |
+|---|---|---|---|---|
+| M-001 | Command Palette | Global (Ctrl+K) | Modal | Universal search and jump actions |
+| M-002 | Notification Inbox | Topbar icon | Drawer | Notification center, mentions, job events |
+| M-003 | Help & Guide Popover | Topbar icon | Popover | Keyboard shortcuts list and tutorial lookup |
+| M-004 | System Status dropdown| Topbar profile | Popover | Executor health, task queue sizes |
+| M-005 | Create Organization | Settings Hub | Dialog | Input name/details for new organization |
+| M-006 | Invite Member | Settings Hub | Dialog | Email + Role invite dispatch |
+| M-007 | Edit Member Role | Settings Hub | Dialog | Dropdown selection to reassign roles |
+| M-008 | Transfer Ownership | Settings Hub | Dialog | Destructive owner pass (Confirm block) |
+| M-009 | Delete Member | Settings Hub | Dialog | Destructive member remove confirm |
+| M-010 | Delete Env Variable | Config panel | Dialog | Variable delete confirmation |
+| M-011 | Provider Test | Config panel | Inline | Live network endpoint test spinner |
+| M-012 | Backup & Restore Wizard| Backup panel | Dialog | Step-by-step target backup or restore |
+| M-013 | Clone Workspace | Projects list | Dialog | Clone workspace git repo path input |
+| M-014 | Archive Workspace | Projects list | Dialog | Read-only workspace archive lock confirm |
+| M-015 | Delete Workspace | Projects list | Dialog | Destructive workspace delete (Type confirmation)|
+| M-016 | Duplicate Environment | Config panel | Dialog | Duplicate vars list to a new env target |
+| M-017 | Rollback Release | Deployments | Dialog | Select release target rollback confirm |
+| M-018 | Promote Release | Deployments | Dialog | Push staging deployment config to prod |
+
+---
+
+## 3. UI States (Empty, Error, Loading)
+
+### 3.1 Empty States
+| ID | Screen / Context | Trigger Condition | Success State |
 |---|---|---|---|
-| M-001 | Create Organization | S-010 | Default, Validating, Success, Error |
-| M-002 | Invite Member | S-011 | Default, Validating, Success, Duplicate Error |
-| M-003 | Edit Member Role | S-011 | Default, Saving, Success, Permission Error |
-| M-004 | Transfer Ownership | S-011 | Confirmation, Processing, Success, Error |
-| M-005 | Delete Member | S-011 | Confirmation, Processing, Success, Error |
-| M-006 | Delete Env Variable | S-008 | Confirmation, Processing, Success, Error |
-| M-007 | Provider Test | S-007 | Testing, Connected, Failed |
-| M-008 | Generic Confirmation | Global | Pending, Confirmed, Cancelled |
+| E-001 | Organizations List | User has no organization memberships | Add illustration + "Create Org" CTA |
+| E-002 | Members Table | Zero members found in active org | Add illustration + "Invite Member" CTA |
+| E-003 | Environments List | No env targets configured for organization | Add illustration + "Add Environment" CTA |
+| E-004 | Variables Table | Selected environment contains zero variables | Add label + "Create Variable" CTA |
+| E-005 | Secrets Table | Selected environment contains zero secrets | Add key icon + "Add Secret" CTA |
+| E-006 | AI Providers | No providers active or configured | Add card grid + "Configure Provider" CTA |
+| E-007 | Project List | No projects created in workspace | Onboarding card + "New Project" CTA |
+| E-008 | Deployments Table | Project has never triggered a deploy run | Add timeline + "Trigger Deploy" CTA |
+| E-009 | Task Runner Console | No tasks configured or triggered | Add console log + "Create Task" CTA |
+| E-010 | Active Services | Workspace lists zero active daemon processes | Renders warning + check systems doc |
+| E-011 | Command Palette | Keyboard query returns zero matches | "No commands or navigation destinations found" |
+| E-012 | Notification Inbox | No new alert events or inbox messages | Check mark icon + "All caught up" |
 
-## 3. Drawers & Side Panels
+### 3.2 Error States
+| ID | Screen / Context | Trigger Condition | Visual Handler |
+|---|---|---|---|
+| ER-001 | Login Form | Invalid credentials | Inline red banner under header |
+| ER-002 | Dashboard / Shell | Backend API unreachable or 500 error | Full viewport alert banner with refresh |
+| ER-003 | Settings Panel | User attempts non-permitted action (403) | Grayed components + tooltips warning |
+| ER-004 | AI Providers Test | Provider connection ping fails | Text label red text with response debug log |
+| ER-005 | Workspace Explorer | Specified workspace identifier not found (404) | Full page "Workspace not found" return link |
+| ER-006 | Workspace runtime | Adapter indexer timeout / file tree hang | Warning alert banner + "Restart Indexer" |
+| ER-007 | Deployments board | Build log execution fails | Red status dot + expandable failed logs terminal |
+| ER-008 | Telemetry Monitor | Metric data feeds crash / offline | Line charts draw straight red line with error label |
+| ER-009 | Notification Inbox | WebSocket alert stream disconnects | Tiny red indicator dot in topbar header |
+| ER-010 | Global API request | Client rate-limited by gateway (429) | Alert banner: "Too many actions. Please wait." |
 
-| ID | Drawer | Location |
+### 3.3 Loading States
+| ID | Screen / Context | Implementation Details |
 |---|---|---|
-| D-001 | Workspace Section Sidebar | S-014 |
-| D-002 | App Navigation Sidebar | App Shell |
-| D-003 | Provider Detail Expand | S-007 |
+| L-001 | Bootstrap Screen | Pulse logo + animated bar indicators |
+| L-002 | Dashboard Board | Skeleton card shapes matching resource metric blocks |
+| L-003 | Table lists | Shimmer overlay lines across row data items |
+| L-004 | Workspace Explorer | Split-pane shimmer matching tree left, editor right |
+| L-005 | Telemetry charts | Wave charts draw straight loading lines |
+| L-006 | Action Buttons | Switch label to spinner, disable clicking |
 
-## 4. Wizards
-
-| ID | Wizard | Route | Steps |
-|---|---|---|---|
-| W-001 | Initial Setup | `/setup` | System Check → DB Init → Admin → Complete |
-| W-002 | Environment Creation | `/config/environments` | Name → Type → Save |
-| W-003 | Provider Config | `/config/providers` | Type → Credentials → Test → Save |
-
-## 5. Empty States
-
-| ID | Screen | Condition | Status |
-|---|---|---|---|
-| E-001 | Organizations | Zero orgs | ✅ Implemented |
-| E-002 | Members | Zero members | ✅ Implemented |
-| E-003 | Variables | No env vars | ✅ Implemented |
-| E-004 | Secrets | No secrets | ✅ Implemented |
-| E-005 | Providers | No providers | ✅ Implemented |
-| E-006 | Projects | No projects | 🟡 Partial |
-| E-007 | Workspace Files | Empty dir | 🟡 Partial |
-| E-008 | Deployments | No history | ❌ Placeholder data |
-| E-009 | Tasks | No tasks | 🟡 Partial |
-| E-010 | Audit Logs | No events | ❌ Missing UI |
-| E-011 | Knowledge | No articles | 🟡 Partial |
-| E-012 | Search Results | No matches | ❌ Missing |
-
-## 6. Error States
-
-| ID | Screen | Condition | Status |
-|---|---|---|---|
-| ER-001 | Login | Invalid credentials | ✅ Toast |
-| ER-002 | Login | Network failure | 🟡 Generic |
-| ER-003 | Dashboard | API unreachable | ❌ Blank |
-| ER-004 | Settings | 403 Forbidden | ✅ Handled |
-| ER-005 | Members | Duplicate email | ✅ Backend |
-| ER-006 | Providers | Connection fail | ✅ Feedback |
-| ER-007 | Environments | Create failure | ✅ Generic toast |
-| ER-008 | Workspace | 404 Not found | 🟡 Partial |
-| ER-009 | Workspace | Indexer timeout | ❌ Hangs |
-| ER-010 | Global | 401 Session expired | ✅ Redirect |
-| ER-011 | Global | 429 Rate limited | ❌ Missing |
-| ER-012 | Global | 500 Server error | 🟡 Generic |
-
-## 7. Loading States
-
-| ID | Screen | Status |
-|---|---|---|
-| L-001 | Bootstrap | ✅ Animated pulse bars |
-| L-002 | Dashboard | 🟡 Text-only |
-| L-003 | Settings | ✅ Shimmer skeletons |
-| L-004 | Providers | 🟡 Basic |
-| L-005 | Environments | 🟡 Basic |
-| L-006 | Workspace | ✅ Partial skeleton |
-| L-007 | Projects | 🟡 Basic |
-| L-008 | Login | ✅ Button state |
-
-## 8. Summary
-
-| Category | Count |
-|---|---|
-| Full-page screens | 29 |
-| Workspace sections | 10 |
-| Modals & dialogs | 8 |
-| Drawers & panels | 3 |
-| Wizards | 3 |
-| Empty states | 12 |
-| Error states | 12 |
-| Loading states | 8 |
-| **Total UI surfaces** | **85** |
+---
 
 > [!IMPORTANT]
-> This document must be approved before any WP-8.6.17 UI implementation code may be written.
+> This document must be approved before any WP-8.6.17 UI implementation begins, as mandated by Permanent Developer Rule 15.
