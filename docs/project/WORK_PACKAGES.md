@@ -211,28 +211,76 @@ Every active and future Work Package tracks status across the following stages:
 **Production Ready**: NO
 
 ### WP-8.6.17 — Production UX Rewrite
-**Status**: Not Started
+**Status**: Phase A In Progress (Design Only)
 **Stages**:
-- [ ] Design
-- [ ] Implementation
+- [x] Design (Phase A — Design Artifacts)
+- [ ] Design Review & Approval (Phase A Gate)
+- [ ] Implementation (Phase B — Code)
 - [ ] Unit Tested
 - [ ] Integration Tested
 - [ ] Human QA
 - [ ] Production Accepted
 **Dependencies**: WP-8.6.16
-**Produces**:
-- A complete UX redesign based on user workflows. Incremental CSS tweaks are prohibited. Start of work must produce:
-  * Complete screen inventory before writing any UI code.
-  * User journey maps for every role (Owner, Admin, Operator, Developer, Viewer).
-  * Information architecture defining what belongs on each screen and why.
-  * High-fidelity desktop, tablet, and mobile mockups.
-  * Integration with a true Design System 2.0 (typography, spacing, elevation, motion, tokens, component variants, accessibility).
-  * Elimination of all placeholder or fabricated data on production pages; every widget must display live backend data or explicit loading/empty/error states.
-  * Every page must explicitly answer: What is this? Why am I here? What can I do next? How do I complete my task?
-- Implementation is strictly blocked until the design deliverables are reviewed and approved. UI code must align precisely with approved mockups.
+
+#### Mandatory Deliverables (Phase A — Design Only)
+
+| # | Artifact | Path | Status |
+|---|---|---|---|
+| 1 | Screen Inventory | `docs/design/SCREEN_INVENTORY.md` | ✅ Produced |
+| 2 | User Journeys | `docs/design/USER_JOURNEYS.md` | ✅ Produced |
+| 3 | Information Architecture | `docs/design/INFORMATION_ARCHITECTURE.md` | ✅ Produced |
+| 4 | Design System 2.0 | `docs/design/DESIGN_SYSTEM.md` | ✅ Produced |
+| 5 | Wireframes | `docs/design/WIREFRAMES/` | ✅ Produced |
+| 6 | Component Library | `docs/design/COMPONENT_LIBRARY.md` | ✅ Produced |
+| 7 | API → UI Mapping | `docs/design/API_UI_MAPPING.md` | ✅ Produced |
+
+**Screen Inventory** contains: every screen, every modal, every drawer, every wizard, every empty state, every error state.
+
+**User Journeys** covers: Owner, Admin, Developer, Operator, Viewer — each journey includes Goal, Entry point, Navigation, Success path, Failure path.
+
+**Information Architecture** defines: Navigation hierarchy, Grouping rationale, Page responsibilities, Entity relationships, Search model.
+
+**Design System** specifies: Typography, Spacing, Elevation, Motion, Color Tokens, Radius, Shadows, Icons, Accessibility, Responsive Grid.
+
+**Wireframes** covers: Desktop, Tablet, Mobile — every page with ASCII layout diagrams.
+
+**Component Library** documents: every component — Purpose, States, Props, Accessibility, Variants.
+
+**API → UI Mapping** maps: every widget → API → State → Loading → Error → Permission → Fallback.
+
+#### Phase A Gate (Design Review)
+
+**Allowed during Phase A:**
+- ✅ Documentation
+- ✅ Mockups & wireframes
+- ✅ Architecture decisions
+- ✅ Design token definitions
+
+**NOT allowed during Phase A:**
+- ❌ React components
+- ❌ CSS implementation
+- ❌ API wiring code
+- ❌ Layout implementation
+- ❌ Any production UI code
+
+**No production UI code may be written before Phase A design documents are reviewed and approved.**
+
+#### Phase B Gate (Implementation)
+
+Only after Phase A design approval may implementation begin. During Phase B:
+
+**Pixel Tolerance Rule**: Every implemented screen must match the approved mockup within **±2px** tolerance unless a justified deviation is documented and approved.
+
+**Produces** (Phase B):
+- Complete UX redesign based on approved user workflows
+- Zero placeholder or fabricated data on production pages
+- Every widget displays live backend data or explicit loading/empty/error states
+- Every page answers: What is this? Why am I here? What can I do next? How do I complete my task?
+- Full Design System 2.0 integration (typography, spacing, elevation, motion, tokens, component variants, accessibility)
+
 **Consumed By**: DevServer Platform Release
-**Remaining Work**: Implementation pending design approval of screen inventory, user journeys, IA, and high-fidelity mockups.
-**Human Testing**: Pending
+**Remaining Work**: Phase A design artifacts produced — pending human review and approval before Phase B may begin.
+**Human Testing**: Pending (blocked by Phase A gate)
 **Production Ready**: NO
 
 ### WP-8.6.18 — Enterprise Dashboard

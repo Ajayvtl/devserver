@@ -82,7 +82,7 @@ This phase bridges the deeply isolated backend foundational services to the user
 * **WP-8.6.14 Deployment Module**: (Not Started) UI and orchestrator connections for deployment pipeline actions.
 * **WP-8.6.15 Monitoring Dashboard**: (Not Started) Frontend views for health monitoring and workspace telemetry.
 * **WP-8.6.16 Design System 2.0**: (Not Started) Redesign of typography scale, tokens, responsive grid, components, and accessibility.
-* **WP-8.6.17 Production UX Rewrite**: (Not Started) Complete user-workflow-driven UX redesign (screen inventory, role-based journey maps, info architecture, high-fidelity mockups, Design System 2.0 integration, and zero dummy data). Implementation is blocked pending design approvals.
+* **WP-8.6.17 Production UX Rewrite**: (Phase A In Progress) All 7 mandatory design artifacts produced: Screen Inventory, User Journeys, Information Architecture, Design System 2.0, Wireframes, Component Library, API→UI Mapping. Phase A design review pending. Phase B (implementation) is explicitly blocked until design approval. Pixel tolerance rule enforced at ±2px.
 * **WP-8.6.18 Enterprise Dashboard**: (Not Started) Live-data telemetry widgets replacing placeholder CPU, memory, and provider configs.
 * **WP-8.6.19 Responsive UI Validation**: (Not Started) Multi-device layout and navigation drawer tests.
 * **WP-8.6.20 Empty / Loading / Error States**: (Not Started) Skeleton UI and graceful error components.
