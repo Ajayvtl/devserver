@@ -52,6 +52,8 @@ func (router *Router) Register(mux *http.ServeMux) {
 
 	// 2. Organizations
 	mux.Handle("/api/v1/organizations", protect(http.HandlerFunc(router.handleOrganizations)))
+	mux.Handle("/api/v1/organizations/members", protect(http.HandlerFunc(router.handleOrganizationMembers)))
+	mux.Handle("/api/v1/organizations/transfer-ownership", protect(http.HandlerFunc(router.handleTransferOwnership)))
 
 	// 3. Users
 	mux.Handle("/api/v1/users/me", protect(http.HandlerFunc(router.handleUsersMe)))

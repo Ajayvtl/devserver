@@ -61,6 +61,9 @@ func initSchema(db *sql.DB) error {
 			org_id VARCHAR(36) NOT NULL,
 			user_id VARCHAR(36) NOT NULL,
 			role_id VARCHAR(36) NOT NULL,
+			status VARCHAR(50) NOT NULL DEFAULT 'active',
+			last_login_at DATETIME NULL,
+			joined_at DATETIME NULL,
 			created_at DATETIME NOT NULL,
 			updated_at DATETIME NOT NULL,
 			FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE,
@@ -82,6 +85,11 @@ func initSchema(db *sql.DB) error {
 			return fmt.Errorf("failed to execute RBAC schema setup: %w", err)
 		}
 	}
+
+	// Alter memberships table to add new columns if they do not exist
+	_, _ = db.Exec("ALTER TABLE memberships ADD COLUMN status VARCHAR(50) NOT NULL DEFAULT 'active'")
+	_, _ = db.Exec("ALTER TABLE memberships ADD COLUMN last_login_at DATETIME NULL")
+	_, _ = db.Exec("ALTER TABLE memberships ADD COLUMN joined_at DATETIME NULL")
 
 	// Seed default org and admin membership if none exists
 	var count int
@@ -142,15 +150,29 @@ func (s *MySQLStore) GetOrganization(ctx context.Context, orgID string) (*Organi
 func (s *MySQLStore) GetMembership(ctx context.Context, userID, orgID string) (*Membership, error) {
 	var mem Membership
 	var ca, ua []uint8
+	var lla, ja []uint8
 
-	err := s.db.QueryRowContext(ctx, "SELECT id, org_id, user_id, role_id, created_at, updated_at FROM memberships WHERE user_id = ? AND org_id = ?", userID, orgID).
-		Scan(&mem.ID, &mem.OrgID, &mem.UserID, &mem.RoleID, &ca, &ua)
+	err := s.db.QueryRowContext(ctx, "SELECT id, org_id, user_id, role_id, status, last_login_at, joined_at, created_at, updated_at FROM memberships WHERE user_id = ? AND org_id = ?", userID, orgID).
+		Scan(&mem.ID, &mem.OrgID, &mem.UserID, &mem.RoleID, &mem.Status, &lla, &ja, &ca, &ua)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrAccessDenied
 		}
 		return nil, err
+	}
+
+	if len(lla) > 0 {
+		t, err := time.Parse("2006-01-02 15:04:05", string(lla))
+		if err == nil {
+			mem.LastLoginAt = &t
+		}
+	}
+	if len(ja) > 0 {
+		t, err := time.Parse("2006-01-02 15:04:05", string(ja))
+		if err == nil {
+			mem.JoinedAt = &t
+		}
 	}
 
 	var parseErr error
@@ -245,12 +267,23 @@ func (s *MySQLStore) UpsertMembership(ctx context.Context, mem *Membership) erro
 		mem.CreatedAt = now
 	}
 	mem.UpdatedAt = now
+	if mem.Status == "" {
+		mem.Status = "active"
+	}
+
+	var llaVal, jaVal any
+	if mem.LastLoginAt != nil {
+		llaVal = mem.LastLoginAt.Format("2006-01-02 15:04:05")
+	}
+	if mem.JoinedAt != nil {
+		jaVal = mem.JoinedAt.Format("2006-01-02 15:04:05")
+	}
 
 	_, err := s.db.ExecContext(ctx,
-		`INSERT INTO memberships (id, user_id, org_id, role_id, created_at, updated_at) 
-		 VALUES (?, ?, ?, ?, ?, ?)
-		 ON DUPLICATE KEY UPDATE role_id = VALUES(role_id), updated_at = VALUES(updated_at)`,
-		mem.ID, mem.UserID, mem.OrgID, mem.RoleID, mem.CreatedAt.Format("2006-01-02 15:04:05"), mem.UpdatedAt.Format("2006-01-02 15:04:05"),
+		`INSERT INTO memberships (id, user_id, org_id, role_id, status, last_login_at, joined_at, created_at, updated_at) 
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		 ON DUPLICATE KEY UPDATE role_id = VALUES(role_id), status = VALUES(status), last_login_at = VALUES(last_login_at), joined_at = VALUES(joined_at), updated_at = VALUES(updated_at)`,
+		mem.ID, mem.UserID, mem.OrgID, mem.RoleID, mem.Status, llaVal, jaVal, mem.CreatedAt.Format("2006-01-02 15:04:05"), mem.UpdatedAt.Format("2006-01-02 15:04:05"),
 	)
 	return err
 }
@@ -387,6 +420,175 @@ func (s *MySQLStore) GetResourcePolicy(ctx context.Context, resourceID, resource
 	}
 
 	return &pol, nil
+}
+
+func (s *MySQLStore) ListMemberships(ctx context.Context, orgID string, params common.QueryParams) ([]*MembershipDetails, int, error) {
+	where := "WHERE m.org_id = ?"
+	args := []any{orgID}
+	if search := params.Query; search != "" {
+		where += " AND (u.username LIKE ? OR u.email LIKE ?)"
+		args = append(args, "%"+search+"%", "%"+search+"%")
+	}
+
+	var total int
+	countQuery := fmt.Sprintf(`
+		SELECT COUNT(m.id)
+		FROM memberships m
+		JOIN users u ON m.user_id = u.id
+		%s
+	`, where)
+	err := s.db.QueryRowContext(ctx, countQuery, args...).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	sortCol := "m.created_at"
+	if params.Sort == "username" {
+		sortCol = "u.username"
+	} else if params.Sort == "email" {
+		sortCol = "u.email"
+	} else if params.Sort == "status" {
+		sortCol = "m.status"
+	}
+
+	dir := "DESC"
+	if params.Dir == "ASC" {
+		dir = "ASC"
+	}
+
+	query := fmt.Sprintf(`
+		SELECT m.id, m.org_id, m.user_id, u.username, u.email, m.role_id, r.name, m.status, m.last_login_at, m.joined_at, m.created_at, m.updated_at
+		FROM memberships m
+		JOIN users u ON m.user_id = u.id
+		LEFT JOIN roles r ON m.role_id = r.id
+		%s
+		ORDER BY %s %s
+		LIMIT ? OFFSET ?
+	`, where, sortCol, dir)
+
+	args = append(args, params.Limit(), params.Offset())
+	rows, err := s.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var details []*MembershipDetails
+	for rows.Next() {
+		var det MembershipDetails
+		var roleName sql.NullString
+		var lla, ja []uint8
+		var ca, ua []uint8
+
+		err := rows.Scan(
+			&det.ID, &det.OrgID, &det.UserID, &det.Username, &det.Email,
+			&det.RoleID, &roleName, &det.Status, &lla, &ja, &ca, &ua,
+		)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		det.RoleName = roleName.String
+		if len(lla) > 0 {
+			t, err := time.Parse("2006-01-02 15:04:05", string(lla))
+			if err == nil {
+				det.LastLoginAt = &t
+			}
+		}
+		if len(ja) > 0 {
+			t, err := time.Parse("2006-01-02 15:04:05", string(ja))
+			if err == nil {
+				det.JoinedAt = &t
+			}
+		}
+
+		if det.CreatedAt, err = time.Parse("2006-01-02 15:04:05", string(ca)); err != nil {
+			return nil, 0, err
+		}
+		if det.UpdatedAt, err = time.Parse("2006-01-02 15:04:05", string(ua)); err != nil {
+			return nil, 0, err
+		}
+
+		details = append(details, &det)
+	}
+
+	return details, total, nil
+}
+
+func (s *MySQLStore) UpdateMembershipStatus(ctx context.Context, orgID, userID string, status string) error {
+	_, err := s.db.ExecContext(ctx,
+		"UPDATE memberships SET status = ?, updated_at = NOW() WHERE org_id = ? AND user_id = ?",
+		status, orgID, userID,
+	)
+	return err
+}
+
+func (s *MySQLStore) UpdateMembershipRole(ctx context.Context, orgID, userID string, roleID string) error {
+	_, err := s.db.ExecContext(ctx,
+		"UPDATE memberships SET role_id = ?, updated_at = NOW() WHERE org_id = ? AND user_id = ?",
+		roleID, orgID, userID,
+	)
+	return err
+}
+
+func (s *MySQLStore) RemoveMembership(ctx context.Context, orgID, userID string) error {
+	_, err := s.db.ExecContext(ctx,
+		"DELETE FROM memberships WHERE org_id = ? AND user_id = ?",
+		orgID, userID,
+	)
+	return err
+}
+
+func (s *MySQLStore) InviteMember(ctx context.Context, orgID string, email string, roleID string) error {
+	var userID string
+	err := s.db.QueryRowContext(ctx, "SELECT id FROM users WHERE email = ?", email).Scan(&userID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			userID = uuid.NewString()
+			username := strings.Split(email, "@")[0]
+			username = fmt.Sprintf("%s-%s", username, userID[:8])
+			_, err = s.db.ExecContext(ctx,
+				"INSERT INTO users (id, username, email, password_hash, created_at, updated_at) VALUES (?, ?, ?, 'placeholder', NOW(), NOW())",
+				userID, username, email,
+			)
+			if err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+	}
+
+	memID := uuid.NewString()
+	_, err = s.db.ExecContext(ctx,
+		`INSERT INTO memberships (id, user_id, org_id, role_id, status, joined_at, created_at, updated_at) 
+		 VALUES (?, ?, ?, ?, 'invited', NULL, NOW(), NOW())
+		 ON DUPLICATE KEY UPDATE status = 'invited', role_id = VALUES(role_id), updated_at = NOW()`,
+		memID, userID, orgID, roleID,
+	)
+	return err
+}
+
+func (s *MySQLStore) ListRoles(ctx context.Context, orgID string) ([]*Role, error) {
+	rows, err := s.db.QueryContext(ctx, "SELECT id, org_id, name, permissions FROM roles WHERE org_id = ?", orgID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var roles []*Role
+	for rows.Next() {
+		var role Role
+		var permsJSON []byte
+		if err := rows.Scan(&role.ID, &role.OrgID, &role.Name, &permsJSON); err != nil {
+			return nil, err
+		}
+		if err := json.Unmarshal(permsJSON, &role.Permissions); err != nil {
+			role.Permissions = []string{}
+		}
+		roles = append(roles, &role)
+	}
+	return roles, nil
 }
 
 func (s *MySQLStore) Close() error {

@@ -51,42 +51,46 @@ export function OrgsPanel() {
     }
   }
 
-  if (loading) return <div>Loading organizations...</div>
+  if (loading) {
+    return (
+      <div className="skeleton-group">
+        <div className="skeleton-line"></div>
+        <div className="skeleton-line"></div>
+        <div className="skeleton-line"></div>
+      </div>
+    )
+  }
 
   return (
-    <div className="stack" style={{ gap: '2rem' }}>
+    <div className="stack">
       <Card>
         <div className="card__eyebrow">Your Organizations</div>
-        <div style={{ margin: '1rem 0' }}>
-          <DataTable 
-            columns={[{ header: 'Name' }, { header: 'Role' }, { header: 'Action' }]}
-            rows={orgs.map(o => [
-              o.name,
-              o.id === currentOrgId ? 'Active' : 'Member',
-              <Button 
-                key={o.id}
-                variant={o.id === currentOrgId ? 'secondary' : 'primary'} 
-                disabled={o.id === currentOrgId}
-                onClick={() => setCurrentOrgId(o.id)}
-              >
-                {o.id === currentOrgId ? 'Current' : 'Switch'}
-              </Button>
-            ])}
-          />
-        </div>
+        <DataTable 
+          columns={[{ header: 'Name' }, { header: 'Role' }, { header: 'Action' }]}
+          rows={orgs.map(o => [
+            o.name,
+            o.id === currentOrgId ? 'Active' : 'Member',
+            <Button 
+              key={o.id}
+              variant={o.id === currentOrgId ? 'secondary' : 'primary'} 
+              disabled={o.id === currentOrgId}
+              onClick={() => setCurrentOrgId(o.id)}
+            >
+              {o.id === currentOrgId ? 'Current' : 'Switch'}
+            </Button>
+          ])}
+        />
       </Card>
       
       <Card>
         <div className="card__eyebrow">Create Organization</div>
-        <div className="flex" style={{ gap: '1rem', marginTop: '1rem', alignItems: 'flex-end' }}>
-          <div style={{ flex: 1 }}>
-            <Input 
-              label="Organization Name"
-              value={newOrgName}
-              onChange={e => setNewOrgName(e.target.value)}
-              placeholder="e.g. Acme Corp"
-            />
-          </div>
+        <div className="page-actions">
+          <Input 
+            label="Organization Name"
+            value={newOrgName}
+            onChange={e => setNewOrgName(e.target.value)}
+            placeholder="e.g. Acme Corp"
+          />
           <Button variant="primary" onClick={handleCreate} disabled={creating || !newOrgName.trim()}>
             {creating ? 'Creating...' : 'Create'}
           </Button>

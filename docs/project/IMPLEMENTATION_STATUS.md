@@ -77,12 +77,12 @@ This phase bridges the deeply isolated backend foundational services to the user
 * **WP-8.4 Web UI Configuration**: (Complete) Management dashboards for Environments, encrypted Secrets, AI Provider binding with live network testing, and Settings persistence over real APIs.
 * **WP-8.5 End-to-End System Workflows**: (Complete) Backend audit pipeline and organization lifecycle integration tests verified via UI.
 * **WP-8.6.1 through WP-8.6.11**: (Complete) Hardened APIs, resolved CORS preflight, established transactional boundaries, fully executed the RBAC/Tenant isolation E2E test matrix, and completed a comprehensive Screen-by-Screen UX Audit and User Operation Manual (`PRODUCT_EXPERIENCE_AUDIT.md`).
-* **WP-8.6.12 Members Management UI**: (Not Started) Organization member and invitation screens to expose RBAC administration features.
+* **WP-8.6.12 Members Management UI**: (Under Review) Exposes settings interface to add/invite new team members, edit membership roles, toggle member statuses, delete memberships, and transfer organization ownership using real API endpoints and responsive Design System 2.0 aesthetics.
 * **WP-8.6.13 Audit Viewer UI**: (Not Started) UI interface for displaying mutation logs and system audits.
 * **WP-8.6.14 Deployment Module**: (Not Started) UI and orchestrator connections for deployment pipeline actions.
 * **WP-8.6.15 Monitoring Dashboard**: (Not Started) Frontend views for health monitoring and workspace telemetry.
 * **WP-8.6.16 Design System 2.0**: (Not Started) Redesign of typography scale, tokens, responsive grid, components, and accessibility.
-* **WP-8.6.17 Production UX Rewrite**: (Not Started) Rewrite of login, workspaces, settings, and navigation screens utilizing the new design system.
+* **WP-8.6.17 Production UX Rewrite**: (Not Started) Complete user-workflow-driven UX redesign (screen inventory, role-based journey maps, info architecture, high-fidelity mockups, Design System 2.0 integration, and zero dummy data). Implementation is blocked pending design approvals.
 * **WP-8.6.18 Enterprise Dashboard**: (Not Started) Live-data telemetry widgets replacing placeholder CPU, memory, and provider configs.
 * **WP-8.6.19 Responsive UI Validation**: (Not Started) Multi-device layout and navigation drawer tests.
 * **WP-8.6.20 Empty / Loading / Error States**: (Not Started) Skeleton UI and graceful error components.

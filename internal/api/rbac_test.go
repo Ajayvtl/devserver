@@ -24,14 +24,14 @@ func TestRBAC_DenyByDefault(t *testing.T) {
 	// Directly test RBACMiddleware
 	mockSvc := &mockTenantRBACService{}
 	middleware := RBACMiddleware(mockSvc, "read")
-	
+
 	handler := middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/environments", nil)
 	w := httptest.NewRecorder()
-	
+
 	// Call without auth context
 	handler.ServeHTTP(w, req)
 
@@ -43,7 +43,7 @@ func TestRBAC_DenyByDefault(t *testing.T) {
 func TestRBAC_TenantIsolation(t *testing.T) {
 	mockSvc := &mockTenantRBACService{}
 	middleware := RBACMiddleware(mockSvc, "read")
-	
+
 	handler := middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))

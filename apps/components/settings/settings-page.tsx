@@ -11,6 +11,7 @@ import { useAuth } from '@/components/auth/auth-context'
 import { request, requestOrFallback } from '@/lib/api/client'
 import { useToast } from '../toast'
 import { OrgsPanel } from './orgs-panel'
+import { MembersPanel } from './members-panel'
 
 export function SettingsPage() {
   const { currentOrgId, can } = useAuth()
@@ -84,7 +85,15 @@ export function SettingsPage() {
   const hasWriteAccess = can('settings.write')
 
   if (loading) {
-    return <div className="page"><div style={{ padding: '2rem', textAlign: 'center', opacity: 0.7 }}>Loading settings...</div></div>
+    return (
+      <div className="page">
+        <div className="skeleton-group">
+          <div className="skeleton-line"></div>
+          <div className="skeleton-line"></div>
+          <div className="skeleton-line"></div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -100,19 +109,30 @@ export function SettingsPage() {
         }
       />
 
-      <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem' }}>
-        <button 
-          onClick={() => setActiveTab('general')}
-          style={{ background: 'none', border: 'none', color: activeTab === 'general' ? '#fff' : '#888', cursor: 'pointer', fontSize: '1rem', fontWeight: activeTab === 'general' ? 600 : 400 }}
-        >
-          General
-        </button>
-        <button 
-          onClick={() => setActiveTab('orgs')}
-          style={{ background: 'none', border: 'none', color: activeTab === 'orgs' ? '#fff' : '#888', cursor: 'pointer', fontSize: '1rem', fontWeight: activeTab === 'orgs' ? 600 : 400 }}
-        >
-          Organizations
-        </button>
+      <div className="tabs">
+        <div className="tabs__list">
+          <button 
+            type="button"
+            onClick={() => setActiveTab('general')}
+            className={`tabs__tab ${activeTab === 'general' ? 'is-active' : ''}`}
+          >
+            General
+          </button>
+          <button 
+            type="button"
+            onClick={() => setActiveTab('orgs')}
+            className={`tabs__tab ${activeTab === 'orgs' ? 'is-active' : ''}`}
+          >
+            Organizations
+          </button>
+          <button 
+            type="button"
+            onClick={() => setActiveTab('members')}
+            className={`tabs__tab ${activeTab === 'members' ? 'is-active' : ''}`}
+          >
+            Members
+          </button>
+        </div>
       </div>
 
       {activeTab === 'general' && (
@@ -120,7 +140,7 @@ export function SettingsPage() {
       <div className="page-grid--two">
         <Card>
           <div className="card__eyebrow">Preferences</div>
-          <div className="stack" style={{ marginTop: '1rem' }}>
+          <div className="stack">
             <Input 
               label="Theme" 
               value={theme} 
@@ -138,8 +158,8 @@ export function SettingsPage() {
         
         <Card>
           <div className="card__eyebrow">Security Posture</div>
-          <div className="stack" style={{ marginTop: '1rem' }}>
-            <label className="checkbox-card" style={!hasWriteAccess ? { opacity: 0.6, cursor: 'not-allowed' } : {}}>
+          <div className="stack">
+            <label className={`checkbox-card ${!hasWriteAccess ? 'is-disabled' : ''}`}>
               <input 
                 type="checkbox" 
                 checked={mfaEnabled === 'true'} 
@@ -172,6 +192,10 @@ export function SettingsPage() {
 
       {activeTab === 'orgs' && (
         <OrgsPanel />
+      )}
+
+      {activeTab === 'members' && (
+        <MembersPanel />
       )}
     </div>
   )

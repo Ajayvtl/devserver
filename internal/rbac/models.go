@@ -24,12 +24,30 @@ type Role struct {
 
 // Membership binds a User to an Organization with a specific Role.
 type Membership struct {
-	ID        string    `json:"id"`
-	OrgID     string    `json:"orgId"`
-	UserID    string    `json:"userId"`
-	RoleID    string    `json:"roleId"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	ID          string     `json:"id"`
+	OrgID       string     `json:"orgId"`
+	UserID      string     `json:"userId"`
+	RoleID      string     `json:"roleId"`
+	Status      string     `json:"status"`
+	LastLoginAt *time.Time `json:"lastLoginAt,omitempty"`
+	JoinedAt    *time.Time `json:"joinedAt,omitempty"`
+	CreatedAt   time.Time  `json:"createdAt"`
+	UpdatedAt   time.Time  `json:"updatedAt"`
+}
+
+type MembershipDetails struct {
+	ID          string     `json:"id"`
+	OrgID       string     `json:"orgId"`
+	UserID      string     `json:"userId"`
+	Username    string     `json:"username"`
+	Email       string     `json:"email"`
+	RoleID      string     `json:"roleId"`
+	RoleName    string     `json:"roleName"`
+	Status      string     `json:"status"`
+	LastLoginAt *time.Time `json:"lastLoginAt,omitempty"`
+	JoinedAt    *time.Time `json:"joinedAt,omitempty"`
+	CreatedAt   time.Time  `json:"createdAt"`
+	UpdatedAt   time.Time  `json:"updatedAt"`
 }
 
 // ResourcePolicy maps a specific resource to its owning Organization.

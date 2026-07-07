@@ -6,6 +6,27 @@ Every development effort must map to a specific Work Package (WP).
 
 **Permanent Developer Rule 12 — Phase 8 Roadmap Freeze**: After the introduction of WP-8.6.42, the Phase 8 scope is strictly frozen. No further work packages may be added to Phase 8. Any newly discovered requirements or issues must be handled as a bug against an existing WP, a subtask of an existing WP, or deferred as a Phase 9 enhancement to ensure objective release gating.
 
+**Permanent Developer Rule 13 — Remote Repository Verification**: Before every WP submission:
+1. Push the commit to the remote repository.
+2. Verify the commit is reachable on GitHub.
+3. Include:
+   * Full 40-character SHA
+   * GitHub Commit URL
+   * Branch name
+Never submit a local or unreachable commit SHA. A WP cannot enter review until the commit is verifiable in the remote repository.
+
+**Permanent Developer Rule 14 — Design System Enforcement**: New UI components must not introduce:
+* hardcoded colors
+* inline typography
+* inline spacing
+* inline shadows
+* inline border radius
+* inline animations
+
+All visual styling must come from shared design tokens, CSS variables, or reusable components. Fallback data is prohibited. If data cannot be loaded, present an appropriate loading, empty, or error state instead of generating placeholder content.
+
+
+
 ## Phase Summaries
 
 ### Phase 7: Foundation Configuration
@@ -42,7 +63,7 @@ Every development effort must map to a specific Work Package (WP).
 - WP-8.6.9: Screen-by-Screen Functional Audit (Completed)
 - WP-8.6.10: Product Acceptance Audit (Completed)
 - WP-8.6.11: Complete Product Experience (PX) Audit & User Operation Manual (Completed)
-- WP-8.6.12: Members Management UI (Not Started)
+- WP-8.6.12: Members Management UI (Under Review)
 - WP-8.6.13: Audit Viewer UI (Not Started)
 - WP-8.6.14: Deployment Module (Not Started)
 - WP-8.6.15: Monitoring Dashboard (Not Started)
@@ -105,20 +126,20 @@ Every active and future Work Package tracks status across the following stages:
 **Production Ready**: YES (Audits Only - Product Gaps Tracked in WP-8.6.12-15)
 
 ### WP-8.6.12 — Members Management UI
-**Status**: Not Started
+**Status**: Under Review
 **Stages**:
-- [ ] Design
-- [ ] Implementation
-- [ ] Unit Tested
-- [ ] Integration Tested
+- [x] Design
+- [x] Implementation
+- [x] Unit Tested
+- [x] Integration Tested
 - [ ] Human QA
 - [ ] Production Accepted
 **Dependencies**: WP-8.3, WP-8.6.2
 **Produces**:
 - Organization Members view & role management controls in settings UI.
 **Consumed By**: DevServer Platform Release
-**Remaining Work**: Implementation pending
-**Human Testing**: Pending
+**Remaining Work**: Code Review, Repository Verification, and Human Acceptance pending
+**Human Testing**: Under Review
 **Production Ready**: NO
 
 ### WP-8.6.13 — Audit Viewer UI
@@ -200,9 +221,17 @@ Every active and future Work Package tracks status across the following stages:
 - [ ] Production Accepted
 **Dependencies**: WP-8.6.16
 **Produces**:
-- Complete redesign of login flow (setup auto-redirect, no raw recovery dev-notes), workspace split-pane, mobile navigation drawer, and robust error/loading states.
+- A complete UX redesign based on user workflows. Incremental CSS tweaks are prohibited. Start of work must produce:
+  * Complete screen inventory before writing any UI code.
+  * User journey maps for every role (Owner, Admin, Operator, Developer, Viewer).
+  * Information architecture defining what belongs on each screen and why.
+  * High-fidelity desktop, tablet, and mobile mockups.
+  * Integration with a true Design System 2.0 (typography, spacing, elevation, motion, tokens, component variants, accessibility).
+  * Elimination of all placeholder or fabricated data on production pages; every widget must display live backend data or explicit loading/empty/error states.
+  * Every page must explicitly answer: What is this? Why am I here? What can I do next? How do I complete my task?
+- Implementation is strictly blocked until the design deliverables are reviewed and approved. UI code must align precisely with approved mockups.
 **Consumed By**: DevServer Platform Release
-**Remaining Work**: Implementation pending
+**Remaining Work**: Implementation pending design approval of screen inventory, user journeys, IA, and high-fidelity mockups.
 **Human Testing**: Pending
 **Production Ready**: NO
 

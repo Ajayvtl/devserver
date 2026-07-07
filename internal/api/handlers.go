@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/Ajayvtl/devserver/internal/domain/common"
@@ -132,9 +133,18 @@ func (router *Router) handleUsersMe(w http.ResponseWriter, r *http.Request) {
 }
 
 func (router *Router) handleRoles(w http.ResponseWriter, r *http.Request) {
-	// Simple stub mapping for WP-8.1 REST endpoints wrapper.
 	if r.Method == http.MethodGet {
-		WriteSuccess(w, r, http.StatusOK, []map[string]string{{"id": "role-1", "name": "admin"}})
+		orgID := r.Header.Get("X-Org-ID")
+		if orgID == "" {
+			WriteSuccess(w, r, http.StatusOK, []map[string]string{{"id": "role-1", "name": "admin"}})
+			return
+		}
+		roles, err := router.rbacService.ListRoles(r.Context(), orgID)
+		if err != nil {
+			WriteError(w, r, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to retrieve roles", nil)
+			return
+		}
+		WriteSuccess(w, r, http.StatusOK, roles)
 		return
 	}
 	WriteError(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
@@ -395,5 +405,177 @@ func (router *Router) handleProviderTest(w http.ResponseWriter, r *http.Request)
 		WriteSuccess(w, r, http.StatusOK, map[string]string{"status": "ok"})
 		return
 	}
+	WriteError(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
+}
+
+func (router *Router) handleOrganizationMembers(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value(ContextKeyUserID).(string)
+	if !ok || userID == "" {
+		WriteError(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Authentication required", nil)
+		return
+	}
+
+	orgID := r.Header.Get("X-Org-ID")
+	if orgID == "" {
+		WriteError(w, r, http.StatusBadRequest, "INVALID_REQUEST", "X-Org-ID header required", nil)
+		return
+	}
+
+	if r.Method == http.MethodGet {
+		params, err := common.ParseQueryParams(r, []string{"username", "email", "status", "created_at"})
+		if err != nil {
+			WriteError(w, r, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), nil)
+			return
+		}
+
+		members, total, err := router.rbacService.ListMembers(r.Context(), userID, orgID, params)
+		if err != nil {
+			if errors.Is(err, rbac.ErrAccessDenied) {
+				WriteError(w, r, http.StatusForbidden, "FORBIDDEN", "Access denied", nil)
+			} else {
+				WriteError(w, r, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error(), nil)
+			}
+			return
+		}
+
+		totalPages := (total + params.PerPage - 1) / params.PerPage
+		meta := PaginationMeta{
+			Total:      total,
+			Page:       params.Page,
+			PerPage:    params.PerPage,
+			TotalPages: totalPages,
+		}
+
+		WriteSuccessPaginated(w, r, http.StatusOK, members, meta)
+		return
+	} else if r.Method == http.MethodPost {
+		var req struct {
+			Email  string `json:"email"`
+			RoleID string `json:"roleId"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			WriteError(w, r, http.StatusBadRequest, "INVALID_REQUEST", "Invalid JSON payload", nil)
+			return
+		}
+
+		if req.Email == "" || req.RoleID == "" {
+			WriteError(w, r, http.StatusBadRequest, "VALIDATION_ERROR", "email and roleId are required", nil)
+			return
+		}
+
+		if err := router.rbacService.InviteUser(r.Context(), userID, orgID, req.Email, req.RoleID); err != nil {
+			if errors.Is(err, rbac.ErrAccessDenied) {
+				WriteError(w, r, http.StatusForbidden, "FORBIDDEN", "Access denied", nil)
+			} else {
+				WriteError(w, r, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error(), nil)
+			}
+			return
+		}
+
+		WriteSuccess(w, r, http.StatusCreated, map[string]string{"status": "invited"})
+		return
+	} else if r.Method == http.MethodPut {
+		var req struct {
+			UserID string `json:"userId"`
+			RoleID string `json:"roleId"`
+			Status string `json:"status"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			WriteError(w, r, http.StatusBadRequest, "INVALID_REQUEST", "Invalid JSON payload", nil)
+			return
+		}
+
+		if req.UserID == "" {
+			WriteError(w, r, http.StatusBadRequest, "VALIDATION_ERROR", "userId is required", nil)
+			return
+		}
+
+		if req.RoleID != "" {
+			if err := router.rbacService.UpdateMemberRole(r.Context(), userID, orgID, req.UserID, req.RoleID); err != nil {
+				if errors.Is(err, rbac.ErrAccessDenied) {
+					WriteError(w, r, http.StatusForbidden, "FORBIDDEN", "Access denied", nil)
+				} else {
+					WriteError(w, r, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error(), nil)
+				}
+				return
+			}
+		}
+
+		if req.Status != "" {
+			if err := router.rbacService.SetMemberStatus(r.Context(), userID, orgID, req.UserID, req.Status); err != nil {
+				if errors.Is(err, rbac.ErrAccessDenied) {
+					WriteError(w, r, http.StatusForbidden, "FORBIDDEN", "Access denied", nil)
+				} else {
+					WriteError(w, r, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error(), nil)
+				}
+				return
+			}
+		}
+
+		WriteSuccess(w, r, http.StatusOK, map[string]string{"status": "updated"})
+		return
+	} else if r.Method == http.MethodDelete {
+		targetUserID := r.URL.Query().Get("userId")
+		if targetUserID == "" {
+			WriteError(w, r, http.StatusBadRequest, "VALIDATION_ERROR", "userId query parameter is required", nil)
+			return
+		}
+
+		if err := router.rbacService.RemoveMember(r.Context(), userID, orgID, targetUserID); err != nil {
+			if errors.Is(err, rbac.ErrAccessDenied) {
+				WriteError(w, r, http.StatusForbidden, "FORBIDDEN", "Access denied", nil)
+			} else {
+				WriteError(w, r, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error(), nil)
+			}
+			return
+		}
+
+		WriteSuccess(w, r, http.StatusOK, map[string]string{"status": "removed"})
+		return
+	}
+
+	WriteError(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
+}
+
+func (router *Router) handleTransferOwnership(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value(ContextKeyUserID).(string)
+	if !ok || userID == "" {
+		WriteError(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Authentication required", nil)
+		return
+	}
+
+	orgID := r.Header.Get("X-Org-ID")
+	if orgID == "" {
+		WriteError(w, r, http.StatusBadRequest, "INVALID_REQUEST", "X-Org-ID header required", nil)
+		return
+	}
+
+	if r.Method == http.MethodPost {
+		var req struct {
+			NewOwnerUserID string `json:"newOwnerUserId"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			WriteError(w, r, http.StatusBadRequest, "INVALID_REQUEST", "Invalid JSON payload", nil)
+			return
+		}
+
+		if req.NewOwnerUserID == "" {
+			WriteError(w, r, http.StatusBadRequest, "VALIDATION_ERROR", "newOwnerUserId is required", nil)
+			return
+		}
+
+		if err := router.rbacService.TransferOrgOwnership(r.Context(), userID, orgID, req.NewOwnerUserID); err != nil {
+			if errors.Is(err, rbac.ErrAccessDenied) {
+				WriteError(w, r, http.StatusForbidden, "FORBIDDEN", "Access denied", nil)
+			} else {
+				WriteError(w, r, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error(), nil)
+			}
+			return
+		}
+
+		WriteSuccess(w, r, http.StatusOK, map[string]string{"status": "ownership_transferred"})
+		return
+	}
+
 	WriteError(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
 }
