@@ -3,9 +3,30 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect, useRef, type ReactNode } from 'react'
+import { 
+  LayoutDashboard, 
+  FolderKanban, 
+  Terminal, 
+  Activity, 
+  History, 
+  Database, 
+  Lock, 
+  Cpu, 
+  Wrench, 
+  BookOpen, 
+  ShieldAlert, 
+  Settings,
+  Bell,
+  Wifi,
+  WifiOff,
+  Search,
+  Menu,
+  X
+} from 'lucide-react'
 
 import { navigation } from '@/lib/navigation'
 import { useAuth } from '@/components/auth/auth-context'
+import { usePreferences, type Density, type FontScale } from '@/components/providers'
 
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
@@ -16,10 +37,29 @@ interface Props {
   notifications?: number
 }
 
+function getNavIcon(href: string) {
+  switch (href) {
+    case '/dashboard': return LayoutDashboard
+    case '/projects': return FolderKanban
+    case '/workspace/devserver': return Terminal
+    case '/monitor': return Activity
+    case '/deploy': return History
+    case '/backup': return Database
+    case '/config/environments': return Lock
+    case '/config/providers': return Cpu
+    case '/devcenter/project-doctor': return Wrench
+    case '/devcenter/architecture': return BookOpen
+    case '/devcenter/ai-usage': return ShieldAlert
+    case '/settings': return Settings
+    default: return FolderKanban
+  }
+}
+
 export function AppShell({ children, server, notifications = 3 }: Props) {
   const pathname = usePathname()
   const router = useRouter()
   const { user, organizations, currentOrgId, setCurrentOrgId, signOut, isLoading } = useAuth()
+  const { density, setDensity, fontScale, setFontScale } = usePreferences()
 
   // State managers
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -122,43 +162,43 @@ export function AppShell({ children, server, notifications = 3 }: Props) {
       {/* Offline Status Alert Banner */}
       {!isOnline && (
         <div className="offline-banner" role="alert" aria-live="assertive">
-          <span className="offline-banner__icon">⚠️</span>
+          <WifiOff size={16} className="offline-banner__icon" />
           <span className="offline-banner__text">
             <strong>Offline Mode</strong> — Access is restricted to cached read-only data. All operations will resume automatically when connectivity is restored.
           </span>
         </div>
       )}
 
-      {/* Sidebar Navigation - Desktop */}
-      <aside className="sidebar" aria-label="Main Navigation">
+      {/* Sidebar Navigation - Desktop (Compact IDE style) */}
+      <aside className="sidebar sidebar--compact" aria-label="Main Navigation">
         <div className="sidebar__brand">
           <div className="sidebar__mark">D</div>
           <div>
             <div className="sidebar__name">DevServer</div>
-            <div className="sidebar__tag">Operations Platform</div>
+            <div className="sidebar__tag">IDE Control Deck</div>
           </div>
         </div>
 
         {/* Workspace Quick Selector */}
         <div className="sidebar__panel">
-          <div className="card__eyebrow" style={{ marginBottom: '8px' }}>Active Workspace</div>
+          <div className="card__eyebrow" style={{ marginBottom: '6px', fontSize: '0.72rem' }}>Active Context</div>
           <select 
             style={{ 
               width: '100%', 
-              padding: '10px 14px', 
-              borderRadius: '12px', 
+              padding: '6px 10px', 
+              borderRadius: '8px', 
               border: '1px solid var(--border)', 
               background: 'rgba(255,255,255,0.03)', 
               color: 'var(--text)',
-              fontSize: '0.9rem',
-              fontWeight: '600'
+              fontSize: '0.8rem',
+              fontWeight: '500'
             }}
             defaultValue="devserver"
             onChange={(e) => router.push(`/workspace/${e.target.value}`)}
           >
-            <option value="devserver">devserver (Active)</option>
-            <option value="auth-service">auth-service (Inactive)</option>
-            <option value="db-indexer">db-indexer (Sleeping)</option>
+            <option value="devserver">devserver</option>
+            <option value="auth-service">auth-service</option>
+            <option value="db-indexer">db-indexer</option>
           </select>
         </div>
 
@@ -166,9 +206,10 @@ export function AppShell({ children, server, notifications = 3 }: Props) {
           {navigation.map((group) => (
             <div key={group.title}>
               <h4 className="sidebar__group-title">{group.title}</h4>
-              <div className="sidebar__links">
+              <div className="sidebar__links" style={{ gap: '4px' }}>
                 {group.items.map((item) => {
                   const current = isActive(pathname, item.href)
+                  const Icon = getNavIcon(item.href)
                   return (
                     <Link
                       key={item.href}
@@ -176,8 +217,8 @@ export function AppShell({ children, server, notifications = 3 }: Props) {
                       className={`sidebar__link${current ? ' is-active' : ''}`}
                       aria-current={current ? 'page' : undefined}
                     >
+                      <Icon size={14} style={{ opacity: current ? 1 : 0.65 }} />
                       <span className="sidebar__link-label">{item.label}</span>
-                      <span className="sidebar__link-subtitle">{item.subtitle}</span>
                     </Link>
                   )
                 })}
@@ -196,18 +237,21 @@ export function AppShell({ children, server, notifications = 3 }: Props) {
               <div className="sidebar__mark">D</div>
               <div>
                 <div className="sidebar__name">DevServer</div>
-                <div className="sidebar__tag">Operations Platform</div>
+                <div className="sidebar__tag">IDE Control Deck</div>
               </div>
             </div>
-            <button className="mobile-drawer__close" aria-label="Close menu" onClick={() => setIsMobileMenuOpen(false)}>×</button>
+            <button className="mobile-drawer__close" aria-label="Close menu" onClick={() => setIsMobileMenuOpen(false)}>
+              <X size={20} />
+            </button>
           </div>
           <nav className="mobile-drawer__nav">
             {navigation.map((group) => (
-              <div key={group.title} style={{ marginBottom: '24px' }}>
+              <div key={group.title} style={{ marginBottom: '16px' }}>
                 <h4 className="sidebar__group-title">{group.title}</h4>
-                <div className="sidebar__links">
+                <div className="sidebar__links" style={{ gap: '4px' }}>
                   {group.items.map((item) => {
                     const current = isActive(pathname, item.href)
+                    const Icon = getNavIcon(item.href)
                     return (
                       <Link
                         key={item.href}
@@ -215,8 +259,8 @@ export function AppShell({ children, server, notifications = 3 }: Props) {
                         onClick={() => setIsMobileMenuOpen(false)}
                         className={`sidebar__link${current ? ' is-active' : ''}`}
                       >
+                        <Icon size={14} />
                         <span className="sidebar__link-label">{item.label}</span>
-                        <span className="sidebar__link-subtitle">{item.subtitle}</span>
                       </Link>
                     )
                   })}
@@ -230,40 +274,85 @@ export function AppShell({ children, server, notifications = 3 }: Props) {
       {/* Main Workspace Area */}
       <div className="shell__main">
         {/* Universal Topbar */}
-        <header className="topbar">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <header className="topbar" style={{ padding: '12px 20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <button 
               className="mobile-hamburger-btn" 
               aria-label="Toggle Navigation Drawer" 
               onClick={() => setIsMobileMenuOpen(true)}
             >
-              ☰
+              <Menu size={20} />
             </button>
             <div>
-              <div className="topbar__eyebrow">Developer Platform Control Deck</div>
-              <h2 className="topbar__title">Overview / Workspace</h2>
+              <div className="topbar__eyebrow" style={{ fontSize: '0.7rem' }}>Developer Platform Control Deck</div>
+              <h2 className="topbar__title" style={{ fontSize: '1.05rem', marginTop: '2px' }}>Overview / Workspace</h2>
             </div>
           </div>
 
-          <div className="topbar__right">
+          <div className="topbar__right" style={{ gap: '8px' }}>
+            {/* Display Preference Controls (Density & Font Scaling) */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', borderRight: '1px solid var(--border)', paddingRight: '8px' }}>
+              <select
+                value={density}
+                onChange={(e) => setDensity(e.target.value as Density)}
+                style={{
+                  padding: '4px 8px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border)',
+                  backgroundColor: 'rgba(15,25,41,0.95)',
+                  color: 'var(--text)',
+                  fontSize: '0.75rem',
+                  fontWeight: 600
+                }}
+                aria-label="Select Display Density"
+              >
+                <option value="comfortable">Comfortable</option>
+                <option value="compact">Compact</option>
+                <option value="ultra">Ultra Compact</option>
+              </select>
+
+              <select
+                value={fontScale}
+                onChange={(e) => setFontScale(Number(e.target.value) as FontScale)}
+                style={{
+                  padding: '4px 8px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border)',
+                  backgroundColor: 'rgba(15,25,41,0.95)',
+                  color: 'var(--text)',
+                  fontSize: '0.75rem',
+                  fontWeight: 600
+                }}
+                aria-label="Select Font Scaling"
+              >
+                <option value={14}>14px</option>
+                <option value={15}>15px</option>
+                <option value={16}>16px</option>
+              </select>
+            </div>
+
             {/* Search Input triggering command palette */}
             <div style={{ position: 'relative' }}>
-              <input 
-                type="text" 
-                placeholder="Search command palette (Ctrl+K)..." 
+              <button 
                 onClick={() => setIsCommandPaletteOpen(true)}
-                readOnly
                 style={{
-                  width: '240px',
-                  padding: '8px 14px',
-                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  width: '200px',
+                  padding: '6px 12px',
+                  borderRadius: '8px',
                   border: '1px solid var(--border)',
                   background: 'rgba(255,255,255,0.03)',
-                  color: 'var(--text)',
-                  fontSize: '0.85rem',
+                  color: 'var(--muted)',
+                  fontSize: '0.78rem',
+                  textAlign: 'left',
                   cursor: 'pointer'
                 }}
-              />
+              >
+                <Search size={12} />
+                <span>Search (Ctrl+K)...</span>
+              </button>
             </div>
 
             {/* Organizations Switcher */}
@@ -272,12 +361,12 @@ export function AppShell({ children, server, notifications = 3 }: Props) {
                 value={currentOrgId || ''}
                 onChange={(e) => setCurrentOrgId(e.target.value)}
                 style={{
-                  padding: '8px 14px',
-                  borderRadius: '12px',
+                  padding: '6px 10px',
+                  borderRadius: '8px',
                   border: '1px solid var(--border)',
                   backgroundColor: 'rgba(15,25,41,0.95)',
                   color: 'var(--text)',
-                  fontSize: '0.85rem',
+                  fontSize: '0.8rem',
                   fontWeight: 600
                 }}
               >
@@ -294,12 +383,12 @@ export function AppShell({ children, server, notifications = 3 }: Props) {
               <button 
                 onClick={() => setIsNotificationOpen(!isNotificationOpen)}
                 style={{
-                  padding: '8px 14px',
-                  borderRadius: '12px',
+                  padding: '6px 10px',
+                  borderRadius: '8px',
                   border: '1px solid var(--border)',
                   background: isNotificationOpen ? 'var(--border-strong)' : 'rgba(255,255,255,0.03)',
                   color: 'var(--text)',
-                  fontSize: '0.85rem',
+                  fontSize: '0.8rem',
                   fontWeight: 600,
                   display: 'flex',
                   alignItems: 'center',
@@ -307,7 +396,8 @@ export function AppShell({ children, server, notifications = 3 }: Props) {
                   cursor: 'pointer'
                 }}
               >
-                🔔 <span style={{ color: 'var(--danger)', fontWeight: 'bold' }}>{notifications}</span>
+                <Bell size={13} />
+                <span style={{ color: 'var(--danger)', fontWeight: 'bold' }}>{notifications}</span>
               </button>
 
               {/* Notification Popover Panel */}
@@ -352,7 +442,7 @@ export function AppShell({ children, server, notifications = 3 }: Props) {
         <div className="command-palette-backdrop" role="dialog" aria-modal="true" aria-label="Universal Command Palette Launcher">
           <div className="command-palette" ref={paletteRef}>
             <div className="command-palette__search">
-              <span className="command-palette__search-icon">🔍</span>
+              <Search size={16} className="command-palette__search-icon" />
               <input
                 ref={paletteInputRef}
                 type="text"
@@ -366,19 +456,25 @@ export function AppShell({ children, server, notifications = 3 }: Props) {
             <div className="command-palette__results">
               <div className="command-palette__section-title">Navigation Shortcuts</div>
               {filteredShortcuts.length ? (
-                filteredShortcuts.map((item) => (
-                  <button
-                    key={item.href}
-                    onClick={() => handleShortcutClick(item.href)}
-                    className="command-palette__item"
-                  >
-                    <div>
-                      <div className="command-palette__item-label">{item.label}</div>
-                      <div className="command-palette__item-sub">{item.subtitle}</div>
-                    </div>
-                    <span className="command-palette__item-group">{item.group}</span>
-                  </button>
-                ))
+                filteredShortcuts.map((item) => {
+                  const Icon = getNavIcon(item.href)
+                  return (
+                    <button
+                      key={item.href}
+                      onClick={() => handleShortcutClick(item.href)}
+                      className="command-palette__item"
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <Icon size={14} style={{ color: 'var(--accent)' }} />
+                        <div>
+                          <div className="command-palette__item-label">{item.label}</div>
+                          <div className="command-palette__item-sub">{item.subtitle}</div>
+                        </div>
+                      </div>
+                      <span className="command-palette__item-group">{item.group}</span>
+                    </button>
+                  )
+                })
               ) : (
                 <div style={{ padding: '24px', textAlign: 'center', color: 'var(--muted)' }}>
                   No matching shortcuts found.
@@ -392,19 +488,19 @@ export function AppShell({ children, server, notifications = 3 }: Props) {
       {/* Mobile Bottom Tab Navigation */}
       <nav className="mobile-bottom-nav" aria-label="Mobile Navigation Bar">
         <Link href="/dashboard" className={`mobile-bottom-nav__item${pathname === '/dashboard' ? ' is-active' : ''}`}>
-          <span className="mobile-bottom-nav__icon">🏠</span>
+          <LayoutDashboard size={18} />
           <span className="mobile-bottom-nav__label">Home</span>
         </Link>
         <Link href="/projects" className={`mobile-bottom-nav__item${pathname === '/projects' ? ' is-active' : ''}`}>
-          <span className="mobile-bottom-nav__icon">📁</span>
+          <FolderKanban size={18} />
           <span className="mobile-bottom-nav__label">Projects</span>
         </Link>
         <Link href="/deploy" className={`mobile-bottom-nav__item${pathname === '/deploy' ? ' is-active' : ''}`}>
-          <span className="mobile-bottom-nav__icon">🚀</span>
+          <History size={18} />
           <span className="mobile-bottom-nav__label">Deploy</span>
         </Link>
         <Link href="/settings" className={`mobile-bottom-nav__item${pathname === '/settings' ? ' is-active' : ''}`}>
-          <span className="mobile-bottom-nav__icon">⚙️</span>
+          <Settings size={18} />
           <span className="mobile-bottom-nav__label">Settings</span>
         </Link>
       </nav>

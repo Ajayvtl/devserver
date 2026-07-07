@@ -1,11 +1,29 @@
 'use client'
 
 import { useState } from 'react'
+import { 
+  CheckCircle2, 
+  AlertTriangle, 
+  Play, 
+  Shield, 
+  RefreshCw, 
+  Star, 
+  Info, 
+  Trash2, 
+  Globe, 
+  Cpu, 
+  Terminal, 
+  Laptop, 
+  Activity,
+  Layers,
+  ChevronDown,
+  ChevronUp
+} from 'lucide-react'
+
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import { Card } from '../ui/card'
 import { EmptyState } from '../ui/empty-state'
-import { MetricCard } from '../ui/metric-card'
 import { Progress } from '../ui/progress'
 
 import type { DashboardDataV2, KnowledgeArticle } from '@/lib/types'
@@ -16,20 +34,33 @@ interface Props {
 }
 
 export function DashboardPageContent({ data, knowledge }: Props) {
-  // Personalization settings
+  // Pinned/Favorites workspaces
   const [pinnedWorkspaces, setPinnedWorkspaces] = useState<string[]>(['devserver'])
-  const [visibleWidgets, setVisibleWidgets] = useState({
-    telemetry: true,
-    timeline: true,
-    tasks: true,
-    personalization: true
-  })
+  
+  // Expand/Collapse status deck pills
+  const [expandedPill, setExpandedPill] = useState<'health' | 'ai' | 'pipelines' | null>(null)
 
-  // Mock list of attention today items
-  const attentionItems = [
-    { id: 'att-1', type: 'danger', text: 'Executor SSH-Remote is unreachable.', action: 'Reconnect' },
-    { id: 'att-2', type: 'warning', text: 'Staging environment is missing DB_PASSWORD secret.', action: 'Resolve' }
-  ]
+  // Toggles for sections
+  const [showResourceMetrics, setShowResourceMetrics] = useState(false)
+
+  // Security widget sessions data
+  const [sessions, setSessions] = useState([
+    { id: 'sess_1', device: 'Chrome 126.0 (Windows 11)', ip: '10.0.0.1', geo: 'Bengaluru, India', lastActive: 'Current Session' },
+    { id: 'sess_2', device: 'Safari (Apple iPad)', ip: '10.0.0.42', geo: 'Bengaluru, India', lastActive: '2h ago' },
+    { id: 'sess_3', device: 'VSCode Client', ip: '192.168.1.15', geo: 'Local Network', lastActive: '1d ago' }
+  ])
+
+  // Mock workspace detailed metadata for "Continue Working"
+  const activeWorkspaceMeta = {
+    name: 'devserver',
+    repo: 'https://github.com/Ajayvtl/devserver.git',
+    branch: 'feature/indexer-stabilization',
+    gitState: '3 files modified, 0 untracked',
+    buildStatus: 'Passing',
+    testResults: '48 / 48 passed',
+    coverage: '92.4%',
+    runtime: 'Go 1.22.4, Next.js 15.5.20'
+  }
 
   const togglePin = (name: string) => {
     setPinnedWorkspaces(prev => 
@@ -37,135 +68,131 @@ export function DashboardPageContent({ data, knowledge }: Props) {
     )
   }
 
+  const togglePill = (pill: 'health' | 'ai' | 'pipelines') => {
+    setExpandedPill(prev => prev === pill ? null : pill)
+  }
+
+  const revokeSession = (id: string) => {
+    setSessions(prev => prev.filter(s => s.id !== id))
+  }
+
   return (
-    <div className="dashboard-layout">
-      {/* 1. PRODUCT IDENTITY: PRIMARY PLATFORM STATUS DECK */}
-      <section className="section-block" style={{ marginBottom: '24px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+    <div className="dashboard-layout" style={{ display: 'grid', gap: '16px' }}>
+      
+      {/* 1. COMPACT STATUS PILLS (REPLACES OVERSIZED CARDS) */}
+      <section className="section-block">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '10px' }}>
           
-          {/* Question: Is my platform healthy? */}
-          <Card style={{ padding: '20px', borderLeft: '4px solid var(--success)' }}>
-            <div className="card__eyebrow">Platform Health</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '12px' }}>
-              <div style={{
-                width: '56px',
-                height: '56px',
-                borderRadius: '50%',
-                border: '4px solid var(--success)',
-                display: 'grid',
-                placeItems: 'center',
-                fontWeight: '700',
-                fontSize: '1.1rem',
-                color: 'var(--success)'
-              }}>
-                98%
+          {/* Health Pill */}
+          <div>
+            <div className="status-deck-pill" onClick={() => togglePill('health')}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <CheckCircle2 size={16} style={{ color: 'var(--success)' }} />
+                <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Platform: 98% nominal</span>
               </div>
-              <div>
-                <h3 style={{ margin: 0 }}>All Systems Nominal</h3>
-                <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: 'var(--muted)' }}>
-                  8 executors connected & online.
-                </p>
-              </div>
+              {expandedPill === 'health' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </div>
-          </Card>
-
-          {/* Question: Is AI configured? */}
-          <Card style={{ padding: '20px', borderLeft: '4px solid var(--accent)' }}>
-            <div className="card__eyebrow">AI Copilot Config</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '12px' }}>
-              <div style={{ fontSize: '1.8rem' }}>🤖</div>
-              <div>
-                <h3 style={{ margin: 0 }}>Ollama (Localhost)</h3>
-                <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: 'var(--muted)' }}>
-                  Model: `codellama` (Latency 45ms)
-                </p>
-              </div>
-            </div>
-            <div style={{ marginTop: '10px' }}>
-              <Badge tone="success">Active Connection</Badge>
-            </div>
-          </Card>
-
-          {/* Question: Are deployments blocked? */}
-          <Card style={{ padding: '20px', borderLeft: '4px solid var(--info)' }}>
-            <div className="card__eyebrow">Release Pipelines</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '12px' }}>
-              <div style={{ fontSize: '1.8rem' }}>🚀</div>
-              <div>
-                <h3 style={{ margin: 0 }}>No Blocked Deployments</h3>
-                <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: 'var(--muted)' }}>
-                  Production deployment completed v1.2.3.
-                </p>
-              </div>
-            </div>
-            <div style={{ marginTop: '10px' }}>
-              <Badge tone="neutral">0 blockers in queue</Badge>
-            </div>
-          </Card>
-        </div>
-      </section>
-
-      {/* 2. PRODUCT IDENTITY: CONTEXTUAL NEXT ACTIONS & ATTENTION TODAY */}
-      <section className="section-block" style={{ marginBottom: '24px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px', alignItems: 'stretch' }}>
-          
-          {/* Action: What should I do next? */}
-          <Card style={{ padding: '22px', background: 'linear-gradient(135deg, rgba(87, 212, 255, 0.1), rgba(73, 208, 142, 0.05))', border: '1px solid rgba(87, 212, 255, 0.25)' }}>
-            <div className="card__eyebrow" style={{ color: 'var(--accent)' }}>Recommended Next Action</div>
-            <h2 style={{ margin: '8px 0 4px', fontSize: '1.4rem', fontFamily: 'var(--font-heading)' }}>
-              Open active workspace & sync files
-            </h2>
-            <p style={{ margin: '0 0 16px', color: 'var(--muted-strong)', fontSize: '0.9rem' }}>
-              Workspace `devserver` has 4 uncommitted files on branch `feature/indexer-stabilization`.
-            </p>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <Button variant="primary" href="/workspace/devserver">
-                Launch Workspace IDE
-              </Button>
-              <Button variant="secondary" href="/projects">
-                View All Workspaces
-              </Button>
-            </div>
-          </Card>
-
-          {/* Action: What needs attention today? */}
-          <Card style={{ padding: '20px' }}>
-            <div className="card__eyebrow" style={{ color: 'var(--danger)' }}>Needs Attention Today</div>
-            <div style={{ display: 'grid', gap: '12px', marginTop: '12px' }}>
-              {attentionItems.map(item => (
-                <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '10px', fontSize: '0.85rem' }}>
-                  <p style={{ margin: 0, color: 'var(--text)' }}>
-                    <span style={{ color: item.type === 'danger' ? 'var(--danger)' : 'var(--warning)', marginRight: '6px' }}>●</span>
-                    {item.text}
-                  </p>
-                  <button style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--accent)',
-                    fontWeight: 'bold',
-                    cursor: 'pointer',
-                    padding: 0
-                  }}>
-                    {item.action}
-                  </button>
+            {expandedPill === 'health' && (
+              <div className="status-deck-expanded">
+                <strong>Fleet Status Details:</strong>
+                <div style={{ marginTop: '6px', lineHeight: '1.4' }}>
+                  • 8/8 executors connected & online.<br />
+                  • Docker provider: Healthy (v26.1.1)<br />
+                  • SSH adapters: 2 active connections.
                 </div>
-              ))}
-            </div>
-          </Card>
-        </div>
-      </section>
-
-      {/* 3. CONTROL DECK GRID */}
-      <div className="dashboard-grid" style={{ marginBottom: '24px' }}>
-        
-        {/* Workspace Quick List Card */}
-        <Card style={{ padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-            <h3 style={{ margin: 0 }}>Workspaces Context</h3>
-            <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>Click star to pin</span>
+              </div>
+            )}
           </div>
 
-          <div style={{ display: 'grid', gap: '10px' }}>
+          {/* AI Pill */}
+          <div>
+            <div className="status-deck-pill" onClick={() => togglePill('ai')}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Cpu size={16} style={{ color: 'var(--accent)' }} />
+                <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>AI Copilot: Ollama (codellama)</span>
+              </div>
+              {expandedPill === 'ai' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            </div>
+            {expandedPill === 'ai' && (
+              <div className="status-deck-expanded">
+                <strong>Ollama Local Facade:</strong>
+                <div style={{ marginTop: '6px', lineHeight: '1.4' }}>
+                  • Endpoint: `http://localhost:11434`<br />
+                  • Response Latency: 45ms (cached)<br />
+                  • Embeddings index status: Indexed (1,482 blocks).
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Pipelines Pill */}
+          <div>
+            <div className="status-deck-pill" onClick={() => togglePill('pipelines')}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Layers size={16} style={{ color: 'var(--info)' }} />
+                <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Pipelines: 0 blocked</span>
+              </div>
+              {expandedPill === 'pipelines' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            </div>
+            {expandedPill === 'pipelines' && (
+              <div className="status-deck-expanded">
+                <strong>Active Deployments status:</strong>
+                <div style={{ marginTop: '6px', lineHeight: '1.4' }}>
+                  • Production: v1.2.3 deployed successfully 4h ago.<br />
+                  • Staging Promotion: Waiting for manual trigger.<br />
+                  • Auto-rollback rules: Enabled.
+                </div>
+              </div>
+            )}
+          </div>
+
+        </div>
+      </section>
+
+      {/* 2. DEVELOPER WORKFLOWS PRIORITIZED */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+        
+        {/* Continue Working & Workspace Info Summary */}
+        <Card style={{ padding: '14px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <span className="card__eyebrow" style={{ color: 'var(--accent)' }}>Continue Working</span>
+              <Badge tone="accent">Active Workspace</Badge>
+            </div>
+            <h3 style={{ margin: '0 0 8px', fontSize: '1.1rem', fontFamily: 'var(--font-heading)' }}>
+              {activeWorkspaceMeta.name}
+            </h3>
+            
+            <div style={{ display: 'grid', gap: '6px', fontSize: '0.8rem', color: 'var(--muted-strong)' }}>
+              <div><strong>Repo:</strong> <code style={{ fontSize: '0.75rem' }}>{activeWorkspaceMeta.repo}</code></div>
+              <div><strong>Branch:</strong> <code>{activeWorkspaceMeta.branch}</code></div>
+              <div><strong>Git State:</strong> <span style={{ color: 'var(--warning)' }}>{activeWorkspaceMeta.gitState}</span></div>
+              <div style={{ display: 'flex', gap: '14px', marginTop: '4px' }}>
+                <span><strong>Build:</strong> <span style={{ color: 'var(--success)' }}>{activeWorkspaceMeta.buildStatus}</span></span>
+                <span><strong>Tests:</strong> {activeWorkspaceMeta.testResults}</span>
+                <span><strong>Coverage:</strong> {activeWorkspaceMeta.coverage}</span>
+              </div>
+              <div><strong>Runtime env:</strong> <span style={{ color: 'var(--info)' }}>{activeWorkspaceMeta.runtime}</span></div>
+            </div>
+          </div>
+
+          <div style={{ marginTop: '14px', width: '100%' }}>
+            <Button variant="primary" href={`/workspace/${activeWorkspaceMeta.name}`}>
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', fontSize: '0.85rem' }}>
+                <Play size={12} /> Resume Workspace IDE
+              </span>
+            </Button>
+          </div>
+        </Card>
+
+        {/* Workspaces & Git status list */}
+        <Card style={{ padding: '14px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <h3 style={{ margin: 0, fontSize: '0.95rem' }}>Workspaces</h3>
+            <span style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>Click star to pin</span>
+          </div>
+
+          <div style={{ display: 'grid', gap: '8px' }}>
             {data.sections[0].items.map(ws => {
               const isPinned = pinnedWorkspaces.includes(ws.label)
               return (
@@ -173,21 +200,21 @@ export function DashboardPageContent({ data, knowledge }: Props) {
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  padding: '12px 16px',
-                  borderRadius: '12px',
-                  background: isPinned ? 'rgba(87, 212, 255, 0.06)' : 'rgba(255,255,255,0.02)',
-                  border: isPinned ? '1px solid rgba(87, 212, 255, 0.2)' : '1px solid var(--border)'
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  background: isPinned ? 'rgba(87, 212, 255, 0.04)' : 'rgba(255,255,255,0.01)',
+                  border: isPinned ? '1px solid rgba(87, 212, 255, 0.15)' : '1px solid var(--border)'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <button 
                       onClick={() => togglePin(ws.label)} 
-                      style={{ background: 'none', border: 'none', color: isPinned ? 'var(--warning)' : 'var(--muted)', cursor: 'pointer', fontSize: '1.1rem' }}
+                      style={{ background: 'none', border: 'none', color: isPinned ? 'var(--warning)' : 'var(--muted)', cursor: 'pointer', fontSize: '1rem', padding: 0 }}
                     >
-                      {isPinned ? '★' : '☆'}
+                      ★
                     </button>
                     <div>
-                      <strong style={{ fontSize: '0.9rem' }}>{ws.label}</strong>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>Branch: main</div>
+                      <strong style={{ fontSize: '0.85rem' }}>{ws.label}</strong>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>branch: main • coverage 92%</div>
                     </div>
                   </div>
                   <Badge tone={ws.tone ?? 'neutral'}>{ws.value}</Badge>
@@ -197,101 +224,163 @@ export function DashboardPageContent({ data, knowledge }: Props) {
           </div>
         </Card>
 
-        {/* Running Jobs & Task Engine Queue */}
-        <Card style={{ padding: '20px' }}>
-          <h3 style={{ margin: '0 0 14px' }}>Task Execution Queue</h3>
-          {data.tasks.length ? (
-            <div style={{ display: 'grid', gap: '14px' }}>
-              {data.tasks.map((task) => (
-                <div key={task.title} style={{ padding: '10px', borderRadius: '10px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <strong style={{ fontSize: '0.85rem' }}>{task.title}</strong>
-                    <Badge tone={task.state === 'Done' ? 'success' : task.state === 'Running' ? 'accent' : 'warning'}>
-                      {task.state}
-                    </Badge>
-                  </div>
-                  <Progress value={task.progress} tone={task.state === 'Done' ? 'success' : 'accent'} />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <EmptyState title="No active jobs" description="Task execution queue is currently empty." />
-          )}
-        </Card>
-
-        {/* Telemetry Metrics Widget */}
-        {visibleWidgets.telemetry && (
-          <Card style={{ padding: '20px', gridColumn: 'span 2' }}>
-            <h3 style={{ margin: '0 0 14px' }}>System Resource Telemetry</h3>
-            <div className="metric-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px' }}>
-              {data.metrics.map((metric) => (
-                <MetricCard
-                  key={metric.label}
-                  label={metric.label}
-                  value={metric.value}
-                  detail={metric.detail}
-                  trend={metric.trend}
-                  tone={metric.tone}
-                />
-              ))}
-            </div>
-          </Card>
-        )}
       </div>
 
-      {/* 4. PERSONALIZATION CONTROLS PANEL */}
-      {visibleWidgets.personalization && (
-        <Card style={{ padding: '20px', marginBottom: '24px' }}>
-          <h3 style={{ margin: '0 0 14px' }}>Control Deck Personalization</h3>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '18px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', cursor: 'pointer' }}>
-              <input 
-                type="checkbox" 
-                checked={visibleWidgets.telemetry} 
-                onChange={(e) => setVisibleWidgets(prev => ({ ...prev, telemetry: e.target.checked }))}
-              />
-              Show Telemetry Metrics
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', cursor: 'pointer' }}>
-              <input 
-                type="checkbox" 
-                checked={visibleWidgets.timeline} 
-                onChange={(e) => setVisibleWidgets(prev => ({ ...prev, timeline: e.target.checked }))}
-              />
-              Show Recent Activity
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', cursor: 'pointer' }}>
-              <input 
-                type="checkbox" 
-                checked={visibleWidgets.tasks} 
-                onChange={(e) => setVisibleWidgets(prev => ({ ...prev, tasks: e.target.checked }))}
-              />
-              Show Task Queue
-            </label>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+        
+        {/* Security Session widget */}
+        <Card style={{ padding: '14px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Shield size={14} style={{ color: 'var(--success)' }} />
+              <h3 style={{ margin: 0, fontSize: '0.95rem' }}>Access Security Widget</h3>
+            </div>
+            <span style={{ fontSize: '0.7rem', color: 'var(--muted)' }}>Last Login: 19:45:12</span>
           </div>
-        </Card>
-      )}
 
-      {/* 5. RECENT ACTIVITY TIMELINE */}
-      {visibleWidgets.timeline && (
-        <Card style={{ padding: '20px' }}>
-          <h3 style={{ margin: '0 0 14px' }}>Audited Activity Timeline</h3>
-          <div className="timeline">
-            {data.activity.map((item) => (
-              <div key={item.title} className="timeline__item">
-                <div className={`timeline__dot timeline__dot--${item.tone}`} />
-                <div className="timeline__body">
-                  <div className="timeline__top" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <h4 style={{ margin: 0, fontSize: '0.9rem' }}>{item.title}</h4>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{item.when}</span>
+          <div style={{ display: 'grid', gap: '8px' }}>
+            {sessions.map(s => (
+              <div key={s.id} className="security-session-row">
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Laptop size={12} style={{ color: 'var(--muted)' }} />
+                    <span style={{ fontWeight: 600 }}>{s.device}</span>
                   </div>
-                  <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: 'var(--muted-strong)' }}>{item.detail}</p>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: '2px' }}>
+                    IP: {s.ip} • Geolocation: {s.geo}
+                  </div>
+                </div>
+                <div>
+                  {s.lastActive === 'Current Session' ? (
+                    <Badge tone="success">Active</Badge>
+                  ) : (
+                    <button 
+                      onClick={() => revokeSession(s.id)}
+                      style={{
+                        background: 'rgba(240, 138, 138, 0.1)',
+                        border: '1px solid rgba(240, 138, 138, 0.2)',
+                        color: 'var(--danger)',
+                        borderRadius: '4px',
+                        padding: '2px 6px',
+                        fontSize: '0.72rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Revoke
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         </Card>
-      )}
+
+        {/* AI status and token usage tracker */}
+        <Card style={{ padding: '14px' }}>
+          <h3 style={{ margin: '0 0 10px', fontSize: '0.95rem' }}>AI Copilot Costs & Usage</h3>
+          <div style={{ display: 'grid', gap: '8px', fontSize: '0.8rem', color: 'var(--muted-strong)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
+              <span>Total Prompt Tokens:</span>
+              <strong>142,852 tokens</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
+              <span>Completion Tokens:</span>
+              <strong>38,591 tokens</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
+              <span>Estimated Cost today:</span>
+              <strong style={{ color: 'var(--success)' }}>$0.00 (Local LLM)</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0' }}>
+              <span>Context Cache Efficiency:</span>
+              <strong>94.2%</strong>
+            </div>
+          </div>
+        </Card>
+
+      </div>
+
+      {/* 3. COLLAPSIBLE SYSTEM RESOURCE METRICS */}
+      <section className="section-block">
+        <Card style={{ padding: '10px 14px' }}>
+          <button 
+            onClick={() => setShowResourceMetrics(!showResourceMetrics)}
+            style={{
+              width: '100%',
+              background: 'none',
+              border: 'none',
+              color: 'var(--text)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              fontWeight: 600,
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              padding: 0
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Activity size={14} style={{ color: 'var(--accent)' }} />
+              <span>Fleet Resource Metrics (CPU, RAM, Disk)</span>
+            </div>
+            <span>{showResourceMetrics ? 'Hide Metrics' : 'Expand Metrics'}</span>
+          </button>
+
+          {showResourceMetrics && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px', marginTop: '12px' }}>
+              {data.metrics.map(metric => (
+                <div key={metric.label} style={{
+                  padding: '10px',
+                  borderRadius: '8px',
+                  background: 'rgba(255,255,255,0.01)',
+                  border: '1px solid var(--border)'
+                }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--muted)', textTransform: 'uppercase' }}>{metric.label}</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 'bold', margin: '4px 0' }}>{metric.value}</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--muted-strong)' }}>{metric.detail}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      </section>
+
+      {/* 4. NOTIFICATIONS & ATTENTION ITEMS LOG */}
+      <Card style={{ padding: '14px' }}>
+        <h3 style={{ margin: '0 0 10px', fontSize: '0.95rem' }}>Incidents & Attention Log</h3>
+        <div style={{ display: 'grid', gap: '8px' }}>
+          {data.activity.slice(0, 3).map((item, idx) => (
+            <div key={item.title} style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              padding: '8px 12px',
+              borderRadius: '8px',
+              background: 'rgba(255, 255, 255, 0.01)',
+              border: '1px solid var(--border)'
+            }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    background: item.tone === 'danger' ? 'var(--danger)' : item.tone === 'warning' ? 'var(--warning)' : 'var(--success)'
+                  }} />
+                  <strong style={{ fontSize: '0.82rem' }}>{item.title}</strong>
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: '2px' }}>
+                  {item.detail}
+                </div>
+              </div>
+              <span style={{ fontSize: '0.72rem', color: 'var(--muted)', fontFamily: 'monospace' }}>
+                TR-{(1000 + idx)}
+              </span>
+            </div>
+          ))}
+        </div>
+      </Card>
+
     </div>
   )
 }

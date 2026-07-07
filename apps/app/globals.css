@@ -68,7 +68,7 @@ select {
 
 .shell {
   display: grid;
-  grid-template-columns: 310px minmax(0, 1fr);
+  grid-template-columns: 240px minmax(0, 1fr);
   min-height: 100vh;
 }
 
@@ -240,9 +240,30 @@ select {
 
 .topbar__right {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 8px;
+}
+
+.topbar__right select,
+.topbar__right button,
+.topbar__right .badge,
+.topbar__right .button {
+  height: 32px !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  vertical-align: middle !important;
+  font-size: 0.78rem !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.topbar__right select {
+  padding-left: 10px !important;
+  padding-right: 10px !important;
 }
 
 .page {
@@ -2578,3 +2599,142 @@ select {
     padding: 18px 18px 78px; /* space for bottom nav bar */
   }
 }
+
+/* --- Font Scaling Utilities --- */
+html.font-scale-14 { font-size: 14px !important; }
+html.font-scale-15 { font-size: 15px !important; }
+html.font-scale-16 { font-size: 16px !important; }
+
+/* --- Density Customizations (20-30% Reduction) --- */
+.density-compact {
+  --radius-lg: 12px;
+  --radius-md: 8px;
+  --radius-sm: 6px;
+}
+.density-compact .shell__content {
+  padding: 16px !important;
+}
+.density-compact .card, 
+.density-compact .metric-card {
+  padding: 12px !important;
+}
+.density-compact .section-block {
+  margin-bottom: 12px !important;
+}
+.density-compact .dashboard-grid,
+.density-compact .metric-grid {
+  gap: 10px !important;
+}
+
+.density-ultra {
+  --radius-lg: 8px;
+  --radius-md: 6px;
+  --radius-sm: 4px;
+}
+.density-ultra .shell__content {
+  padding: 10px !important;
+}
+.density-ultra .card,
+.density-ultra .metric-card {
+  padding: 8px 10px !important;
+}
+.density-ultra .section-block {
+  margin-bottom: 8px !important;
+}
+.density-ultra .dashboard-grid,
+.density-ultra .metric-grid {
+  gap: 6px !important;
+}
+.density-ultra * {
+  font-size: 0.94em !important;
+}
+
+/* --- Compact IDE-Style Sidebar --- */
+.sidebar--compact {
+  padding: 12px 8px !important;
+}
+.sidebar--compact .sidebar__brand {
+  margin-bottom: 16px !important;
+  gap: 10px !important;
+}
+.sidebar--compact .sidebar__mark {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 8px !important;
+  font-size: 1rem !important;
+}
+.sidebar--compact .sidebar__name {
+  font-size: 0.95rem !important;
+}
+.sidebar--compact .sidebar__tag {
+  font-size: 0.75rem !important;
+}
+.sidebar--compact .sidebar__panel {
+  padding: 10px !important;
+  margin-bottom: 12px !important;
+  border-radius: var(--radius-md) !important;
+}
+.sidebar--compact .sidebar__nav {
+  gap: 12px !important;
+}
+.sidebar--compact .sidebar__group-title {
+  font-size: 0.7rem !important;
+  margin-bottom: 6px !important;
+}
+.sidebar--compact .sidebar__link {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 8px 10px !important;
+  border-radius: 8px !important;
+}
+.sidebar--compact .sidebar__link-label {
+  font-size: 0.85rem !important;
+  font-weight: 500 !important;
+}
+.sidebar--compact .sidebar__link-subtitle {
+  display: none !important; /* Hide details for ultra-clean sidebar */
+}
+
+/* --- Compact Status Pills & Expandable Views --- */
+.status-deck-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+.status-deck-pill:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--border-strong);
+}
+.status-deck-expanded {
+  background: rgba(10, 17, 30, 0.45);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 6px;
+  font-size: 0.82rem;
+  color: var(--muted-strong);
+  animation: slideDown 120ms ease;
+}
+
+/* --- Security Session Manager List --- */
+.security-session-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  font-size: 0.82rem;
+}
+.security-session-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
