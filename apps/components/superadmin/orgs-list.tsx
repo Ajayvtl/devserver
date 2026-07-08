@@ -21,7 +21,7 @@ interface Organization {
 export function SuperAdminOrgsList() {
   const { currentOrgId, user } = useAuth()
   const { push } = useToast()
-  
+
   const [orgs, setOrgs] = useState<Organization[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -35,7 +35,7 @@ export function SuperAdminOrgsList() {
         { data: [] },
         { headers: { 'X-Org-ID': currentOrgId } }
       )
-      
+
       // Handle either raw array or paginated response format
       const list = Array.isArray(response) ? response : (response?.data || [])
       setOrgs(list)
@@ -60,7 +60,7 @@ export function SuperAdminOrgsList() {
     )
   }
 
-  const newestOrg = orgs.length > 0 
+  const newestOrg = orgs.length > 0
     ? [...orgs].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
     : null
 
@@ -152,7 +152,7 @@ export function SuperAdminOrgsList() {
             </Badge>
           ])}
         />
-        
+
         {orgs.length === 0 && (
           <div style={{ padding: '40px', textAlign: 'center', color: 'var(--muted)' }}>
             No registered organizations found in system.

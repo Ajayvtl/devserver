@@ -87,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setOrganizations([])
       setCurrentOrgId(null)
       logout()
-      
+
       // Push friendly error notification
       if (typeof window !== 'undefined') {
         const nextUrl = window.location.pathname

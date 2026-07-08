@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import type { Document } from '@/lib/types'
 
 interface Props {
@@ -47,7 +47,7 @@ export function WorkspaceEditor({ workspaceId, documents, activeDocPath, onTabCl
     }
     loadContent(activePath)
   }, [activePath, loadContent, documents, activeContent])
-  
+
   // Re-scroll if the cursor changes on the same already-loaded document
   useEffect(() => {
     if (activeDoc && activeContent) {
@@ -57,11 +57,11 @@ export function WorkspaceEditor({ workspaceId, documents, activeDocPath, onTabCl
 
   const scrollToCursor = (doc: Document) => {
     if (!contentRef.current || doc.cursor.line <= 0) return
-    
+
     // Find the line element and scroll to it
     const lineElements = contentRef.current.querySelectorAll('.code-line')
     const targetLine = lineElements[doc.cursor.line - 1]
-    
+
     if (targetLine) {
       targetLine.scrollIntoView({ block: 'center', behavior: 'smooth' })
     }
@@ -77,21 +77,21 @@ export function WorkspaceEditor({ workspaceId, documents, activeDocPath, onTabCl
     if (loading[activeDoc.path]) return (
       <div style={{ padding: '20px', color: 'var(--muted)' }}>Loading {activeDoc.path}...</div>
     )
-    
+
     const content = contentCache[activeDoc.path] || ''
     const lines = content.split('\n')
-    
+
     return (
       <pre ref={contentRef} style={{ margin: 0, padding: '16px 0', fontFamily: 'var(--font-mono)', fontSize: '13px', lineHeight: 1.5, overflowX: 'auto' }}>
         {lines.map((line, idx) => {
           const lineNum = idx + 1
           const isTargetLine = activeDoc.cursor.line === lineNum
           return (
-            <div 
-              key={idx} 
+            <div
+              key={idx}
               className="code-line"
-              style={{ 
-                display: 'flex', 
+              style={{
+                display: 'flex',
                 background: isTargetLine ? 'rgba(87, 212, 255, 0.15)' : 'transparent',
                 borderLeft: isTargetLine ? '3px solid var(--accent)' : '3px solid transparent',
               }}
@@ -117,7 +117,7 @@ export function WorkspaceEditor({ workspaceId, documents, activeDocPath, onTabCl
           const isActive = doc.path === activeDocPath
           const filename = doc.path.split('/').pop() || doc.path
           return (
-            <div 
+            <div
               key={doc.path}
               onClick={() => onTabClick(doc.path)}
               style={{
@@ -130,7 +130,7 @@ export function WorkspaceEditor({ workspaceId, documents, activeDocPath, onTabCl
               }}
             >
               <span style={{ fontFamily: 'var(--font-mono)' }}>{filename}</span>
-              <button 
+              <button
                 onClick={(e) => { e.stopPropagation(); onCloseTab(doc.path) }}
                 style={{ background: 'transparent', border: 'none', color: 'var(--muted)', cursor: 'pointer', padding: '2px' }}
                 title="Close"
@@ -139,11 +139,11 @@ export function WorkspaceEditor({ workspaceId, documents, activeDocPath, onTabCl
           )
         })}
       </div>
-      
+
       {/* Breadcrumbs */}
       {activeDoc && (
         <div style={{ display: 'flex', padding: '8px 16px', fontSize: '0.8rem', color: 'var(--muted)', borderBottom: '1px solid rgba(148, 163, 184, 0.05)' }}>
-           {activeDoc.path.replace(/\//g, ' › ')}
+          {activeDoc.path.replace(/\//g, ' › ')}
         </div>
       )}
 
