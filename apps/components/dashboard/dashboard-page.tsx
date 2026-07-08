@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { 
   CheckCircle2, 
   AlertTriangle, 
@@ -27,6 +27,8 @@ import { EmptyState } from '../ui/empty-state'
 import { Progress } from '../ui/progress'
 
 import type { DashboardDataV2, KnowledgeArticle } from '@/lib/types'
+import { useAuth } from '@/components/auth/auth-context'
+import { requestOrFallback } from '@/lib/api/client'
 
 interface Props {
   data: DashboardDataV2
@@ -34,12 +36,35 @@ interface Props {
 }
 
 export function DashboardPageContent({ data, knowledge }: Props) {
+  const { user, currentOrgId } = useAuth()
+  const [systemOrgs, setSystemOrgs] = useState<any[]>([])
+  const [loadingOrgs, setLoadingOrgs] = useState(false)
+
+  const isSuperAdmin = user?.role === 'admin' || user?.role === 'super admin' || user?.role === 'owner'
+
+  useEffect(() => {
+    if (isSuperAdmin && currentOrgId) {
+      setLoadingOrgs(true)
+      requestOrFallback<any>('/api/v1/superadmin/organizations', { data: [] }, {
+        headers: { 'X-Org-ID': currentOrgId }
+      })
+      .then(res => {
+        const list = Array.isArray(res) ? res : (res?.data || [])
+        setSystemOrgs(list)
+      })
+      .catch(err => {
+        console.error('Failed to load system organizations', err)
+      })
+      .finally(() => setLoadingOrgs(false))
+    }
+  }, [isSuperAdmin, currentOrgId])
+
   // Pinned/Favorites workspaces
   const [pinnedWorkspaces, setPinnedWorkspaces] = useState<string[]>(['devserver'])
   
   // Expand/Collapse status deck pills
   const [expandedPill, setExpandedPill] = useState<'health' | 'ai' | 'pipelines' | null>(null)
-
+  
   // Toggles for sections
   const [showResourceMetrics, setShowResourceMetrics] = useState(false)
 
@@ -380,6 +405,64 @@ export function DashboardPageContent({ data, knowledge }: Props) {
           ))}
         </div>
       </Card>
+
+      {/* 5. SUPER ADMIN ORGANIZATIONS LIST */}
+      {isSuperAdmin && (
+        <Card style={{ padding: '14px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <h3 style={{ margin: 0, fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Layers size={14} style={{ color: 'var(--accent)' }} />
+              <span>Platform Tenant Index (Super Admin view)</span>
+            </h3>
+            <Badge tone="accent">Total: {systemOrgs.length}</Badge>
+          </div>
+          
+          {loadingOrgs ? (
+            <div className="skeleton-group" style={{ padding: '10px' }}>
+              <div className="skeleton-line" style={{ height: '24px' }} />
+              <div className="skeleton-line" style={{ height: '24px' }} />
+            </div>
+          ) : (
+            <div className="table-wrap">
+              <table className="data-table" style={{ fontSize: '0.8rem', width: '100%' }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: 'left', padding: '8px' }}>Organization Name</th>
+                    <th style={{ textAlign: 'left', padding: '8px' }}>Slug / ID</th>
+                    <th style={{ textAlign: 'left', padding: '8px' }}>Registration Date</th>
+                    <th style={{ textAlign: 'left', padding: '8px' }}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {systemOrgs.map(org => (
+                    <tr key={org.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                      <td style={{ padding: '8px', fontWeight: '500' }}>{org.name}</td>
+                      <td style={{ padding: '8px' }}>
+                        <code style={{ fontSize: '0.72rem', color: 'var(--muted)', background: 'rgba(255,255,255,0.03)', padding: '2px 6px', borderRadius: '4px' }}>
+                          {org.slug || org.id.substring(0, 8)}
+                        </code>
+                      </td>
+                      <td style={{ padding: '8px', color: 'var(--muted)' }}>
+                        {new Date(org.createdAt).toLocaleDateString()}
+                      </td>
+                      <td style={{ padding: '8px' }}>
+                        <Badge tone="success">Active</Badge>
+                      </td>
+                    </tr>
+                  ))}
+                  {systemOrgs.length === 0 && (
+                    <tr>
+                      <td colSpan={4} style={{ textAlign: 'center', color: 'var(--muted)', padding: '20px' }}>
+                        No organizations registered.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+      )}
 
     </div>
   )

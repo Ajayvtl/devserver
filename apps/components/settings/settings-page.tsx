@@ -8,6 +8,7 @@ import { DataTable } from '../ui/table'
 import { SectionHeader } from '../ui/section-header'
 import { Input } from '../ui/input'
 import { useAuth } from '@/components/auth/auth-context'
+import { PermissionSettingsWrite } from '@/lib/rbac/permissions'
 import { request, requestOrFallback } from '@/lib/api/client'
 import { useToast } from '../toast'
 import { OrgsPanel } from './orgs-panel'
@@ -16,11 +17,11 @@ import { MembersPanel } from './members-panel'
 export function SettingsPage() {
   const { currentOrgId, can } = useAuth()
   const { push } = useToast()
-  
+
   const [settings, setSettings] = useState<{ key: string; value: string }[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  
+
   // Local state for edits
   const [theme, setTheme] = useState('dark')
   const [language, setLanguage] = useState('en-US')
@@ -35,16 +36,16 @@ export function SettingsPage() {
         headers: { 'X-Org-ID': currentOrgId }
       })
       setSettings(data)
-      
+
       const t = data.find(s => s.key === 'theme')?.value
       if (t) setTheme(t)
-        
+
       const l = data.find(s => s.key === 'language')?.value
       if (l) setLanguage(l)
-        
+
       const m = data.find(s => s.key === 'mfa')?.value
       if (m) setMfaEnabled(m)
-        
+
     } finally {
       setLoading(false)
     }
@@ -82,7 +83,7 @@ export function SettingsPage() {
     }
   }
 
-  const hasWriteAccess = can('settings.write')
+  const hasWriteAccess = can(PermissionSettingsWrite)
 
   if (loading) {
     return (
@@ -111,21 +112,21 @@ export function SettingsPage() {
 
       <div className="tabs">
         <div className="tabs__list">
-          <button 
+          <button
             type="button"
             onClick={() => setActiveTab('general')}
             className={`tabs__tab ${activeTab === 'general' ? 'is-active' : ''}`}
           >
             General
           </button>
-          <button 
+          <button
             type="button"
             onClick={() => setActiveTab('orgs')}
             className={`tabs__tab ${activeTab === 'orgs' ? 'is-active' : ''}`}
           >
             Organizations
           </button>
-          <button 
+          <button
             type="button"
             onClick={() => setActiveTab('members')}
             className={`tabs__tab ${activeTab === 'members' ? 'is-active' : ''}`}
@@ -136,58 +137,58 @@ export function SettingsPage() {
       </div>
 
       {activeTab === 'general' && (
-      <>
-      <div className="page-grid--two">
-        <Card>
-          <div className="card__eyebrow">Preferences</div>
-          <div className="stack">
-            <Input 
-              label="Theme" 
-              value={theme} 
-              onChange={e => setTheme(e.target.value)} 
-              disabled={!hasWriteAccess}
-            />
-            <Input 
-              label="Language" 
-              value={language} 
-              onChange={e => setLanguage(e.target.value)} 
-              disabled={!hasWriteAccess}
-            />
-          </div>
-        </Card>
-        
-        <Card>
-          <div className="card__eyebrow">Security Posture</div>
-          <div className="stack">
-            <label className={`checkbox-card ${!hasWriteAccess ? 'is-disabled' : ''}`}>
-              <input 
-                type="checkbox" 
-                checked={mfaEnabled === 'true'} 
-                onChange={e => setMfaEnabled(e.target.checked ? 'true' : 'false')}
-                disabled={!hasWriteAccess}
-              />
-              <span>Require Multi-Factor Authentication (MFA) for all members</span>
-            </label>
-          </div>
-        </Card>
-      </div>
+        <>
+          <div className="page-grid--two">
+            <Card>
+              <div className="card__eyebrow">Preferences</div>
+              <div className="stack">
+                <Input
+                  label="Theme"
+                  value={theme}
+                  onChange={e => setTheme(e.target.value)}
+                  disabled={!hasWriteAccess}
+                />
+                <Input
+                  label="Language"
+                  value={language}
+                  onChange={e => setLanguage(e.target.value)}
+                  disabled={!hasWriteAccess}
+                />
+              </div>
+            </Card>
 
-      <div className="page-grid--two">
-        <Card>
-          <div className="card__eyebrow">Active Integrations</div>
-          <DataTable
-            columns={[
-              { header: 'Integration' },
-              { header: 'Status' }
-            ]}
-            rows={[
-              ['GitHub', <Badge key="github" tone="success">Connected</Badge>],
-              ['Slack', <Badge key="slack" tone="info">Pending</Badge>]
-            ]}
-          />
-        </Card>
-      </div>
-      </>
+            <Card>
+              <div className="card__eyebrow">Security Posture</div>
+              <div className="stack">
+                <label className={`checkbox-card ${!hasWriteAccess ? 'is-disabled' : ''}`}>
+                  <input
+                    type="checkbox"
+                    checked={mfaEnabled === 'true'}
+                    onChange={e => setMfaEnabled(e.target.checked ? 'true' : 'false')}
+                    disabled={!hasWriteAccess}
+                  />
+                  <span>Require Multi-Factor Authentication (MFA) for all members</span>
+                </label>
+              </div>
+            </Card>
+          </div>
+
+          <div className="page-grid--two">
+            <Card>
+              <div className="card__eyebrow">Active Integrations</div>
+              <DataTable
+                columns={[
+                  { header: 'Integration' },
+                  { header: 'Status' }
+                ]}
+                rows={[
+                  ['GitHub', <Badge key="github" tone="success">Connected</Badge>],
+                  ['Slack', <Badge key="slack" tone="info">Pending</Badge>]
+                ]}
+              />
+            </Card>
+          </div>
+        </>
       )}
 
       {activeTab === 'orgs' && (

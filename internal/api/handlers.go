@@ -103,8 +103,27 @@ func (router *Router) handleOrganizations(w http.ResponseWriter, r *http.Request
 		}
 
 		role := &rbac.Role{
-			Name:        "admin",
-			Permissions: []string{"*"},
+			Name: "owner",
+			Permissions: []string{
+				rbac.PermissionOrgOwner,
+				rbac.PermissionMembersView,
+				rbac.PermissionMembersInvite,
+				rbac.PermissionMembersManage,
+				rbac.PermissionMembersRemove,
+				rbac.PermissionSettingsView,
+				rbac.PermissionSettingsWrite,
+				rbac.PermissionEnvironmentsView,
+				rbac.PermissionEnvironmentsWrite,
+				rbac.PermissionSecretsView,
+				rbac.PermissionSecretsWrite,
+				rbac.PermissionVariablesView,
+				rbac.PermissionVariablesWrite,
+				rbac.PermissionProvidersView,
+				rbac.PermissionProvidersWrite,
+				rbac.PermissionRolesView,
+				rbac.PermissionOrganizationsView,
+				rbac.PermissionOrganizationsCreate,
+			},
 		}
 		mem := &rbac.Membership{
 			UserID: userID,
@@ -129,7 +148,38 @@ func (router *Router) handleUsersMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteSuccess(w, r, http.StatusOK, map[string]string{"id": userID, "status": "active"})
+	orgID := r.Header.Get("X-Org-ID")
+	roleName := "viewer" // default fallback
+	var perms []string
+	if orgID != "" {
+		if role, err := router.rbacService.GetUserRole(r.Context(), userID, orgID); err == nil {
+			roleName = role
+		}
+		if p, err := router.rbacService.GetUserPermissions(r.Context(), userID, orgID); err == nil {
+			perms = p
+		}
+	} else {
+		orgs, _, err := router.rbacService.ListOrganizations(r.Context(), userID, common.QueryParams{Page: 1, PerPage: 1})
+		if err == nil && len(orgs) > 0 {
+			if role, err := router.rbacService.GetUserRole(r.Context(), userID, orgs[0].ID); err == nil {
+				roleName = role
+			}
+			if p, err := router.rbacService.GetUserPermissions(r.Context(), userID, orgs[0].ID); err == nil {
+				perms = p
+			}
+		}
+	}
+
+	if perms == nil {
+		perms = []string{}
+	}
+
+	WriteSuccess(w, r, http.StatusOK, map[string]any{
+		"id":          userID,
+		"status":      "active",
+		"role":        roleName,
+		"permissions": perms,
+	})
 }
 
 func (router *Router) handleRoles(w http.ResponseWriter, r *http.Request) {
@@ -574,6 +624,35 @@ func (router *Router) handleTransferOwnership(w http.ResponseWriter, r *http.Req
 		}
 
 		WriteSuccess(w, r, http.StatusOK, map[string]string{"status": "ownership_transferred"})
+		return
+	}
+
+	WriteError(w, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", nil)
+}
+
+func (router *Router) handleSuperAdminOrganizations(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		params, err := common.ParseQueryParams(r, []string{"name", "created_at"})
+		if err != nil {
+			WriteError(w, r, http.StatusBadRequest, "VALIDATION_ERROR", err.Error(), nil)
+			return
+		}
+
+		orgs, total, err := router.rbacService.ListAllOrganizations(r.Context(), params)
+		if err != nil {
+			WriteError(w, r, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error(), nil)
+			return
+		}
+
+		totalPages := (total + params.PerPage - 1) / params.PerPage
+		meta := PaginationMeta{
+			Total:      total,
+			Page:       params.Page,
+			PerPage:    params.PerPage,
+			TotalPages: totalPages,
+		}
+
+		WriteSuccessPaginated(w, r, http.StatusOK, orgs, meta)
 		return
 	}
 

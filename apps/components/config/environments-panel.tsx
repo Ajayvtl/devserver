@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { request, requestOrFallback } from '@/lib/api/client'
 import { useAuth } from '@/components/auth/auth-context'
+import { PermissionEnvironmentsWrite } from '@/lib/rbac/permissions'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -26,14 +27,14 @@ interface SecretRef {
 export function EnvironmentsPanel() {
   const { currentOrgId, can } = useAuth()
   const { push } = useToast()
-  
+
   const [environments, setEnvironments] = useState<EnvData[]>([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
   const [newName, setNewName] = useState('')
   const [newType, setNewType] = useState('development')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  
+
   const [activeEnv, setActiveEnv] = useState<EnvData | null>(null)
   const [variables, setVariables] = useState<Variable[]>([])
   const [secrets, setSecrets] = useState<SecretRef[]>([])
@@ -125,7 +126,7 @@ export function EnvironmentsPanel() {
     }
   }
 
-  const hasWriteAccess = can('environments.write')
+  const hasWriteAccess = can(PermissionEnvironmentsWrite)
 
   return (
     <div className="stack" style={{ gap: '2rem' }}>
@@ -142,17 +143,17 @@ export function EnvironmentsPanel() {
               <div className="card__eyebrow">New Environment</div>
               <form onSubmit={handleCreate} className="stack" style={{ marginTop: '1rem' }}>
                 <div className="page-grid--two">
-                  <Input 
-                    label="Environment Name" 
-                    value={newName} 
+                  <Input
+                    label="Environment Name"
+                    value={newName}
                     onChange={e => setNewName(e.target.value)}
                     required
                   />
                   <div className="input-group">
                     <label className="input-label">Environment Type</label>
-                    <select 
-                      value={newType} 
-                      onChange={e => setNewType(e.target.value)} 
+                    <select
+                      value={newType}
+                      onChange={e => setNewType(e.target.value)}
                       style={{ padding: '0.625rem', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg-elevated)', color: 'var(--text-primary)', width: '100%' }}
                     >
                       <option value="development">Development</option>

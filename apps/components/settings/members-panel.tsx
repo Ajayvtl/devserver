@@ -11,6 +11,7 @@ import { Skeleton } from '../ui/skeleton'
 import { EmptyState } from '../ui/empty-state'
 import { ErrorState } from '../ui/error-state'
 import { useMembersManagement } from '../../hooks/use-members-management'
+import { PermissionOrgOwner, PermissionMembersInvite, PermissionMembersManage, PermissionMembersRemove } from '@/lib/rbac/permissions'
 
 export function MembersPanel() {
   const { currentOrgId, can, user } = useAuth()
@@ -77,10 +78,10 @@ export function MembersPanel() {
     }
   }
 
-  const isOwner = can('org.owner')
-  const hasInviteAccess = can('members.invite')
-  const hasManageAccess = can('members.manage')
-  const hasRemoveAccess = can('members.remove')
+  const isOwner = can(PermissionOrgOwner)
+  const hasInviteAccess = can(PermissionMembersInvite)
+  const hasManageAccess = can(PermissionMembersManage)
+  const hasRemoveAccess = can(PermissionMembersRemove)
 
   // Error & loading views for Roles load state
   if (rolesLoading) {

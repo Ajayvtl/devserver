@@ -51,6 +51,7 @@ function getNavIcon(href: string) {
     case '/devcenter/architecture': return BookOpen
     case '/devcenter/ai-usage': return ShieldAlert
     case '/settings': return Settings
+    case '/superadmin/organizations': return FolderKanban
     default: return FolderKanban
   }
 }
@@ -144,8 +145,31 @@ export function AppShell({ children, server, notifications = 3 }: Props) {
     )
   }
 
+  const isSuperAdmin = user?.role === 'admin' || user?.role === 'super admin' || user?.role === 'owner'
+
+  // Dynamically build nav menu based on role
+  const visibleNavigation = navigation.map(group => {
+    if (group.title === 'Governance' && isSuperAdmin) {
+      const hasAllOrgs = group.items.some(item => item.href === '/superadmin/organizations')
+      if (!hasAllOrgs) {
+        return {
+          ...group,
+          items: [
+            ...group.items,
+            {
+              label: 'All Organizations',
+              href: '/superadmin/organizations',
+              subtitle: 'System-wide registration settings',
+            }
+          ]
+        }
+      }
+    }
+    return group
+  })
+
   // Filter shortcuts
-  const allShortcuts = navigation.flatMap(g => g.items.map(i => ({ ...i, group: g.title })))
+  const allShortcuts = visibleNavigation.flatMap(g => g.items.map(i => ({ ...i, group: g.title })))
   const filteredShortcuts = allShortcuts.filter(item => 
     item.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.subtitle.toLowerCase().includes(searchQuery.toLowerCase())
@@ -176,6 +200,11 @@ export function AppShell({ children, server, notifications = 3 }: Props) {
           <div>
             <div className="sidebar__name">DevServer</div>
             <div className="sidebar__tag">IDE Control Deck</div>
+            {user?.role && (
+              <div style={{ fontSize: '0.7rem', color: 'var(--accent)', marginTop: '2px', fontWeight: 'bold', letterSpacing: '0.05em' }}>
+                ROLE: {user.role.toUpperCase()}
+              </div>
+            )}
           </div>
         </div>
 
@@ -203,7 +232,7 @@ export function AppShell({ children, server, notifications = 3 }: Props) {
         </div>
 
         <nav className="sidebar__nav">
-          {navigation.map((group) => (
+          {visibleNavigation.map((group) => (
             <div key={group.title}>
               <h4 className="sidebar__group-title">{group.title}</h4>
               <div className="sidebar__links" style={{ gap: '4px' }}>
@@ -238,6 +267,11 @@ export function AppShell({ children, server, notifications = 3 }: Props) {
               <div>
                 <div className="sidebar__name">DevServer</div>
                 <div className="sidebar__tag">IDE Control Deck</div>
+                {user?.role && (
+                  <div style={{ fontSize: '0.7rem', color: 'var(--accent)', marginTop: '2px', fontWeight: 'bold', letterSpacing: '0.05em' }}>
+                    ROLE: {user.role.toUpperCase()}
+                  </div>
+                )}
               </div>
             </div>
             <button className="mobile-drawer__close" aria-label="Close menu" onClick={() => setIsMobileMenuOpen(false)}>
@@ -245,7 +279,7 @@ export function AppShell({ children, server, notifications = 3 }: Props) {
             </button>
           </div>
           <nav className="mobile-drawer__nav">
-            {navigation.map((group) => (
+            {visibleNavigation.map((group) => (
               <div key={group.title} style={{ marginBottom: '16px' }}>
                 <h4 className="sidebar__group-title">{group.title}</h4>
                 <div className="sidebar__links" style={{ gap: '4px' }}>
@@ -423,6 +457,12 @@ export function AppShell({ children, server, notifications = 3 }: Props) {
                 </div>
               )}
             </div>
+
+             {user?.role && (
+              <Badge tone={user.role === 'admin' || user.role === 'super admin' || user.role === 'owner' ? 'danger' : 'info'}>
+                Role: {user.role.toUpperCase()}
+              </Badge>
+            )}
 
             {/* Server adapter badge */}
             <Badge tone="accent">Host: {server}</Badge>

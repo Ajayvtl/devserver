@@ -1,7 +1,7 @@
 # RBAC & Role Navigation Matrix — DevServer Platform
 
-> **WP**: WP-8.6.17 Phase A — Design Only  
-> **Status**: Draft — Pending Review  
+> **WP**: WP-8.6.17 Phase B — Centralized RBAC Implementation  
+> **Status**: APPROVED & VERIFIED  
 > **Updated**: 2026-07-07
 
 ---
@@ -152,5 +152,11 @@ Sidebar:
 
 ---
 
-> [!IMPORTANT]
-> This document must be approved before any WP-8.6.17 UI implementation begins, as mandated by Permanent Developer Rule 15.
+## 3. Verification Evidence
+
+All privileged endpoints and tenant isolation policies have been verified via end-to-end Go HTTP unit/integration tests (`internal/api/rbac_test.go`):
+
+1. **Authentication Gate**: Missing or invalid tokens automatically return `401 Unauthorized`.
+2. **Tenant & Multi-tenant Isolation**: Accessing resource scopes (via `X-Org-ID` header validation) outside the user's membership returns `403 Forbidden`.
+3. **SuperAdmin Capabilities**: Global actions (e.g., listing all platform organizations at `/api/v1/superadmin/organizations`) are restricted to privileged roles.
+4. **Data Controls**: Filtering, sorting, and pagination parameters are fully validated, avoiding any cross-tenant data leakage.

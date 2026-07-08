@@ -91,7 +91,7 @@ func initSchema(db *sql.DB) error {
 	_, _ = db.Exec("ALTER TABLE memberships ADD COLUMN last_login_at DATETIME NULL")
 	_, _ = db.Exec("ALTER TABLE memberships ADD COLUMN joined_at DATETIME NULL")
 
-	// Seed default org and admin membership if none exists
+	// Seed default org and production role set if none exists
 	var count int
 	_ = db.QueryRow("SELECT COUNT(*) FROM organizations").Scan(&count)
 	if count == 0 {
@@ -100,20 +100,60 @@ func initSchema(db *sql.DB) error {
 		err := db.QueryRow("SELECT id FROM users WHERE username = 'admin' LIMIT 1").Scan(&adminID)
 		if err == nil && adminID != "" {
 			orgID := uuid.NewString()
-			roleID := uuid.NewString()
 			now := time.Now().UTC().Format("2006-01-02 15:04:05")
 
 			// Create Default Organization
 			_, _ = db.Exec("INSERT INTO organizations (id, name, slug, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
 				orgID, "DevServer Default", "devserver-default", now, now)
 
-			// Create Admin Role
-			_, _ = db.Exec("INSERT INTO roles (id, org_id, name, permissions, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
-				roleID, orgID, "admin", `["*"]`, now, now)
+			// Seed production roles with explicit permission sets
+			roleIDs := map[string]string{}
 
-			// Assign Admin to Default Organization
+			roles := map[string][]string{
+				"Owner": {
+					PermissionWildcard,
+				},
+				"Admin": {
+					PermissionOrgAdmin,
+					PermissionMembersView,
+					PermissionMembersInvite,
+					PermissionMembersManage,
+					PermissionMembersRemove,
+					PermissionOrganizationsView,
+					PermissionRolesView,
+					PermissionUsersView,
+				},
+				"Developer": {
+					PermissionEnvironmentsView,
+					PermissionEnvironmentsWrite,
+					PermissionSecretsView,
+					PermissionVariablesView,
+				},
+				"Operator": {
+					PermissionEnvironmentsView,
+					PermissionSecretsView,
+					PermissionProvidersView,
+					PermissionProvidersWrite,
+				},
+				"Viewer": {
+					PermissionOrganizationsView,
+					PermissionEnvironmentsView,
+					PermissionSecretsView,
+				},
+			}
+
+			for name, perms := range roles {
+				id := uuid.NewString()
+				permJSON, _ := json.Marshal(perms)
+				_, _ = db.Exec("INSERT INTO roles (id, org_id, name, permissions, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+					id, orgID, name, string(permJSON), now, now)
+				roleIDs[name] = id
+			}
+
+			// Assign Owner role to seeded admin user
+			ownerRoleID := roleIDs["Owner"]
 			_, _ = db.Exec("INSERT INTO memberships (id, org_id, user_id, role_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
-				uuid.NewString(), orgID, adminID, roleID, now, now)
+				uuid.NewString(), orgID, adminID, ownerRoleID, now, now)
 		}
 	}
 
@@ -589,6 +629,57 @@ func (s *MySQLStore) ListRoles(ctx context.Context, orgID string) ([]*Role, erro
 		roles = append(roles, &role)
 	}
 	return roles, nil
+}
+
+func (s *MySQLStore) ListAllOrganizations(ctx context.Context, params common.QueryParams) ([]*Organization, int, error) {
+	var total int
+	err := s.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM organizations").Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	sortCol := "created_at"
+	if params.Sort == "name" {
+		sortCol = "name"
+	} else if params.Sort == "updated_at" {
+		sortCol = "updated_at"
+	}
+
+	dir := "DESC"
+	if params.Dir == "ASC" {
+		dir = "ASC"
+	}
+
+	query := fmt.Sprintf(`
+		SELECT id, name, slug, created_at, updated_at 
+		FROM organizations
+		ORDER BY %s %s
+		LIMIT ? OFFSET ?
+	`, sortCol, dir)
+
+	rows, err := s.db.QueryContext(ctx, query, params.Limit(), params.Offset())
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var orgs []*Organization
+	for rows.Next() {
+		var org Organization
+		var ca, ua []uint8
+		if err := rows.Scan(&org.ID, &org.Name, &org.Slug, &ca, &ua); err != nil {
+			return nil, 0, err
+		}
+		var parseErr error
+		if org.CreatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ca)); parseErr != nil {
+			return nil, 0, fmt.Errorf("failed to parse created_at: %w", parseErr)
+		}
+		if org.UpdatedAt, parseErr = time.Parse("2006-01-02 15:04:05", string(ua)); parseErr != nil {
+			return nil, 0, fmt.Errorf("failed to parse updated_at: %w", parseErr)
+		}
+		orgs = append(orgs, &org)
+	}
+	return orgs, total, nil
 }
 
 func (s *MySQLStore) Close() error {

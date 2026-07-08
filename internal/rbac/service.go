@@ -31,6 +31,7 @@ type Store interface {
 	RemoveMembership(ctx context.Context, orgID, userID string) error
 	InviteMember(ctx context.Context, orgID string, email string, roleID string) error
 	ListRoles(ctx context.Context, orgID string) ([]*Role, error)
+	ListAllOrganizations(ctx context.Context, params common.QueryParams) ([]*Organization, int, error)
 }
 
 // Service handles authorization evaluations.
@@ -49,6 +50,9 @@ type Service interface {
 	RemoveMember(ctx context.Context, adminID, orgID, targetUserID string) error
 	TransferOrgOwnership(ctx context.Context, adminID, orgID, newOwnerID string) error
 	ListRoles(ctx context.Context, orgID string) ([]*Role, error)
+	GetUserRole(ctx context.Context, userID, orgID string) (string, error)
+	GetUserPermissions(ctx context.Context, userID, orgID string) ([]string, error)
+	ListAllOrganizations(ctx context.Context, params common.QueryParams) ([]*Organization, int, error)
 }
 
 // DefaultService implements core RBAC authorization rules.
@@ -79,7 +83,7 @@ func (s *DefaultService) Authorize(ctx context.Context, userID, orgID, permissio
 	}
 
 	for _, p := range role.Permissions {
-		if p == permission || p == "*" {
+		if p == permission || p == PermissionWildcard {
 			return nil
 		}
 	}
@@ -119,42 +123,42 @@ func (s *DefaultService) ListOrganizations(ctx context.Context, userID string, p
 }
 
 func (s *DefaultService) ListMembers(ctx context.Context, userID, orgID string, params common.QueryParams) ([]*MembershipDetails, int, error) {
-	if err := s.Authorize(ctx, userID, orgID, "members.view"); err != nil {
+	if err := s.Authorize(ctx, userID, orgID, PermissionMembersView); err != nil {
 		return nil, 0, err
 	}
 	return s.store.ListMemberships(ctx, orgID, params)
 }
 
 func (s *DefaultService) InviteUser(ctx context.Context, adminID, orgID string, email string, roleID string) error {
-	if err := s.Authorize(ctx, adminID, orgID, "members.invite"); err != nil {
+	if err := s.Authorize(ctx, adminID, orgID, PermissionMembersInvite); err != nil {
 		return err
 	}
 	return s.store.InviteMember(ctx, orgID, email, roleID)
 }
 
 func (s *DefaultService) UpdateMemberRole(ctx context.Context, adminID, orgID, targetUserID string, roleID string) error {
-	if err := s.Authorize(ctx, adminID, orgID, "members.manage"); err != nil {
+	if err := s.Authorize(ctx, adminID, orgID, PermissionMembersManage); err != nil {
 		return err
 	}
 	return s.store.UpdateMembershipRole(ctx, orgID, targetUserID, roleID)
 }
 
 func (s *DefaultService) SetMemberStatus(ctx context.Context, adminID, orgID, targetUserID string, status string) error {
-	if err := s.Authorize(ctx, adminID, orgID, "members.manage"); err != nil {
+	if err := s.Authorize(ctx, adminID, orgID, PermissionMembersManage); err != nil {
 		return err
 	}
 	return s.store.UpdateMembershipStatus(ctx, orgID, targetUserID, status)
 }
 
 func (s *DefaultService) RemoveMember(ctx context.Context, adminID, orgID, targetUserID string) error {
-	if err := s.Authorize(ctx, adminID, orgID, "members.remove"); err != nil {
+	if err := s.Authorize(ctx, adminID, orgID, PermissionMembersRemove); err != nil {
 		return err
 	}
 	return s.store.RemoveMembership(ctx, orgID, targetUserID)
 }
 
 func (s *DefaultService) TransferOrgOwnership(ctx context.Context, adminID, orgID, newOwnerID string) error {
-	if err := s.Authorize(ctx, adminID, orgID, "org.owner"); err != nil {
+	if err := s.Authorize(ctx, adminID, orgID, PermissionOrgOwner); err != nil {
 		return err
 	}
 	oldMem, err := s.store.GetMembership(ctx, adminID, orgID)
@@ -177,4 +181,32 @@ func (s *DefaultService) TransferOrgOwnership(ctx context.Context, adminID, orgI
 
 func (s *DefaultService) ListRoles(ctx context.Context, orgID string) ([]*Role, error) {
 	return s.store.ListRoles(ctx, orgID)
+}
+
+func (s *DefaultService) GetUserRole(ctx context.Context, userID, orgID string) (string, error) {
+	membership, err := s.store.GetMembership(ctx, userID, orgID)
+	if err != nil {
+		return "", err
+	}
+	role, err := s.store.GetRole(ctx, membership.RoleID)
+	if err != nil {
+		return "", err
+	}
+	return role.Name, nil
+}
+
+func (s *DefaultService) GetUserPermissions(ctx context.Context, userID, orgID string) ([]string, error) {
+	membership, err := s.store.GetMembership(ctx, userID, orgID)
+	if err != nil {
+		return nil, err
+	}
+	role, err := s.store.GetRole(ctx, membership.RoleID)
+	if err != nil {
+		return nil, err
+	}
+	return role.Permissions, nil
+}
+
+func (s *DefaultService) ListAllOrganizations(ctx context.Context, params common.QueryParams) ([]*Organization, int, error) {
+	return s.store.ListAllOrganizations(ctx, params)
 }

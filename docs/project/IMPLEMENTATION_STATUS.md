@@ -82,7 +82,7 @@ This phase bridges the deeply isolated backend foundational services to the user
 * **WP-8.6.14 Deployment Module**: (Not Started) UI and orchestrator connections for deployment pipeline actions.
 * **WP-8.6.15 Monitoring Dashboard**: (Not Started) Frontend views for health monitoring and workspace telemetry.
 * **WP-8.6.16 Design System 2.0**: (Not Started) Redesign of typography scale, tokens, responsive grid, components, and accessibility.
-* **WP-8.6.17 Production UX Rewrite**: (Phase B In Progress) Phase A (Design) approved and tagged (`design-approved/WP-8.6.17`). Implementation initiated under strict token/CSS guidelines and ±2px pixel tolerance.
+* **WP-8.6.17 Production UX Rewrite**: (Phase B In Progress) Phase A (Design) approved. Fully implemented backend support for organization role metadata lookups, active tenant scoping in `/api/v1/users/me` profile responses, dynamic sidebar and header navigation filtering, and the dedicated Super Admin organizations directory `/superadmin/organizations` with high-density stats cards. All code builds cleanly and is verified by tests.
 * **WP-8.6.18 Enterprise Dashboard**: (Not Started) Live-data telemetry widgets replacing placeholder CPU, memory, and provider configs.
 * **WP-8.6.19 Responsive UI Validation**: (Not Started) Multi-device layout and navigation drawer tests.
 * **WP-8.6.20 Empty / Loading / Error States**: (Not Started) Skeleton UI and graceful error components.

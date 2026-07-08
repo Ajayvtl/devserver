@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { request, requestOrFallback } from '@/lib/api/client'
 import { useAuth } from '@/components/auth/auth-context'
+import { PermissionProvidersWrite } from '@/lib/rbac/permissions'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -23,7 +24,7 @@ export function ProvidersPanel() {
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
   const [editingProvider, setEditingProvider] = useState<ProviderConfig | null>(null)
-  
+
   const [formName, setFormName] = useState('openai')
   const [formSecretRef, setFormSecretRef] = useState('')
   const [formEnabled, setFormEnabled] = useState(true)
@@ -103,7 +104,7 @@ export function ProvidersPanel() {
     setTestingConnection(true)
     try {
       if (!formSecretRef) throw new Error('Secret Reference is required for connection testing.')
-      
+
       await request('/api/v1/providers/test', {
         method: 'POST',
         headers: { 'X-Org-ID': currentOrgId },
@@ -113,7 +114,7 @@ export function ProvidersPanel() {
           secretRef: formSecretRef
         }
       })
-      
+
       push({ title: 'Connection Successful', message: `Successfully authenticated with ${formName}.`, tone: 'success' })
     } catch (err: any) {
       push({ title: 'Connection Failed', message: err.message, tone: 'danger' })
@@ -122,13 +123,13 @@ export function ProvidersPanel() {
     }
   }
 
-  const hasWriteAccess = can('providers.write')
+  const hasWriteAccess = can(PermissionProvidersWrite)
 
   return (
     <div className="stack" style={{ gap: '2rem' }}>
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <Button 
-          variant="primary" 
+        <Button
+          variant="primary"
           onClick={() => showAdd ? closeForm() : openForm()}
           disabled={!hasWriteAccess}
         >
@@ -143,9 +144,9 @@ export function ProvidersPanel() {
             <div className="page-grid--two">
               <div className="input-group">
                 <label className="input-label">Provider Type</label>
-                <select 
-                  value={formName} 
-                  onChange={e => setFormName(e.target.value)} 
+                <select
+                  value={formName}
+                  onChange={e => setFormName(e.target.value)}
                   disabled={!!editingProvider}
                   style={{ padding: '0.625rem', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg-elevated)', color: 'var(--text-primary)', width: '100%' }}
                 >
@@ -155,23 +156,23 @@ export function ProvidersPanel() {
                   <option value="ollama">Ollama (Local)</option>
                 </select>
               </div>
-              <Input 
-                label="Environment Secret Reference ID" 
-                value={formSecretRef} 
+              <Input
+                label="Environment Secret Reference ID"
+                value={formSecretRef}
                 onChange={e => setFormSecretRef(e.target.value)}
                 placeholder="e.g. SEC_OPENAI_API_KEY"
                 required
               />
-              <Input 
-                label="Default Model (Optional)" 
-                value={formModel} 
+              <Input
+                label="Default Model (Optional)"
+                value={formModel}
                 onChange={e => setFormModel(e.target.value)}
                 placeholder="e.g. gpt-4o, gemini-1.5-pro"
               />
               <label className="checkbox-card" style={{ marginTop: '1.5rem' }}>
-                <input 
-                  type="checkbox" 
-                  checked={formEnabled} 
+                <input
+                  type="checkbox"
+                  checked={formEnabled}
                   onChange={e => setFormEnabled(e.target.checked)}
                 />
                 <span>Enable this provider for AI requests</span>

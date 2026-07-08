@@ -8,6 +8,8 @@ import { logout } from '@/lib/services/auth'
 interface UserProfile {
   id: string
   status: string
+  role?: string
+  permissions?: string[]
 }
 
 interface Organization {
@@ -47,7 +49,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       try {
-        const userProfile = await request<UserProfile>('/api/v1/users/me')
+        const storedOrg = typeof window !== 'undefined' ? window.localStorage.getItem('devserver-org') : null
+
+        const userProfile = await request<UserProfile>('/api/v1/users/me', {
+          headers: storedOrg ? { 'X-Org-ID': storedOrg } : undefined
+        })
         setUser(userProfile)
 
         const orgsResp = await request<Organization[]>('/api/v1/organizations')
@@ -55,7 +61,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setOrganizations(orgs)
 
         if (orgs.length > 0) {
-          const storedOrg = typeof window !== 'undefined' ? window.localStorage.getItem('devserver-org') : null
           if (storedOrg && orgs.find(o => o.id === storedOrg)) {
             setCurrentOrgId(storedOrg)
           } else {
@@ -101,6 +106,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [pathname, router])
 
+  // Update role profile dynamically when organization changes
+  useEffect(() => {
+    if (!currentOrgId || !user) return
+    async function updateRole() {
+      try {
+        const userProfile = await request<UserProfile>('/api/v1/users/me', {
+          headers: { 'X-Org-ID': currentOrgId as string }
+        })
+        setUser(prev => prev ? { ...prev, role: userProfile.role, permissions: userProfile.permissions } : userProfile)
+      } catch (err) {
+        console.error('Failed to update user role', err)
+      }
+    }
+    updateRole()
+  }, [currentOrgId])
+
   const handleSetOrgId = (id: string) => {
     setCurrentOrgId(id)
     if (typeof window !== 'undefined') {
@@ -111,10 +132,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const can = (permission: string) => {
-    // TODO: Verify permissions against the current organization's active Role.
-    // E.g. return user.permissions.includes(permission) || user.permissions.includes('*')
-    // For now, assume admin logic allows all if we have a user.
-    return !!user
+    if (!user || !user.permissions) return false
+    return user.permissions.includes(permission) || user.permissions.includes('*')
   }
 
   const signOut = async () => {

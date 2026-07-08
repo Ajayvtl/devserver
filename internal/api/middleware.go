@@ -85,6 +85,39 @@ func RBACMiddleware(rbacService rbac.Service, requiredPermission string) func(ht
 	}
 }
 
+func MethodRBACMiddleware(rbacService rbac.Service, methodPermissions map[string]string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			requiredPermission, exists := methodPermissions[r.Method]
+			if !exists {
+				// If no permission is mapped for this HTTP method, allow it to pass or deny
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			userID, ok := r.Context().Value(ContextKeyUserID).(string)
+			if !ok || userID == "" {
+				WriteError(w, r, http.StatusUnauthorized, "UNAUTHORIZED", "Authentication required", nil)
+				return
+			}
+			orgID := r.Header.Get("X-Org-ID")
+			if orgID == "" {
+				WriteError(w, r, http.StatusBadRequest, "INVALID_REQUEST", "X-Org-ID header required", nil)
+				return
+			}
+
+			err := rbacService.Authorize(r.Context(), userID, orgID, requiredPermission)
+			if err != nil {
+				WriteError(w, r, http.StatusForbidden, "FORBIDDEN", "Insufficient permissions for this organization", nil)
+				return
+			}
+
+			ctx := context.WithValue(r.Context(), ContextKeyOrgID, orgID)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
 type responseRecorder struct {
 	http.ResponseWriter
 	status int
