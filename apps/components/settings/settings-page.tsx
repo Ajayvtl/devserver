@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import { Card } from '../ui/card'
@@ -28,7 +28,7 @@ export function SettingsPage() {
   const [mfaEnabled, setMfaEnabled] = useState('false')
   const [activeTab, setActiveTab] = useState('general')
 
-  const loadSettings = async () => {
+  const loadSettings = useCallback(async () => {
     if (!currentOrgId) return
     setLoading(true)
     try {
@@ -49,11 +49,11 @@ export function SettingsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentOrgId])
 
   useEffect(() => {
     loadSettings()
-  }, [currentOrgId])
+  }, [loadSettings])
 
   const handleSave = async () => {
     if (!currentOrgId) return

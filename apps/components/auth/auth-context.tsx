@@ -120,7 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
     updateRole()
-  }, [currentOrgId])
+  }, [currentOrgId, user])
 
   const handleSetOrgId = (id: string) => {
     setCurrentOrgId(id)

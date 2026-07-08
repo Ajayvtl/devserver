@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { request, requestOrFallback } from '@/lib/api/client'
 import { useAuth } from '@/components/auth/auth-context'
 import { PermissionProvidersWrite } from '@/lib/rbac/permissions'
@@ -32,7 +32,7 @@ export function ProvidersPanel() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [testingConnection, setTestingConnection] = useState(false)
 
-  const loadProviders = async () => {
+  const loadProviders = useCallback(async () => {
     if (!currentOrgId) return
     setLoading(true)
     try {
@@ -43,11 +43,11 @@ export function ProvidersPanel() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentOrgId])
 
   useEffect(() => {
     loadProviders()
-  }, [currentOrgId])
+  }, [loadProviders])
 
   const openForm = (provider?: ProviderConfig) => {
     if (provider) {

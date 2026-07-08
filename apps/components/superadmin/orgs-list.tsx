@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Card } from '../ui/card'
 import { Badge } from '../ui/badge'
 import { DataTable } from '../ui/table'
@@ -25,7 +25,7 @@ export function SuperAdminOrgsList() {
   const [orgs, setOrgs] = useState<Organization[]>([])
   const [loading, setLoading] = useState(true)
 
-  const loadOrgs = async () => {
+  const loadOrgs = useCallback(async () => {
     if (!currentOrgId) return
     setLoading(true)
     try {
@@ -44,11 +44,11 @@ export function SuperAdminOrgsList() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentOrgId, push])
 
   useEffect(() => {
     loadOrgs()
-  }, [currentOrgId])
+  }, [loadOrgs])
 
   if (loading) {
     return (

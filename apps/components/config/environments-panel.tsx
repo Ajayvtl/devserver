@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { request, requestOrFallback } from '@/lib/api/client'
 import { useAuth } from '@/components/auth/auth-context'
 import { PermissionEnvironmentsWrite } from '@/lib/rbac/permissions'
@@ -44,7 +44,7 @@ export function EnvironmentsPanel() {
   const [secKey, setSecKey] = useState('')
   const [secValue, setSecValue] = useState('')
 
-  const loadEnvironments = async () => {
+  const loadEnvironments = useCallback(async () => {
     if (!currentOrgId) return
     setLoading(true)
     try {
@@ -55,9 +55,9 @@ export function EnvironmentsPanel() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentOrgId])
 
-  const loadDetails = async (env: EnvData) => {
+  const loadDetails = useCallback(async (env: EnvData) => {
     setActiveEnv(env)
     const [vars, secs] = await Promise.all([
       requestOrFallback<Variable[]>(`/api/v1/variables?envId=${env.id}`, [], { headers: { 'X-Org-ID': currentOrgId || '' } }),
@@ -65,11 +65,11 @@ export function EnvironmentsPanel() {
     ])
     setVariables(vars || [])
     setSecrets(secs || [])
-  }
+  }, [currentOrgId])
 
   useEffect(() => {
     loadEnvironments()
-  }, [currentOrgId])
+  }, [loadEnvironments])
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()

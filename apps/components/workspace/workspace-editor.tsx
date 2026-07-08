@@ -17,36 +17,43 @@ export function WorkspaceEditor({ workspaceId, documents, activeDocPath, onTabCl
   const contentRef = useRef<HTMLPreElement>(null)
 
   const activeDoc = documents.find(d => d.path === activeDocPath)
+  const activePath = activeDocPath
+
+  const loadContent = useCallback(async (path: string) => {
+    const doc = documents.find(d => d.path === path)
+    if (!doc) return
+    setLoading(prev => ({ ...prev, [path]: true }))
+    try {
+      const r = await fetch(`http://127.0.0.1:8080/api/workspaces/${workspaceId}/filecontent?path=${encodeURIComponent(path)}`)
+      const data = await r.json()
+      setContentCache(prev => ({ ...prev, [path]: data.content || '' }))
+      setLoading(prev => ({ ...prev, [path]: false }))
+      setTimeout(() => scrollToCursor(doc), 50)
+    } catch (err) {
+      console.error(err)
+      setLoading(prev => ({ ...prev, [path]: false }))
+    }
+  }, [workspaceId, documents])
+
+  const activeContent = activePath ? contentCache[activePath] : undefined
 
   useEffect(() => {
-    if (!activeDoc) return
-    if (contentCache[activeDoc.path]) {
-      scrollToCursor(activeDoc)
+    if (!activePath) return
+    const doc = documents.find(d => d.path === activePath)
+    if (!doc) return
+    if (activeContent) {
+      scrollToCursor(doc)
       return
     }
-    
-    setLoading(prev => ({ ...prev, [activeDoc.path]: true }))
-    
-    fetch(`http://127.0.0.1:8080/api/workspaces/${workspaceId}/filecontent?path=${encodeURIComponent(activeDoc.path)}`)
-      .then(r => r.json())
-      .then(data => {
-        setContentCache(prev => ({ ...prev, [activeDoc.path]: data.content || '' }))
-        setLoading(prev => ({ ...prev, [activeDoc.path]: false }))
-        // Delay scroll slightly to ensure DOM is updated
-        setTimeout(() => scrollToCursor(activeDoc), 50)
-      })
-      .catch(err => {
-        console.error(err)
-        setLoading(prev => ({ ...prev, [activeDoc.path]: false }))
-      })
-  }, [activeDoc, workspaceId, contentCache])
+    loadContent(activePath)
+  }, [activePath, loadContent, documents, activeContent])
   
   // Re-scroll if the cursor changes on the same already-loaded document
   useEffect(() => {
-    if (activeDoc && contentCache[activeDoc.path]) {
+    if (activeDoc && activeContent) {
       scrollToCursor(activeDoc)
     }
-  }, [activeDoc?.cursor.line])
+  }, [activeDoc?.cursor.line, activeDoc, activeContent])
 
   const scrollToCursor = (doc: Document) => {
     if (!contentRef.current || doc.cursor.line <= 0) return

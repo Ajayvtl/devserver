@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/Ajayvtl/devserver/internal/ai"
 	"github.com/Ajayvtl/devserver/internal/api"
@@ -34,6 +36,7 @@ import (
 	"github.com/Ajayvtl/devserver/internal/settings"
 	"github.com/Ajayvtl/devserver/internal/state"
 	"github.com/Ajayvtl/devserver/internal/tasks"
+	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 )
 
@@ -225,6 +228,33 @@ func runServer(ctx context.Context, log zerolog.Logger, cfg config.Config) error
 	rbacService := rbac.NewService(log, rbacStore)
 	_ = rbacService // Silencing unused warning until wired to HTTP handlers
 
+	// Subscribe to audit.mutation events and persist audit records
+	auditCh := bus.Subscribe(events.EventType("audit.mutation"))
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case evt, ok := <-auditCh:
+				if !ok {
+					return
+				}
+				// Expect payload to be a map[string]any matching AuditMiddleware
+				if payload, ok := evt.Payload.(map[string]any); ok {
+					ae := auth.AuditEvent{
+						EventID:   uuid.NewString(),
+						UserID:    toString(payload["userId"]),
+						Action:    toString(payload["action"]),
+						IPAddress: toString(payload["ipAddress"]),
+						UserAgent: toString(payload["userAgent"]),
+						Timestamp: time.Now().UTC(),
+					}
+					_ = authStore.SaveAuditEvent(context.Background(), ae)
+				}
+			}
+		}
+	}()
+
 	// Phase 7: Settings & Integrations
 	settingsStore, err := settings.NewMySQLStore(cfg.Database.DSN)
 	if err != nil {
@@ -310,6 +340,16 @@ func runServer(ctx context.Context, log zerolog.Logger, cfg config.Config) error
 	}
 
 	return nil
+}
+
+func toString(v any) string {
+	if v == nil {
+		return ""
+	}
+	if s, ok := v.(string); ok {
+		return s
+	}
+	return fmt.Sprintf("%v", v)
 }
 
 func syncTaskStore(ctx context.Context, bus events.Bus, db *state.StoreDB, log zerolog.Logger) {
